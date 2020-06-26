@@ -33,7 +33,7 @@ from vivarium.plots.multibody_physics import (
     plot_agent,
     plot_agents,
     plot_snapshots,
-    plot_trajectory,
+    plot_temporal_trajectory,
     plot_motility,
 )
 
@@ -131,13 +131,10 @@ class Multibody(Process):
             self.ax = plt.gca()
             self.ax.set_aspect('equal')
 
-        # all initial agents get a key under a single port
-        ports = {'agents': ['*']}
-
         parameters = {'time_step': self.defaults['time_step']}
         parameters.update(initial_parameters)
 
-        super(Multibody, self).__init__(ports, parameters)
+        super(Multibody, self).__init__(parameters)
 
     def ports_schema(self):
         glob_schema = {
@@ -521,7 +518,7 @@ def run_jitter(config={}, out_dir='out', filename='jitter'):
 
     # make trajectory plot
     timeseries = timeseries_from_data(data)
-    plot_trajectory(timeseries, motility_config, out_dir, filename + '_trajectory')
+    plot_temporal_trajectory(timeseries, motility_config, out_dir, filename + '_trajectory')
 
 def run_motility(config={}, out_dir='out', filename='motility'):
     total_time = config.get('total_time', 30)
@@ -540,7 +537,7 @@ def run_motility(config={}, out_dir='out', filename='motility'):
 
     # make motility plot
     plot_motility(motility_timeseries, out_dir, filename + '_analysis')
-    plot_trajectory(motility_timeseries, motility_config, out_dir, filename + '_trajectory')
+    plot_temporal_trajectory(motility_timeseries, motility_config, out_dir, filename + '_trajectory')
 
 def run_growth_division():
     n_agents = 1
@@ -587,7 +584,7 @@ if __name__ == '__main__':
     no_args = (len(sys.argv) == 1)
 
     if args.motility or no_args:
-        run_motility({'animate': False}, out_dir)
+        run_motility({'animate': True}, out_dir)
     if args.growth or no_args:
         run_growth_division()
     if args.jitter:

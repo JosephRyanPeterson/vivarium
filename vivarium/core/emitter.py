@@ -28,13 +28,23 @@ def create_indexes(table, columns):
         table.create_index(column)
 
 def get_emitter(config):
-    '''
-    Get an emitter based on the provided config.
+    '''Get an emitter based on the provided config.
 
-    config is a dict and requires three keys:
-    * type: Type of emitter ('kafka' for a kafka emitter).
-    * emitter: Any configuration the emitter type requires to initialize.
-    * keys: A list of state keys to emit for each state label.
+    The available emitter type names and their classes are:
+
+    * ``kafka``: :py:class:`KafkaEmitter`
+    * ``database``: :py:class:`DatabaseEmitter`
+    * ``null``: :py:class:`NullEmitter`
+    * ``timeseries``: :py:class:`TimeSeriesEmitter`
+
+    Arguments:
+        config (dict): Requires three keys:
+            * type: Type of emitter ('kafka' for a kafka emitter).
+            * emitter: Any configuration the emitter type requires to initialize.
+            * keys: A list of state keys to emit for each state label.
+
+    Returns:
+        Emitter: An instantiated emitter.
     '''
 
     if config is None:
@@ -83,23 +93,6 @@ def timeseries_from_data(data):
     embedded_timeseries['time'] = times_vector
     return embedded_timeseries
 
-def timeseries_from_data_old(data):
-    time_vec = list(data.keys())
-    initial_state = data[time_vec[0]]
-    timeseries = {port: {state: []
-                         for state, initial in states.items()}
-                  for port, states in initial_state.items()}
-    timeseries['time'] = time_vec
-
-    for time, all_states in data.items():
-        for port, states in all_states.items():
-            if port not in timeseries:
-                timeseries[port] = {}
-            for state_id, state in states.items():
-                if state_id not in timeseries[port]:
-                    timeseries[port][state_id] = []  # TODO -- record appearance of new states
-                timeseries[port][state_id].append(state)
-    return timeseries
 
 class Emitter(object):
     '''
@@ -119,9 +112,6 @@ class Emitter(object):
 
     def get_timeseries(self):
         return timeseries_from_data(self.get_data())
-
-    def get_timeseries_old(self):
-        return timeseries_from_data_old(self.get_data())
 
 
 class NullEmitter(Emitter):
