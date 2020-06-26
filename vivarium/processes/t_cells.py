@@ -4,18 +4,20 @@ import os
 import random
 
 from vivarium.library.units import units
+from vivarium.library.dict_utils import deep_merge
 from vivarium.core.process import Process
 from vivarium.core.composition import (
     simulate_process_in_experiment,
     plot_simulation_output,
     PROCESS_OUT_DIR,
 )
-
+from vivarium.core.experiment import Compartment
+from vivarium.processes.meta_division import MetaDivision
 
 NAME = 'T_cell'
 
 
-class T_cell(Process):
+class TCellProcess(Process):
     """
     T-cell process with 2 states
 
@@ -62,26 +64,31 @@ class T_cell(Process):
     def __init__(self, initial_parameters=None):
         if initial_parameters is None:
             initial_parameters = {}
+        parameters = copy.deepcopy(self.defaults)
+        deep_merge(parameters, initial_parameters)
+        super(TCellProcess, self).__init__(parameters)
 
         if random.uniform(0, 1) < self.defaults['initial_PD1n']:
             self.initial_state = 'PD1n'
         else:
             self.initial_state = 'PD1p'
 
-        parameters = self.defaults
-        
-        ports = {
-            'internal': ['cell_state'],
-            'boundary': ['IFNg']}
-        super(T_cell, self).__init__(ports, parameters)
+
 
     def ports_schema(self):
         return {
+            'globals': {
+                'divide': {
+                    '_default': False,
+                    '_updater': 'set'}
+            },
             'internal': {
                 'cell_state': {
                     '_default': self.initial_state,
                     '_emit': True,
-                    '_updater': 'set'}},
+                    '_updater': 'set'
+                }
+            },
             'boundary': {
                 'diameter': {
                     '_default': self.parameters['diameter']
@@ -90,61 +97,124 @@ class T_cell(Process):
                     '_default': 0,
                     '_updater': 'accumulate',
                 }
-            }}
+            }
+        }
 
     def next_update(self, timestep, states):
         cell_state = states['internal']['cell_state']
 
+        # death
+        if cell_state == 'PD1n':
+            if random.uniform(0, 1) < self.parameters['death_PD1n'] * timestep:
+                return {
+                    '_delete': {}
+                }
+        elif cell_state == 'PD1p':
+            if random.uniform(0, 1) < self.parameters['death_PD1p'] * timestep:
+                return {
+                    '_delete': {}
+                }
+
+        # division
+        if cell_state == 'PD1n':
+            if random.uniform(0, 1) < self.parameters['PD1n_growth'] * timestep:
+                return {
+                    'globals': {
+                        'divide': True
+                    }
+                }
+        elif cell_state == 'PD1p':
+            if random.uniform(0, 1) < self.parameters['PD1p_growth'] * timestep:
+                return {
+                    'globals': {
+                        'divide': True
+                    }
+                }
+
         # state transition
         new_cell_state = cell_state
-        death = False
-        division = False
         IFNg = 0.0
         if cell_state == 'PD1n':
-            # death
-            if random.uniform(0, 1) < self.parameters['death_PD1n'] * timestep:
-                death = True
-
-            # change state
-            if random.uniform(0,1) < self.parameters['transition_PD1n_to_PD1p'] * timestep:
+            if random.uniform(0, 1) < self.parameters['transition_PD1n_to_PD1p'] * timestep:
                 new_cell_state = 'PD1p'
+        elif cell_state == 'PD1p':
+            pass
 
+        # behavior
+        if cell_state == 'PD1n':
             # produce IFNg  # TODO -- integer? save remainder
             IFNg = self.parameters['PD1n_IFNg_production'] * timestep
-
-            # division # TODO -- make this reproduce the Petrovas distribution
-            # if random.uniform(0, 1) < self.parameters['PD1n_growth'] * timestep:
-            #     division = True
 
             # TODO migration
 
             # TODO killing -- pass cytotoxic packets to contacted tumor cells, based on tumor type
-                
-        if cell_state == 'PD1p':
 
-            # TODO -- if next to PDL1+ tumor then use self.parameters['death_PD1p_next_to_PDL1p']
-            if random.uniform(0, 1) < self.parameters['death_PD1p'] * timestep:
-                death = True
+        elif cell_state == 'PD1p':
 
             # produce IFNg  # TODO -- integer? save remainder
             IFNg = self.parameters['PD1p_IFNg_production'] * timestep
 
-            # division # TODO -- make this reproduce the Petrovas distribution
-            # if random.uniform(0, 1) < self.parameters['PD1p_growth'] * timestep:
-            #     division = True
 
-        # TODO -- if death, then pass a death update
         return {
             'internal': {
-                'cell_state': new_cell_state},
+                'cell_state': new_cell_state
+            },
             'boundary': {
                 'IFNg': IFNg
-            }}
+            },
+        }
+
+
+
+class TCellCompartment(Compartment):
+
+    defaults = {
+        'boundary_path': ('boundary',),
+        'agents_path': ('..', '..', 'agents',),
+        'daughter_path': tuple()}
+
+    def __init__(self, config):
+        self.config = config
+        for key, value in self.defaults.items():
+            if key not in self.config:
+                self.config[key] = value
+
+        # paths
+        self.boundary_path = config.get('boundary_path', self.defaults['boundary_path'])
+        self.agents_path = config.get('agents_path', self.defaults['agents_path'])
+
+    def generate_processes(self, config):
+        daughter_path = config['daughter_path']
+        agent_id = config['agent_id']
+
+        division_config = dict(
+            config.get('division', {}),
+            daughter_path=daughter_path,
+            agent_id=agent_id,
+            compartment=self)
+
+        t_cell = TCellProcess(config.get('growth', {}))
+        division = MetaDivision(division_config)
+
+        return {
+            't_cell': t_cell,
+            'division': division}
+
+    def generate_topology(self, config):
+        return {
+            't_cell': {
+                'internal': ('internal',),
+                'boundary': self.boundary_path,
+                'global': self.boundary_path},
+            'division': {
+                'global': self.boundary_path,
+                'cells': self.agents_path},
+            }
 
 
 
 def run_t_cells():
-    t_cell_process = T_cell({})
+    t_cell_process = TCellProcess({})
     settings = {'total_time': 1000}
     timeseries = simulate_process_in_experiment(t_cell_process, settings)
 
