@@ -16,6 +16,7 @@ from vivarium.core.composition import (
 from vivarium.core.experiment import Compartment
 from vivarium.processes.meta_division import MetaDivision
 
+
 NAME = 'T_cell'
 
 
@@ -45,9 +46,10 @@ class TCellProcess(Process):
         'death_PD1p': 7e-3,  # 0.7 / 14 hrs (Petrovas 2007)
         'death_PD1n': 2e-3,  # 0.2 / 14 hrs (Petrovas 2007)
         'death_PD1p_next_to_PDL1p': 9.5e-3,  # 0.95 / 14 hrs (Petrovas 2007)
-        # IFNg_production
+        # production rates
         'PD1n_IFNg_production': 1.6e4/3600,  # (molecules/cell/second) (Bouchnita 2017)
         'PD1p_IFNg_production': 0.0,  # (molecules/cell/second)
+        'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
         # division rate (Petrovas 2007)
         'PD1n_growth': 0.9,  # probability of division in 8 hours
         'PD1p_growth': 0.05,  # probability of division in 8 hours
@@ -103,7 +105,17 @@ class TCellProcess(Process):
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'accumulate',
-                }
+                },
+                'PD1': {
+                    '_default': 0,
+                    '_emit': True,
+                    '_updater': 'set',
+                },  # membrane protein, promotes T-cell death
+                'cytotoxic_packets': {},  # release into the tumor cells
+            },
+            'neighbors': {
+                'PDL1': {},
+                'MHC1': {},
             }
         }
 
@@ -156,23 +168,35 @@ class TCellProcess(Process):
             pass
 
         # behavior
-        if cell_state == 'PD1n':
+        IFNg = 0
+        PD1 = 0
+        cytotoxic_packets = 0
+
+        # TODO migration
+        # TODO killing -- pass cytotoxic packets to contacted tumor cells, based on tumor type
+        if new_cell_state == 'PD1n':
             # produce IFNg  # TODO -- integer? save remainder
             IFNg = self.parameters['PD1n_IFNg_production'] * timestep
 
-            # TODO migration
-            # TODO killing -- pass cytotoxic packets to contacted tumor cells, based on tumor type
+            # cytotoxic_packets = f(PDL1, MHC1, PD1)
+            # self.parameters['PD1n_cytotoxic_packets']
 
-        elif cell_state == 'PD1p':
+        elif new_cell_state == 'PD1p':
             # produce IFNg  # TODO -- integer? save remainder
             IFNg = self.parameters['PD1p_IFNg_production'] * timestep
+            PD1 = self.parameters['PD1p_PD1_equilibrium']
+
+            # cytotoxic_packets = function(PDL1, MHC1, PD1) TODO -- get this
+            # self.parameters['PD1p_cytotoxic_packets']
 
         return {
             'internal': {
                 'cell_state': new_cell_state
             },
             'boundary': {
-                'IFNg': IFNg
+                'IFNg': IFNg,
+                'PD1': PD1,
+                'cytotoxic_packets': cytotoxic_packets,
             },
         }
 
