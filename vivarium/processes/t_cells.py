@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import sys
+import copy
 import random
 
 from vivarium.library.units import units
@@ -59,6 +61,8 @@ class TCellProcess(Process):
         # killing  # TODO -- pass these to contacted tumor cells. TODO -- base this on tumor type (MHC1p, MHC1n)
         'PD1n_cytotoxic_packets': 5,  # number of packets to each contacted tumor cell
         'PD1p_cytotoxic_packets': 1,  # number of packets to each contacted tumor cell
+        # settings
+        'self_path': tuple(),
     }
 
     def __init__(self, initial_parameters=None):
@@ -73,7 +77,9 @@ class TCellProcess(Process):
         else:
             self.initial_state = 'PD1p'
 
-
+        self.self_path = self.or_default(
+            initial_parameters, 'self_path'
+        )
 
     def ports_schema(self):
         return {
@@ -95,6 +101,7 @@ class TCellProcess(Process):
                 },
                 'IFNg': {
                     '_default': 0,
+                    '_emit': True,
                     '_updater': 'accumulate',
                 }
             }
@@ -106,18 +113,25 @@ class TCellProcess(Process):
         # death
         if cell_state == 'PD1n':
             if random.uniform(0, 1) < self.parameters['death_PD1n'] * timestep:
+                print('PD1n DEATH!')
                 return {
-                    '_delete': {}
+                    '_delete': {
+                        'path': self.self_path
+                    }
                 }
         elif cell_state == 'PD1p':
             if random.uniform(0, 1) < self.parameters['death_PD1p'] * timestep:
+                print('PD1p DEATH!')
                 return {
-                    '_delete': {}
+                    '_delete': {
+                        'path': self.self_path
+                    }
                 }
 
         # division
         if cell_state == 'PD1n':
             if random.uniform(0, 1) < self.parameters['PD1n_growth'] * timestep:
+                print('PD1n DIVIDE!')
                 return {
                     'globals': {
                         'divide': True
@@ -125,6 +139,7 @@ class TCellProcess(Process):
                 }
         elif cell_state == 'PD1p':
             if random.uniform(0, 1) < self.parameters['PD1p_growth'] * timestep:
+                print('PD1p DIVIDE!')
                 return {
                     'globals': {
                         'divide': True
@@ -146,14 +161,11 @@ class TCellProcess(Process):
             IFNg = self.parameters['PD1n_IFNg_production'] * timestep
 
             # TODO migration
-
             # TODO killing -- pass cytotoxic packets to contacted tumor cells, based on tumor type
 
         elif cell_state == 'PD1p':
-
             # produce IFNg  # TODO -- integer? save remainder
             IFNg = self.parameters['PD1p_IFNg_production'] * timestep
-
 
         return {
             'internal': {
@@ -213,18 +225,32 @@ class TCellCompartment(Compartment):
 
 
 
-def run_t_cells():
+def run_single_t_cell(out_dir='out'):
     t_cell_process = TCellProcess({})
     settings = {'total_time': 1000}
     timeseries = simulate_process_in_experiment(t_cell_process, settings)
 
-    import ipdb;
-    ipdb.set_trace()
+    # plot
+    plot_settings = {}
+    plot_simulation_output(timeseries, plot_settings, out_dir)
 
+
+def run_batch_t_cells(out_dir='out'):
+    import ipdb; ipdb.set_trace()
+    pass
 
 if __name__ == '__main__':
     out_dir = os.path.join(PROCESS_OUT_DIR, NAME)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    run_t_cells()
+    parser = argparse.ArgumentParser(description='ODE expression')
+    parser.add_argument('--single', '-s', action='store_true', default=False)
+    parser.add_argument('--batch', '-b', action='store_true', default=False)
+    args = parser.parse_args()
+    no_args = (len(sys.argv) == 1)
+
+    if args.single or no_args:
+        run_single_t_cell(out_dir)
+    if args.batch:
+        run_batch_t_cells(out_dir)
