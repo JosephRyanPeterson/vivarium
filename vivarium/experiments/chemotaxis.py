@@ -334,7 +334,8 @@ def run_master(out_dir='out'):
 def plot_chemotaxis_experiment(
         data,
         field_config,
-        out_dir):
+        out_dir,
+        filename=''):
 
     # multigen agents plot
     plot_settings = {
@@ -356,10 +357,10 @@ def plot_chemotaxis_experiment(
         'field': field,
         'rotate_90': True}
 
-    plot_temporal_trajectory(copy.deepcopy(agents_timeseries), trajectory_config, out_dir, 'temporal')
-    plot_agent_trajectory(agents_timeseries, trajectory_config, out_dir, 'trajectory')
+    plot_temporal_trajectory(copy.deepcopy(agents_timeseries), trajectory_config, out_dir, filename + 'temporal')
+    plot_agent_trajectory(agents_timeseries, trajectory_config, out_dir, filename + 'trajectory')
     try:
-        plot_motility(agents_timeseries, out_dir, 'motility_analysis')
+        plot_motility(agents_timeseries, out_dir, filename + 'motility_analysis')
     except:
         print('plot_motility failed')
 

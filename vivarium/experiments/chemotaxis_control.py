@@ -23,6 +23,9 @@ from vivarium.experiments.chemotaxis import (
     run_chemotaxis_experiment,
     DEFAULT_AGENT_CONFIG,
     DEFAULT_ENVIRONMENT_TYPE,
+    get_exponential_env_config,
+    get_linear_env_config,
+    plot_chemotaxis_experiment,
 )
 
 # compartments
@@ -54,7 +57,7 @@ def rule(): return OneOrMore(specification)
 
 def make_agent(agent_specs):
     agent_type = agent_specs[0].value
-    number = agent_specs[1].value
+    number = int(agent_specs[1].value)
 
     if agent_type == 'motor':
         agents_config = {
@@ -95,12 +98,12 @@ def parse_agents(agents_string):
     return agents_config
 
 
-
 def make_dir(out_dir):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-if __name__ == '__main__':
+
+def execute():
     out_dir = os.path.join(EXPERIMENT_OUT_DIR, 'chemotaxis')
     make_dir(out_dir)
 
@@ -114,27 +117,40 @@ if __name__ == '__main__':
     parser.add_argument(
         '--environment', '-e',
         type=str,
-        default='',
-        help='the environment')
+        default='exponential',
+        help='the environment type ("linear" or "exponential")')
     parser.add_argument(
         '--time', '-t',
-        type=str,
-        default='',
+        type=int,
+        default=10,
         help='total simulation time, in seconds')
-
-
+    parser.add_argument(
+        '--emit', '-m',
+        type=int,
+        default=1,
+        help='emit interval, in seconds')
     args = parser.parse_args()
-    no_args = (len(sys.argv) == 1)
 
+
+    # configure the agents
+    agents_config = []
     if args.agents:
-        agents_string = ' '.join(args.type)
+        agents_string = ' '.join(args.agents)
         agents_config = parse_agents(agents_string)
 
+    # configure the environment
+    if args.environment == 'linear':
+        env_config = get_linear_env_config()
+    else:
+        env_config = get_exponential_env_config()
     environment_config = {
         'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_exponential_env_config(),
+        'config': env_config,
     }
 
+    # configure the simulation
+    total_time = args.time
+    emit_step = args.emit
     simulation_settings = {
         'total_time': total_time,
         'emit_step': emit_step,
@@ -146,4 +162,11 @@ if __name__ == '__main__':
         environment_config=environment_config,
         simulation_settings=simulation_settings,
     )
-    import ipdb; ipdb.set_trace()
+
+    # plot
+    field_config = environment_config['config']['field']
+    plot_chemotaxis_experiment(data, field_config, out_dir, 'control_')
+
+
+if __name__ == '__main__':
+    execute()
