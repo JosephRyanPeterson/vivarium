@@ -50,14 +50,14 @@ MotorActivityAgent = process_in_compartment(
     })
 
 
-DEFAULT_BOUNDS = [1000, 5000]
+DEFAULT_BOUNDS = [1000, 3000]
 DEFAULT_AGENT_LOCATION = [0.5, 0.1]
 DEFAULT_LIGAND_ID = 'MeAsp'
 DEFAULT_INITIAL_LIGAND = 25.0
 DEFAULT_ENVIRONMENT_TYPE = StaticLattice
 
 
-def get_environment_config():
+def get_exponential_env_config():
     # field parameters
     field_scale = 1.0
     exponential_base = 2e2
@@ -85,9 +85,40 @@ def get_environment_config():
         'multibody': multibody_config,
         'field': field_config}
 
+def get_linear_env_config():
+    # field parameters
+    slope = 1.0
+    base = 1e-1
+    field_center = [0.5, 0.0]
+
+    # multibody process config
+    multibody_config = {
+        'animate': False,
+        'jitter_force': 5e-4,
+        'bounds': DEFAULT_BOUNDS}
+
+    # static field config
+    field_config = {
+        'molecules': [DEFAULT_LIGAND_ID],
+        'gradient': {
+            'type': 'linear',
+            'molecules': {
+                DEFAULT_LIGAND_ID: {
+                    'base': base,
+                    'center': field_center,
+                    'slope': slope,
+                }
+            }
+        },
+        'bounds': DEFAULT_BOUNDS}
+
+    return {
+        'multibody': multibody_config,
+        'field': field_config}
+
 DEFAULT_ENVIRONMENT_CONFIG = {
     'type': DEFAULT_ENVIRONMENT_TYPE,
-    'config': get_environment_config()
+    'config': get_exponential_env_config()
 }
 
 DEFAULT_AGENT_CONFIG = {
@@ -172,7 +203,7 @@ def run_mixed(out_dir='out'):
 
     environment_config = {
         'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_environment_config()
+        'config': get_exponential_env_config()
     }
 
     simulation_settings = {
@@ -214,7 +245,7 @@ def run_variable(out_dir='out'):
 
     environment_config = {
         'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_environment_config()}
+        'config': get_exponential_env_config()}
 
     simulation_settings = {
         'total_time': total_time,
@@ -280,7 +311,7 @@ def run_master(out_dir='out'):
 
     environment_config = {
         'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_environment_config(),
+        'config': get_exponential_env_config(),
     }
 
     simulation_settings = {
@@ -342,7 +373,7 @@ if __name__ == '__main__':
     out_dir = os.path.join(EXPERIMENT_OUT_DIR, 'chemotaxis')
     make_dir(out_dir)
 
-    parser = argparse.ArgumentParser(description='multibody')
+    parser = argparse.ArgumentParser(description='chemotaxis experiments')
     parser.add_argument('--minimal', '-n', action='store_true', default=False)
     parser.add_argument('--master', '-m', action='store_true', default=False)
     parser.add_argument('--variable', '-v', action='store_true', default=False)
