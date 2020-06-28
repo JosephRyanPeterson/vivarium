@@ -98,18 +98,14 @@ class CircleMultibody(Process):
                             }
                         }
                     },
-                    'length': {
-                        '_emit': True,
-                        '_default': 2.0,
-                        '_divider': 'split',
-                        '_updater': 'set'},
-                    'width': {
+                    'diameter': {
                         '_emit': True,
                         '_default': 1.0,
+                        '_divider': 'set',
                         '_updater': 'set'},
                     'mass': {
                         '_emit': True,
-                        '_default': 1339 * units.fg,
+                        '_default': 1 * units.fg,
                         '_updater': 'set'},
                 }
             }
@@ -175,9 +171,16 @@ def run_circle_world():
 
     timeline = [
         (0, {('agents',): {
-            '1': {}
-        }
-        }),
+            '_add': {
+                'path': ('1',),
+                'state': {},
+            }}}),
+        # (0, {tuple(): {
+        #     'agents': {
+        #         '_add': {
+        #             'path': ('1',),
+        #             'state': {},
+        #         }}}}),
         # (60, {('agents', 'flagella'): 6}),
         # (200, {('agents', 'flagella'): 7}),
         (240, {})]
