@@ -195,8 +195,27 @@ class Multibody(Process):
 
         # get new agent positions
         agent_positions = self.physics.get_body_positions()
+        update = {'agents': agent_positions}
 
-        return {'agents': agent_positions}
+        # for mother machine configurations, remove cells above the channel height
+        if self.mother_machine:
+            channel_height = self.mother_machine['channel_height']
+            delete_agents = []
+            for agent_id, position in agent_positions.items():
+                location = position['boundary']['location']
+                y_loc = location[1]
+                if y_loc > channel_height:
+                    # cell has moved past the channels
+                    delete_agents.append(agent_id)
+            if delete_agents:
+                update['agents']['_delete'] = [
+                    (agent_id,)
+                    for agent_id in delete_agents]
+
+                import ipdb; ipdb.set_trace()
+                # TODO -- get agents to delete!
+
+        return update
 
     ## matplotlib interactive plot
     def animate_frame(self, agents):
