@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # vivarium imports
-from vivarium.library.pymunk_multibody import MultiBody
+from vivarium.library.pymunk_multibody import PymunkMultibody
 from vivarium.library.units import units, remove_units
 from vivarium.core.emitter import timeseries_from_data
 from vivarium.core.process import Process
@@ -124,7 +124,7 @@ class Multibody(Process):
             'bounds': self.bounds,
             'barriers': self.mother_machine,
         }
-        self.physics = MultiBody(multibody_config)
+        self.physics = PymunkMultibody(multibody_config)
 
         # interactive plot for visualization
         self.animate = initial_parameters.get('animate', self.defaults['animate'])

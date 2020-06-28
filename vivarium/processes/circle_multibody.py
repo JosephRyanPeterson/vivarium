@@ -3,24 +3,21 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 import argparse
-
 import random
 import math
 
 import numpy as np
 
 import matplotlib
-matplotlib.use('TKAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # vivarium imports
-from vivarium.library.pymunk_multibody import MultiBody
+from vivarium.library.pymunk_multibody import PymunkMultibody
 from vivarium.library.units import units, remove_units
 from vivarium.core.process import Process
 from vivarium.core.composition import (
-    process_in_experiment,
-    simulate_experiment,
+    simulate_process_in_experiment,
     PROCESS_OUT_DIR,
 )
 
@@ -31,9 +28,26 @@ DEFAULT_BOUNDS = [10, 10]
 PI = math.pi
 
 
+def volume_from_length(length, width):
+    '''
+    inverse of length_from_volume
+    '''
+    radius = width / 2
+    cylinder_length = length - width
+    volume = cylinder_length * (PI * radius**2) + (4 / 3) * PI * radius**3
+    return volume
+
+
+def make_random_position(bounds):
+    return [
+        np.random.uniform(0, bounds[0]),
+        np.random.uniform(0, bounds[1])]
+
+
+
 class CircleMultibody(Process):
     """
-    A multi-body physics process using pymunk
+    A multi-body physics process with circular agents
     """
 
     defaults = {
@@ -53,10 +67,9 @@ class CircleMultibody(Process):
 
         # make the multibody object
         multibody_config = {
-            'jitter_force': jitter_force,
             'bounds': self.bounds,
         }
-        self.physics = MultiBody(multibody_config)
+        self.physics = PymunkMultibody(multibody_config)
 
         # interactive plot for visualization
         self.animate = initial_parameters.get('animate', self.defaults['animate'])
@@ -79,10 +92,12 @@ class CircleMultibody(Process):
                         '_default': [0.5, 0.5],
                         '_updater': 'set',
                         '_divider': {
-                            'divider': daughter_locations,
+                            'divider': 'set',
                             'topology': {
                                 'length': ('length',),
-                                'angle': ('angle',)}}},
+                            }
+                        }
+                    },
                     'length': {
                         '_emit': True,
                         '_default': 2.0,
@@ -92,19 +107,9 @@ class CircleMultibody(Process):
                         '_emit': True,
                         '_default': 1.0,
                         '_updater': 'set'},
-                    'angle': {
-                        '_emit': True,
-                        '_default': 0.0,
-                        '_updater': 'set'},
                     'mass': {
                         '_emit': True,
                         '_default': 1339 * units.fg,
-                        '_updater': 'set'},
-                    'thrust': {
-                        '_default': 0.0,
-                        '_updater': 'set'},
-                    'torque': {
-                        '_default': 0.0,
                         '_updater': 'set'},
                 }
             }
@@ -114,6 +119,9 @@ class CircleMultibody(Process):
 
     def next_update(self, timestep, states):
         agents = states['agents']
+
+        import ipdb;
+        ipdb.set_trace()
 
         # animate before update
         if self.animate:
@@ -161,12 +169,36 @@ class CircleMultibody(Process):
         plt.draw()
         plt.pause(0.005)
 
-def run_growth_division():
-    import ipdb; ipdb.set_trace()
+
+def run_circle_world():
+    circle_world = CircleMultibody({})
+
+    timeline = [
+        (0, {('agents',): {
+            '1': {}
+        }
+        }),
+        # (60, {('agents', 'flagella'): 6}),
+        # (200, {('agents', 'flagella'): 7}),
+        (240, {})]
+
+    settings = {
+        'timeline': {'timeline': timeline},
+        'return_raw_data': False
+    }
+    data = simulate_process_in_experiment(circle_world, settings)
+
+    import ipdb;
+    ipdb.set_trace()
+
+
+
+
+
 
 if __name__ == '__main__':
     out_dir = os.path.join(PROCESS_OUT_DIR, NAME)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    run_growth_division()
+    run_circle_world()

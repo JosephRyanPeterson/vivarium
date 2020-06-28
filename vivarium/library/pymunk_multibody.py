@@ -69,7 +69,7 @@ def random_body_position(body):
 
 
 
-class MultiBody(object):
+class PymunkMultibody(object):
     """
     Multibody object for interfacing with pymunk
     """
@@ -399,7 +399,7 @@ def test_multibody(
         'initial_agents': agents,
         # 'debug': debug
     }
-    multibody = MultiBody(config)
+    multibody = PymunkMultibody(config)
 
     # run simulation
     time = 0
