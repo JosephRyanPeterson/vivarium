@@ -28,6 +28,8 @@ from vivarium.processes.transcription import Transcription, UNBOUND_RNAP_KEY
 from vivarium.processes.translation import Translation, UNBOUND_RIBOSOME_KEY
 from vivarium.processes.degradation import RnaDegradation
 from vivarium.processes.complexation import Complexation
+from vivarium.processes.growth_protein import GrowthProtein
+from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.tree_mass import TreeMass
 from vivarium.compartments.flagella_expression import (
     get_flagella_expression_config,
@@ -100,24 +102,25 @@ class ChemotaxisExpressionFlagella(Compartment):
         'ligand_id': 'MeAsp',
         'initial_ligand': 0.1,
         'initial_mass': 1339.0 * units.fg,
-        'config': {
-            'transcription': get_flagella_expression_config({})['transcription'],
-            'translation': get_flagella_expression_config({})['translation'],
-            'degradation': get_flagella_expression_config({})['degradation'],
-            'complexation': get_flagella_expression_config({})['complexation'],
-        }
+        'growth_rate': 0.0006,
+        'transcription': get_flagella_expression_config({})['transcription'],
+        'translation': get_flagella_expression_config({})['translation'],
+        'degradation': get_flagella_expression_config({})['degradation'],
+        'complexation': get_flagella_expression_config({})['complexation'],
+        'boundary_path': ('boundary',),
+        'external_path': ('boundary', 'external',),
+        'agents_path': ('..', '..', 'agents',),
+        'daughter_path': tuple(),
+        'agent_id': 'chemotaxis_flagella'
     }
 
     def __init__(self, config=None):
         if config is None:
             config = {}
-        self.config = copy.deepcopy(self.defaults['config'])
+        self.config = copy.deepcopy(self.defaults)
         deep_merge(self.config, config)
 
-        self.initial_mass = config.get(
-            'initial_mass',
-            self.defaults['initial_mass'])
-
+        # parameters
         n_flagella = config.get(
             'n_flagella',
             self.defaults['n_flagella'])
@@ -127,40 +130,53 @@ class ChemotaxisExpressionFlagella(Compartment):
         initial_ligand = config.get(
             'initial_ligand',
             self.defaults['initial_ligand'])
+        initial_mass = config.get(
+            'initial_mass',
+            self.defaults['initial_mass'])
+        growth_rate = config.get(
+            'growth_rate',
+            self.defaults['growth_rate'])
 
-        # add receptor and flagella configs
+        # receptor and flagella config
         self.config['receptor'] = {
             'ligand_id': ligand_id,
             'initial_ligand': initial_ligand}
-
         self.config['flagella'] = {
             'n_flagella': n_flagella}
 
-    def generate_processes(self, config):
-        receptor = ReceptorCluster(config['receptor'])
-        flagella = FlagellaActivity(config['flagella'])
+        # growth and division config
+        self.config['growth'] = {
+            'growth_rate': growth_rate}
+        self.config['mass_deriver'] = {
+            'initial_mass': initial_mass}
 
-        # expression
-        transcription = Transcription(config['transcription'])
-        translation = Translation(config['translation'])
-        degradation = RnaDegradation(config['degradation'])
-        complexation = Complexation(config['complexation'])
-        mass_deriver = TreeMass(config.get('mass_deriver', {
-            'initial_mass': config.get('initial_mass', self.initial_mass)}))
+    def generate_processes(self, config):
+        # division config
+        daughter_path = config['daughter_path']
+        agent_id = config['agent_id']
+        division_config = dict(
+            config.get('division', {}),
+            daughter_path=daughter_path,
+            agent_id=agent_id,
+            compartment=self)
 
         return {
-            'receptor': receptor,
-            'flagella': flagella,
-            'transcription': transcription,
-            'translation': translation,
-            'degradation': degradation,
-            'complexation': complexation,
-            'mass_deriver': mass_deriver,
+            'receptor': ReceptorCluster(config['receptor']),
+            'flagella': FlagellaActivity(config['flagella']),
+            'transcription': Transcription(config['transcription']),
+            'translation': Translation(config['translation']),
+            'degradation': RnaDegradation(config['degradation']),
+            'complexation': Complexation(config['complexation']),
+            'growth': GrowthProtein(config['growth']),
+            'division': MetaDivision(division_config),
+            'mass_deriver': TreeMass(config['mass_deriver']),
         }
 
     def generate_topology(self, config):
-        boundary_path = ('boundary',)
-        external_path = boundary_path + ('external',)
+        boundary_path = config['boundary_path']
+        external_path = config['external_path']
+        agents_path = config['agents_path']
+
         return {
 
             'receptor': {
@@ -200,6 +216,14 @@ class ChemotaxisExpressionFlagella(Compartment):
                 'monomers': ('proteins',),
                 'complexes': ('proteins',),
                 'global': boundary_path},
+
+            'growth': {
+                'internal': ('aggregate_protein',),
+                'global': boundary_path},
+
+            'division': {
+                'global': boundary_path,
+                'cells': agents_path},
 
             'mass_deriver': {
                 'global': boundary_path},
@@ -348,5 +372,5 @@ if __name__ == '__main__':
             n_flagella=args.flagella,
             # a cell cycle of 2520 sec is expected to express 8 flagella.
             # 2 flagella expected in 630 seconds.
-            total_time=630,
+            total_time=2520,
             out_dir=expression_out_dir)

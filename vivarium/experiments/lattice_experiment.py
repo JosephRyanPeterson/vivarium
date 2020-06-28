@@ -70,8 +70,7 @@ def get_gd_minimal_config():
         'compartment': GrowthDivisionMinimal,
         'config': {
             'agents_path': ('..', '..', 'agents'),
-            'growth_rate': 0.03,
-            'growth_rate_noise': 0.02,
+            'growth_rate': 0.01,
             'division_volume': 2.6
         }
     }

@@ -19,7 +19,7 @@ class GrowthProtein(Process):
  
     defaults = {
         'initial_protein': 5e7,
-        'growth_rate': 0.006,
+        'growth_rate': 0.0006,
         'global_deriver_key': 'global_deriver',
         'mass_deriver_key': 'mass_deriver',
     }
