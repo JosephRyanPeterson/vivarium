@@ -208,12 +208,14 @@ class Multibody(Process):
                     # cell has moved past the channels
                     delete_agents.append(agent_id)
             if delete_agents:
+                update['agents'] = {
+                    agent_id: position
+                    for agent_id, position in agent_positions.items()
+                    if agent_id not in delete_agents}
+
                 update['agents']['_delete'] = [
                     (agent_id,)
                     for agent_id in delete_agents]
-
-                import ipdb; ipdb.set_trace()
-                # TODO -- get agents to delete!
 
         return update
 

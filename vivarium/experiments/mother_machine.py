@@ -103,7 +103,7 @@ def get_mother_machine_config():
     growth_division_config = {
         'agents_path': ('..', '..', 'agents'),
         'global_path': ('global',),
-        'growth_rate': 0.006,
+        'growth_rate': 0.006,  # fast!
         'division_volume': 2.6}
 
     ## environment
