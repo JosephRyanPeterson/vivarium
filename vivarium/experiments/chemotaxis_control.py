@@ -49,62 +49,61 @@ MotorActivityAgent = process_in_compartment(
     })
 
 
+# agent types
+agents_library = {
+    'motor': {
+        # 'number': number,
+        'name': 'motor',
+        'type': MotorActivityAgent,
+        'config': DEFAULT_AGENT_CONFIG
+    },
+    'minimal': {
+        # 'number': number,
+        'name': 'minimal',
+        'type': ChemotaxisMinimal,
+        'config': DEFAULT_AGENT_CONFIG},
+    'variable': {
+        # 'number': number,
+        'name': 'variable',
+        'type': ChemotaxisVariableFlagella,
+        'config': DEFAULT_AGENT_CONFIG
+    },
+    'expression': {
+        # 'number': number,
+        'name': 'expression',
+        'type': ChemotaxisExpressionFlagella,
+        'config': DEFAULT_AGENT_CONFIG},
+}
+
+def get_agent_config(agent_specs):
+    agent_type = agent_specs[0].value
+    number = int(agent_specs[1].value)
+
+    config = agents_library[agent_type]
+    config['number'] = number
+    return config
+
+
+
 # parsing expression grammar for agents
 def agent_type(): return RegExMatch(r'[a-zA-Z0-9.\-\_]+')
 def number(): return RegExMatch(r'[0-9]+')
 def specification(): return agent_type, number
 def rule(): return OneOrMore(specification)
 
-def make_agent(agent_specs):
-    agent_type = agent_specs[0].value
-    number = int(agent_specs[1].value)
-
-    # TODO -- this could be done in a dictionary.
-    if agent_type == 'motor':
-        agents_config = {
-                'number': number,
-                'name': 'motor',
-                'type': MotorActivityAgent,
-                'config': DEFAULT_AGENT_CONFIG}
-
-    elif agent_type == 'minimal':
-        agents_config = {
-            'number': number,
-            'name': 'minimal',
-            'type': ChemotaxisMinimal,
-            'config': DEFAULT_AGENT_CONFIG}
-
-    elif agent_type == 'variable':
-        agents_config = {
-            'number': number,
-            'name': 'variable',
-            'type': ChemotaxisVariableFlagella,
-            'config': DEFAULT_AGENT_CONFIG}
-
-    elif agent_type == 'expression':
-        agents_config = {
-            'number': number,
-            'name': 'expression',
-            'type': ChemotaxisExpressionFlagella,
-            'config': DEFAULT_AGENT_CONFIG}
-
-    return agents_config
-
 agent_parser = ParserPython(rule)
-def parse_agents(agents_string):
+def parse_agents_string(agents_string):
     all_agents = agent_parser.parse(agents_string)
     agents_config = []
     for idx, agent_specs in enumerate(all_agents):
-        agents_config.append(make_agent(agent_specs))
+        agents_config.append(get_agent_config(agent_specs))
     return agents_config
-
 
 def make_dir(out_dir):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-
-def execute(out_dir='out'):
+def run_chemotaxis_simulation(out_dir='out'):
     """
     Execute a chemotaxis simulation with any number of different chemotactic agents
     """
@@ -138,7 +137,7 @@ def execute(out_dir='out'):
     agents_config = []
     if args.agents:
         agents_string = ' '.join(args.agents)
-        agents_config = parse_agents(agents_string)
+        agents_config = parse_agents_string(agents_string)
 
     # configure the environment
     if args.environment == 'linear':
@@ -174,4 +173,4 @@ if __name__ == '__main__':
     out_dir = os.path.join(EXPERIMENT_OUT_DIR, 'chemotaxis')
     make_dir(out_dir)
 
-    execute(out_dir)
+    run_chemotaxis_simulation(out_dir)
