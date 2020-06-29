@@ -59,6 +59,7 @@ def make_agent(agent_specs):
     agent_type = agent_specs[0].value
     number = int(agent_specs[1].value)
 
+    # TODO -- this could be done in a dictionary.
     if agent_type == 'motor':
         agents_config = {
                 'number': number,
