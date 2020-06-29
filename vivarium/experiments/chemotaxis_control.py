@@ -103,9 +103,10 @@ def make_dir(out_dir):
         os.makedirs(out_dir)
 
 
-def execute():
-    out_dir = os.path.join(EXPERIMENT_OUT_DIR, 'chemotaxis')
-    make_dir(out_dir)
+def execute(out_dir='out'):
+    """
+    Execute a chemotaxis simulation with any number of different chemotactic agents
+    """
 
     parser = argparse.ArgumentParser(description='chemotaxis control')
     parser.add_argument(
@@ -169,4 +170,7 @@ def execute():
 
 
 if __name__ == '__main__':
-    execute()
+    out_dir = os.path.join(EXPERIMENT_OUT_DIR, 'chemotaxis')
+    make_dir(out_dir)
+
+    execute(out_dir)

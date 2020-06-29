@@ -44,6 +44,10 @@ from vivarium.compartments.flagella_expression import (
 
 NAME = 'chemotaxis_flagella'
 
+DEFAULT_ENVIRONMENT_PORT = 'external'
+DEFAULT_LIGAND = 'MeAsp'
+DEFAULT_INITIAL_LIGAND = 0.0
+
 
 class ChemotaxisVariableFlagella(Compartment):
 
@@ -87,7 +91,7 @@ class ChemotaxisVariableFlagella(Compartment):
         return {
             'receptor': {
                 'external': external_path,
-                'internal': ('cell',)},
+                'internal': ('internal',)},
             'flagella': {
                 'internal': ('internal',),
                 'membrane': ('membrane',),
@@ -95,7 +99,6 @@ class ChemotaxisVariableFlagella(Compartment):
                 'flagella': ('flagella',),
                 'boundary': boundary_path},
         }
-
 
 
 class ChemotaxisODEExpressionFlagella(Compartment):
@@ -346,62 +349,44 @@ class ChemotaxisExpressionFlagella(Compartment):
         }
 
 
-def test_ode_expression_chemotaxis(
-        n_flagella=5,
-        total_time=10,
-        out_dir='out'):
-
-    environment_port = 'external'
-    ligand_id = 'MeAsp'
-    initial_conc = 0
-
-    # configure timeline
-    exponential_random_config = {
+def get_timeline(
+    environment_port=DEFAULT_ENVIRONMENT_PORT,
+    ligand_id=DEFAULT_LIGAND,
+    initial_conc=DEFAULT_INITIAL_LIGAND,
+    total_time=10,
+    timestep=1,
+    base=1+4e-4,
+    speed=14,
+):
+    return get_exponential_random_timeline({
         'ligand': ligand_id,
         'environment_port': environment_port,
         'time': total_time,
-        'timestep': 1,
+        'timestep': timestep,
         'initial_conc': initial_conc,
-        'base': 1+4e-4,
-        'speed': 14}
+        'base': base,
+        'speed': speed})
 
-    # make the compartment
-    config = {
-        'external_path': (environment_port,),
+def get_baseline_config(
+    n_flagella=5
+):
+    return {
+        'external_path': (DEFAULT_ENVIRONMENT_PORT,),
         'agents_path': ('agents',),  # Note -- should go two level up for experiments with environment
-        'ligand_id': ligand_id,
-        'initial_ligand': initial_conc,
+        'ligand_id': DEFAULT_LIGAND,
+        'initial_ligand': DEFAULT_INITIAL_LIGAND,
         # 'growth_rate': 0.0001,
         'n_flagella': n_flagella}
-    compartment = ChemotaxisODEExpressionFlagella(config)
 
-    # save the topology network
-    settings = {'show_ports': True}
-    plot_compartment_topology(
-        compartment,
-        settings,
-        out_dir)
 
-    # run experiment
-    initial_state = get_flagella_initial_state({
-        'molecules': 'internal'})
-    experiment_settings = {
-        'initial_state': initial_state,
-        'timeline': {
-            'timeline': get_exponential_random_timeline(
-                exponential_random_config),
-            'ports': {'external': ('boundary', 'external')}},
-    }
-    timeseries = simulate_compartment_in_experiment(
-        compartment,
-        experiment_settings)
-
-    # check growth
+def print_growth(timeseries):
     volume_ts = timeseries['boundary']['volume']
     mass_ts = timeseries['boundary']['mass']
     print('volume growth: {}'.format(volume_ts[-1] / volume_ts[0]))
     print('mass growth: {}'.format(mass_ts[-1] / mass_ts[0]))
 
+
+def plot_timeseries(timeseries, out_dir):
     # plot settings for the simulations
     plot_settings = {
         'max_rows': 30,
@@ -414,65 +399,65 @@ def test_ode_expression_chemotaxis(
         out_dir)
 
 
-def test_expression_chemotaxis(
+def test_ode_expression_chemotaxis(
         n_flagella=5,
         total_time=10,
-        out_dir='out'):
-
-    environment_port = 'external'
-    ligand_id = 'MeAsp'
-    initial_conc = 0
-
-    # configure timeline
-    exponential_random_config = {
-        'ligand': ligand_id,
-        'environment_port': environment_port,
-        'time': total_time,
-        'timestep': 1,
-        'initial_conc': initial_conc,
-        'base': 1+4e-4,
-        'speed': 14}
-
+        out_dir='out'
+):
     # make the compartment
-    config = {
-        'external_path': (environment_port,),
-        'agents_path': ('agents',),  # Note -- should go two level up for experiments with environment
-        'ligand_id': ligand_id,
-        'initial_ligand': initial_conc,
-        'n_flagella': n_flagella}
-    compartment = ChemotaxisExpressionFlagella(config)
+    config = get_baseline_config(n_flagella)
+    compartment = ChemotaxisODEExpressionFlagella(config)
 
     # save the topology network
-    settings = {'show_ports': True}
-    plot_compartment_topology(
-        compartment,
-        settings,
-        out_dir)
+    plot_compartment_topology(compartment, {}, out_dir)
 
     # run experiment
-    initial_state = get_flagella_initial_state({
-        'molecules': 'internal'})
+    initial_state = {}
+    timeline = get_timeline(total_time=total_time)
     experiment_settings = {
         'initial_state': initial_state,
         'timeline': {
-            'timeline': get_exponential_random_timeline(
-                exponential_random_config),
+            'timeline': timeline,
             'ports': {'external': ('boundary', 'external')}},
     }
     timeseries = simulate_compartment_in_experiment(
         compartment,
         experiment_settings)
 
-    # plot settings for the simulations
-    plot_settings = {
-        'max_rows': 30,
-        'remove_zeros': True,
-        'skip_ports': ['chromosome', 'ribosomes']
+    print_growth(timeseries)
+
+    # plot
+    plot_timeseries(timeseries, out_dir)
+
+
+def test_expression_chemotaxis(
+        n_flagella=5,
+        total_time=10,
+        out_dir='out'
+):
+    # make the compartment
+    config = get_baseline_config(n_flagella)
+    compartment = ChemotaxisExpressionFlagella(config)
+
+    # save the topology network
+    plot_compartment_topology(compartment, {}, out_dir)
+
+    # run experiment
+    initial_state = get_flagella_initial_state({
+        'molecules': 'internal'})
+    timeline = get_timeline(total_time=total_time)
+    experiment_settings = {
+        'initial_state': initial_state,
+        'timeline': {
+            'timeline': timeline,
+            'ports': {'external': ('boundary', 'external')}},
     }
-    plot_simulation_output(
-        timeseries,
-        plot_settings,
-        out_dir)
+    timeseries = simulate_compartment_in_experiment(
+        compartment,
+        experiment_settings)
+
+    # plot
+    plot_timeseries(timeseries, out_dir)
 
     # gene expression plot
     plot_config = {
@@ -489,54 +474,30 @@ def test_expression_chemotaxis(
 def test_variable_chemotaxis(
         n_flagella=5,
         total_time=10,
-        out_dir='out'):
-
-    environment_port = 'external'
-    ligand_id = 'MeAsp'
-    initial_conc = 0
-
-    # configure timeline
-    exponential_random_config = {
-        'ligand': ligand_id,
-        'environment_port': environment_port,
-        'time': total_time,
-        'timestep': 1,
-        'initial_conc': initial_conc,
-        'base': 1+4e-4,
-        'speed': 14}
-
+        out_dir='out'
+):
     # make the compartment
-    config = {
-        'external_path': (environment_port,),
-        'ligand_id': ligand_id,
-        'initial_ligand': initial_conc,
-        'n_flagella': n_flagella}
+    config = get_baseline_config(n_flagella)
     compartment = ChemotaxisVariableFlagella(config)
 
     # save the topology network
-    settings = {'show_ports': True}
-    plot_compartment_topology(
-        compartment,
-        settings,
-        out_dir)
+    plot_compartment_topology(compartment, {}, out_dir)
 
     # run experiment
+    initial_state = {}
+    timeline = get_timeline(total_time=total_time)
     experiment_settings = {
+        'initial_state': initial_state,
         'timeline': {
-            'timeline': get_exponential_random_timeline(exponential_random_config),
+            'timeline': timeline,
             'ports': {'external': ('boundary', 'external')}},
     }
-    timeseries = simulate_compartment_in_experiment(compartment, experiment_settings)
+    timeseries = simulate_compartment_in_experiment(
+        compartment,
+        experiment_settings)
 
-    # plot settings for the simulations
-    plot_settings = {
-        'max_rows': 20,
-        'remove_zeros': True,
-    }
-    plot_simulation_output(
-        timeseries,
-        plot_settings,
-        out_dir)
+    # plot
+    plot_timeseries(timeseries, out_dir)
 
 
 def make_dir(out_dir):
@@ -581,5 +542,5 @@ if __name__ == '__main__':
             n_flagella=args.flagella,
             # a cell cycle of 2520 sec is expected to express 8 flagella.
             # 2 flagella expected in 630 seconds.
-            total_time=2520,
+            total_time=200,
             out_dir=expression_out_dir)
