@@ -136,7 +136,9 @@ class Store(object):
     * **_updater** (:py:class:`str`): The name of the :term:`updater` to
       use. By default this is ``accumulate``.
     * **_divider** (:py:class:`str`): The name of the :term:`divider` to
-      use.
+      use. Note that ``_divider`` is not included in the ``schema_keys``
+      set because it can be applied to any node in the hierarchy, not
+      just leaves (which represent variables).
     * **_value** (Type should match the variable value): The current
       value of the variable. This is ``None`` by default.
     * **_properties** (:py:class:`dict`): Extra properties of the
