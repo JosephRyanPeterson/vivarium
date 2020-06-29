@@ -10,6 +10,7 @@ from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units
 from vivarium.core.experiment import Compartment
 from vivarium.core.composition import (
+    plot_compartment_topology,
     simulate_compartment_in_experiment,
     plot_simulation_output,
     COMPARTMENT_OUT_DIR
@@ -31,6 +32,8 @@ from vivarium.processes.complexation import Complexation
 from vivarium.processes.growth_protein import GrowthProtein
 from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.tree_mass import TreeMass
+from vivarium.processes.derive_globals import DeriveGlobals
+from vivarium.processes.ode_expression import ODE_expression, get_flagella_expression
 from vivarium.compartments.flagella_expression import (
     get_flagella_expression_config,
     get_flagella_initial_state,
@@ -93,6 +96,119 @@ class ChemotaxisVariableFlagella(Compartment):
                 'boundary': boundary_path},
         }
 
+
+
+class ChemotaxisODEExpressionFlagella(Compartment):
+
+    defaults = {
+        'n_flagella': 5,
+        'ligand_id': 'MeAsp',
+        'initial_ligand': 0.1,
+        'initial_mass': 1339.0 * units.fg,
+        'growth_rate': 0.0001,
+        'expression': get_flagella_expression(),
+        'boundary_path': ('boundary',),
+        'external_path': ('boundary', 'external',),
+        'agents_path': ('..', '..', 'agents',),
+        'daughter_path': tuple(),
+        'agent_id': 'chemotaxis_flagella'
+    }
+
+    def __init__(self, config=None):
+        if config is None:
+            config = {}
+        self.config = copy.deepcopy(self.defaults)
+        deep_merge(self.config, config)
+
+        # parameters
+        n_flagella = config.get(
+            'n_flagella',
+            self.defaults['n_flagella'])
+        ligand_id = config.get(
+            'ligand_id',
+            self.defaults['ligand_id'])
+        initial_ligand = config.get(
+            'initial_ligand',
+            self.defaults['initial_ligand'])
+        initial_mass = config.get(
+            'initial_mass',
+            self.defaults['initial_mass'])
+        growth_rate = config.get(
+            'growth_rate',
+            self.defaults['growth_rate'])
+
+        # receptor and flagella config
+        self.config['receptor'] = {
+            'ligand_id': ligand_id,
+            'initial_ligand': initial_ligand}
+        self.config['flagella'] = {
+            'n_flagella': n_flagella}
+
+        # growth and division config
+        self.config['growth'] = {
+            'growth_rate': growth_rate}
+        self.config['mass_deriver'] = {
+            'initial_mass': initial_mass}
+        self.config['global_deriver'] = {}
+
+    def generate_processes(self, config):
+        # division config
+        daughter_path = config['daughter_path']
+        agent_id = config['agent_id']
+        division_config = dict(
+            config.get('division', {}),
+            daughter_path=daughter_path,
+            agent_id=agent_id,
+            compartment=self)
+
+        return {
+            'receptor': ReceptorCluster(config['receptor']),
+            'flagella': FlagellaActivity(config['flagella']),
+            'expression': ODE_expression(config['expression']),
+            'growth': GrowthProtein(config['growth']),
+            # 'division': MetaDivision(division_config),
+            'mass_deriver': TreeMass(config['mass_deriver']),
+            # 'global_deriver': DeriveGlobals(config['global_deriver']),
+        }
+
+    def generate_topology(self, config):
+        boundary_path = config['boundary_path']
+        external_path = config['external_path']
+        agents_path = config['agents_path']
+
+        return {
+
+            'receptor': {
+                'external': external_path,
+                'internal': ('cell',)},
+
+            'flagella': {
+                'internal': ('internal',),
+                'membrane': ('membrane',),
+                'internal_counts': ('proteins',),
+                'flagella': ('flagella',),
+                'boundary': boundary_path},
+
+            'expression': {
+                'internal': ('internal_concentrations',),
+                'counts': ('internal',),
+                'external': external_path,
+                'global': boundary_path},
+
+            'growth': {
+                'internal': ('protein',),
+                'global': boundary_path},
+
+            # 'division': {
+            #     'global': boundary_path,
+            #     'cells': agents_path},
+
+            'mass_deriver': {
+                'global': boundary_path},
+
+            # 'global_deriver': {
+            #     'global': boundary_path},
+        }
 
 
 class ChemotaxisExpressionFlagella(Compartment):
@@ -168,7 +284,7 @@ class ChemotaxisExpressionFlagella(Compartment):
             'degradation': RnaDegradation(config['degradation']),
             'complexation': Complexation(config['complexation']),
             'growth': GrowthProtein(config['growth']),
-            'division': MetaDivision(division_config),
+            # 'division': MetaDivision(division_config),
             'mass_deriver': TreeMass(config['mass_deriver']),
         }
 
@@ -221,13 +337,81 @@ class ChemotaxisExpressionFlagella(Compartment):
                 'internal': ('aggregate_protein',),
                 'global': boundary_path},
 
-            'division': {
-                'global': boundary_path,
-                'cells': agents_path},
+            # 'division': {
+            #     'global': boundary_path,
+            #     'cells': agents_path},
 
             'mass_deriver': {
                 'global': boundary_path},
         }
+
+
+def test_ode_expression_chemotaxis(
+        n_flagella=5,
+        total_time=10,
+        out_dir='out'):
+
+    environment_port = 'external'
+    ligand_id = 'MeAsp'
+    initial_conc = 0
+
+    # configure timeline
+    exponential_random_config = {
+        'ligand': ligand_id,
+        'environment_port': environment_port,
+        'time': total_time,
+        'timestep': 1,
+        'initial_conc': initial_conc,
+        'base': 1+4e-4,
+        'speed': 14}
+
+    # make the compartment
+    config = {
+        'external_path': (environment_port,),
+        'agents_path': ('agents',),  # Note -- should go two level up for experiments with environment
+        'ligand_id': ligand_id,
+        'initial_ligand': initial_conc,
+        # 'growth_rate': 0.0001,
+        'n_flagella': n_flagella}
+    compartment = ChemotaxisODEExpressionFlagella(config)
+
+    # save the topology network
+    settings = {'show_ports': True}
+    plot_compartment_topology(
+        compartment,
+        settings,
+        out_dir)
+
+    # run experiment
+    initial_state = get_flagella_initial_state({
+        'molecules': 'internal'})
+    experiment_settings = {
+        'initial_state': initial_state,
+        'timeline': {
+            'timeline': get_exponential_random_timeline(
+                exponential_random_config),
+            'ports': {'external': ('boundary', 'external')}},
+    }
+    timeseries = simulate_compartment_in_experiment(
+        compartment,
+        experiment_settings)
+
+    # check growth
+    volume_ts = timeseries['boundary']['volume']
+    mass_ts = timeseries['boundary']['mass']
+    print('volume growth: {}'.format(volume_ts[-1] / volume_ts[0]))
+    print('mass growth: {}'.format(mass_ts[-1] / mass_ts[0]))
+
+    # plot settings for the simulations
+    plot_settings = {
+        'max_rows': 30,
+        'remove_zeros': True,
+        'skip_ports': ['chromosome', 'ribosomes']
+    }
+    plot_simulation_output(
+        timeseries,
+        plot_settings,
+        out_dir)
 
 
 def test_expression_chemotaxis(
@@ -252,10 +436,18 @@ def test_expression_chemotaxis(
     # make the compartment
     config = {
         'external_path': (environment_port,),
+        'agents_path': ('agents',),  # Note -- should go two level up for experiments with environment
         'ligand_id': ligand_id,
         'initial_ligand': initial_conc,
         'n_flagella': n_flagella}
     compartment = ChemotaxisExpressionFlagella(config)
+
+    # save the topology network
+    settings = {'show_ports': True}
+    plot_compartment_topology(
+        compartment,
+        settings,
+        out_dir)
 
     # run experiment
     initial_state = get_flagella_initial_state({
@@ -294,7 +486,6 @@ def test_expression_chemotaxis(
         out_dir)
 
 
-
 def test_variable_chemotaxis(
         n_flagella=5,
         total_time=10,
@@ -321,6 +512,13 @@ def test_variable_chemotaxis(
         'initial_ligand': initial_conc,
         'n_flagella': n_flagella}
     compartment = ChemotaxisVariableFlagella(config)
+
+    # save the topology network
+    settings = {'show_ports': True}
+    plot_compartment_topology(
+        compartment,
+        settings,
+        out_dir)
 
     # run experiment
     experiment_settings = {
@@ -353,6 +551,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='variable flagella')
     parser.add_argument('--variable', '-v', action='store_true', default=False)
+    parser.add_argument('--ode', '-o', action='store_true', default=False)
     parser.add_argument('--expression', '-e', action='store_true', default=False)
     parser.add_argument('--flagella', '-f', type=int, default=5)
     args = parser.parse_args()
@@ -365,6 +564,16 @@ if __name__ == '__main__':
             n_flagella=args.flagella,
             total_time=60,
             out_dir=variable_out_dir)
+    elif args.ode:
+        # ODE flagella expression
+        ode_out_dir = os.path.join(out_dir, 'ode_expression')
+        make_dir(ode_out_dir)
+        test_ode_expression_chemotaxis(
+            n_flagella=args.flagella,
+            # a cell cycle of 2520 sec is expected to express 8 flagella.
+            # 2 flagella expected in 630 seconds.
+            total_time=2520,
+            out_dir=ode_out_dir)
     elif args.expression:
         expression_out_dir = os.path.join(out_dir, 'expression')
         make_dir(expression_out_dir)
