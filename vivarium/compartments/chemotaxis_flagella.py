@@ -166,7 +166,7 @@ class ChemotaxisODEExpressionFlagella(Compartment):
 
         return {
             'receptor': ReceptorCluster(config['receptor']),
-            'flagella': FlagellaActivity(config['flagella']),
+            'flagella_activity': FlagellaActivity(config['flagella']),
             'expression': ODE_expression(config['expression']),
             'growth': GrowthProtein(config['growth']),
             # 'division': MetaDivision(division_config),
@@ -185,7 +185,7 @@ class ChemotaxisODEExpressionFlagella(Compartment):
                 'external': external_path,
                 'internal': ('cell',)},
 
-            'flagella': {
+            'flagella_activity': {
                 'internal': ('internal',),
                 'membrane': ('membrane',),
                 'internal_counts': ('proteins',),
@@ -281,7 +281,7 @@ class ChemotaxisExpressionFlagella(Compartment):
 
         return {
             'receptor': ReceptorCluster(config['receptor']),
-            'flagella': FlagellaActivity(config['flagella']),
+            'flagella_activity': FlagellaActivity(config['flagella']),
             'transcription': Transcription(config['transcription']),
             'translation': Translation(config['translation']),
             'degradation': RnaDegradation(config['degradation']),
@@ -302,7 +302,7 @@ class ChemotaxisExpressionFlagella(Compartment):
                 'external': external_path,
                 'internal': ('cell',)},
 
-            'flagella': {
+            'flagella_activity': {
                 'internal': ('internal',),
                 'membrane': ('membrane',),
                 'internal_counts': ('proteins',),
