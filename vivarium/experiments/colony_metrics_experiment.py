@@ -23,6 +23,7 @@ from vivarium.library.timeseries import (
     process_path_timeseries_for_csv,
     save_flat_timeseries,
 )
+from vivarium.library.units import units
 
 
 NAME = 'colony_metrics'
@@ -62,6 +63,11 @@ def get_lattice_with_metrics_config():
     config = get_lattice_config()
     colony_metrics_config = {
         'colony_mass_deriver': {},
+        'colony_cell_volume_deriver': {
+            'metric_port_schema': {
+                '_default': 0.0 * units.fL,
+            }
+        },
     }
     config['environment'].update(colony_metrics_config)
     return config
@@ -87,7 +93,7 @@ def run_experiment(agent_config=None):
     return simulate_experiment(experiment, settings), experiment_config
 
 
-def test_colony_mass():
+def test_experiment():
     data, _ = run_experiment()
     path_ts = path_timeseries_from_data(data)
     filtered = {
@@ -139,4 +145,5 @@ def main():
 
 
 if __name__ == '__main__':
+    test_experiment()
     main()
