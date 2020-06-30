@@ -33,10 +33,6 @@ class GrowthDivisionMinimal(Compartment):
             if key not in self.config:
                 self.config[key] = value
 
-        # # paths
-        # self.boundary_path = config.get('boundary_path', self.defaults['boundary_path'])
-        # self.agents_path = config.get('agents_path', self.defaults['agents_path'])
-
     def generate_processes(self, config):
         # division config
         daughter_path = config['daughter_path']
