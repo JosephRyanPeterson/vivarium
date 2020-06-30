@@ -8,53 +8,34 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 
-from vivarium.core.experiment import get_in
-from vivarium.core.process import Deriver
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units
+from vivarium.processes.derive_colony_metric import (
+    ColonyMetricDeriver,
+    assert_no_divide,
+)
 
 
-def assert_no_divide(state):
-    raise AssertionError('Colony mass cannot be divided!')
-
-
-class ColonyMassDeriver(Deriver):
+class ColonyMassDeriver(ColonyMetricDeriver):
 
     defaults = {
-        'agent_mass_path': ('boundary', 'mass')
+        'metric_port': 'mass',
+        'metric_port_schema': {
+            '_default': 0.0 * units.fg,
+            '_divider': assert_no_divide,
+            '_updater': 'set',
+            '_emit': True,
+        },
+        'agent_metric_path': ('boundary', 'mass'),
+        'variable_name': 'mass',
     }
 
-    def ports_schema(self):
-        return {
-            'colony_global': {
-                'mass': {
-                    '_default': 0.0 * units.fg,
-                    '_divider': assert_no_divide,
-                    '_updater': 'set',
-                    '_emit': True,
-                },
-            },
-            'agents': {
-                '_default': dict(),
-                '_divider': assert_no_divide,
-                '_updater': 'set',
-            },
-        }
-
-    def next_update(self, timestep, states):
-        agents = states['agents']
-        assert isinstance(agents, dict)
-        mass = 0 * units.fg
-        for agent, agent_state in agents.items():
-            if agent.startswith('_'):
-                # This is a special key like `_subschema`, not an agent
-                continue
-            mass += get_in(agent_state, self.parameters['agent_mass_path'])
-        return {
-            'colony_global': {
-                'mass': mass,
-            },
-        }
+    def __init__(self, parameters=None):
+        if parameters is None:
+            parameters = {}
+        config = copy.deepcopy(self.defaults)
+        deep_merge(config, parameters)
+        super(ColonyMassDeriver, self).__init__(config)
 
 
 class TestColonyMassDeriver():
@@ -126,7 +107,7 @@ class TestColonyMassDeriver():
 
     def test_configure_mass_path(self):
         deriver = ColonyMassDeriver({
-            'agent_mass_path': ('globals', 'metrics', 'mass'),
+            'agent_metric_path': ('globals', 'metrics', 'mass'),
         })
         states = {
             'agents': {
