@@ -69,16 +69,21 @@ def assoc_in(d, path, value):
 
 
 def assoc_path(d, path, value):
-    if path:
-        head = path[0]
-        if len(path) == 1:
-            d[head] = value
+    if not path:
+        return
+    head = path[0]
+    if len(path) == 1:
+        if (
+            isinstance(d.get(head), dict)
+            and isinstance(value, dict)
+        ):
+            d[head].update(value)
         else:
-            if head not in d:
-                d[head] = {}
-            assoc_path(d[head], path[1:], value)
+            d[head] = value
     else:
-        value
+        if head not in d:
+            d[head] = {}
+        assoc_path(d[head], path[1:], value)
 
 
 def update_in(d, path, f):
@@ -1758,6 +1763,45 @@ def test_timescales():
 
     experiment.update(10.0)
 
+
+def test_inverse_topology():
+    update = {
+        'port1': {
+            'a': 5,
+        },
+        'port2': {
+            'b': 10,
+        },
+        'port3': {
+            'b': 10,
+        },
+        'global': {
+            'c': 20,
+        },
+    }
+    topology = {
+        'port1': ('boundary', 'x'),
+        'global': ('boundary',),
+        'port2': ('boundary', 'y'),
+        'port3': ('boundary', 'x'),
+    }
+    path = ('agent',)
+    inverse = inverse_topology(path, update, topology)
+    expected_inverse = {
+        'agent': {
+            'boundary': {
+                'x': {
+                    'a': 5,
+                    'b': 10,
+                },
+                'y': {
+                    'b': 10,
+                },
+                'c': 20,
+            }
+        }
+    }
+    assert inverse == expected_inverse
 
 
 if __name__ == '__main__':
