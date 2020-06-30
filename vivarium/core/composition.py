@@ -106,6 +106,7 @@ def agent_environment_experiment(
     topology = network['topology']
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
+
     return Experiment({
         'processes': processes,
         'topology': topology,

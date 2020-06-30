@@ -217,9 +217,6 @@ class Multibody(Process):
                     (agent_id,)
                     for agent_id in delete_agents]
 
-
-        import ipdb; ipdb.set_trace()
-
         return update
 
     ## matplotlib interactive plot
