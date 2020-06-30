@@ -83,7 +83,7 @@ class ChemotaxisVariableFlagella(Compartment):
 
         return {
             'receptor': receptor,
-            'flagella': flagella}
+            'flagella_activity': flagella}
 
     def generate_topology(self, config):
         boundary_path = ('boundary',)
@@ -92,7 +92,7 @@ class ChemotaxisVariableFlagella(Compartment):
             'receptor': {
                 'external': external_path,
                 'internal': ('internal',)},
-            'flagella': {
+            'flagella_activity': {
                 'internal': ('internal',),
                 'membrane': ('membrane',),
                 'internal_counts': ('proteins',),
