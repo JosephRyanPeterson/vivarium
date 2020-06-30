@@ -356,8 +356,6 @@ def plot_compartment_topology(compartment, settings, out_dir='out', filename='to
         pos[node_id] = np.array([-1, -idx])
     for idx, node_id in enumerate(store_nodes, 1):
         pos[node_id] = np.array([1, -idx])
-    # add buffer
-    plt.xlim(-1 - buffer, 1 + buffer)
 
     # plot
     nx.draw_networkx_nodes(G, pos,
@@ -385,6 +383,11 @@ def plot_compartment_topology(compartment, settings, out_dir='out', filename='to
                                  edge_labels=edges,
                                  font_size=font_size,
                                  label_pos=label_pos)
+
+    # add buffer
+    xmin, xmax, ymin, ymax = plt.axis()
+    plt.xlim(xmin - buffer, xmax + buffer)
+    plt.ylim(ymin - buffer, ymax + buffer)
 
     # save figure
     fig_path = os.path.join(out_dir, filename)
