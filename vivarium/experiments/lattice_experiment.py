@@ -2,11 +2,9 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import sys
-import uuid
 import argparse
 
 from vivarium.core.experiment import (
-    generate_state,
     Experiment
 )
 from vivarium.core.composition import (
