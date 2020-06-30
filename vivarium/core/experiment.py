@@ -69,21 +69,16 @@ def assoc_in(d, path, value):
 
 
 def assoc_path(d, path, value):
-    if not path:
-        return
-    head = path[0]
-    if len(path) == 1:
-        if (
-            isinstance(d.get(head), dict)
-            and isinstance(value, dict)
-        ):
-            d[head].update(value)
-        else:
+    if path:
+        head = path[0]
+        if len(path) == 1:
             d[head] = value
+        else:
+            if head not in d:
+                d[head] = {}
+            assoc_path(d[head], path[1:], value)
     else:
-        if head not in d:
-            d[head] = {}
-        assoc_path(d[head], path[1:], value)
+        value
 
 
 def update_in(d, path, f):
@@ -1035,7 +1030,10 @@ def inverse_topology(outer, update, topology):
             else:
                 for child, child_update in update.items():
                     inner = normalize_path(outer + path + (child,))
-                    assoc_path(inverse, inner, child_update)
+                    if isinstance(child_update, dict):
+                        update_in(inverse, inner, lambda current: deep_merge(current, child_update))
+                    else:
+                        assoc_path(inverse, inner, child_update)
 
         elif key in update:
             value = update[key]
@@ -1056,7 +1054,10 @@ def inverse_topology(outer, update, topology):
 
             else:
                 inner = normalize_path(outer + path)
-                assoc_path(inverse, inner, value)
+                if isinstance(value, dict):
+                    update_in(inverse, inner, lambda current: deep_merge(current, value))
+                else:
+                    assoc_path(inverse, inner, value)
 
     return inverse
 
