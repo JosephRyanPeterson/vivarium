@@ -23,6 +23,7 @@ from vivarium.plots.multibody_physics import plot_snapshots
 from vivarium.compartments.lattice import Lattice
 from vivarium.compartments.growth_division import GrowthDivision
 from vivarium.compartments.growth_division_minimal import GrowthDivisionMinimal
+from vivarium.compartments.transport_metabolism import TransportMetabolism
 
 
 NAME = 'lattice'
@@ -43,6 +44,13 @@ agents_library = {
             'agents_path': ('..', '..', 'agents'),
             'growth_rate': 0.01,
             'division_volume': 2.6
+        }
+    },
+    'transport_metabolism': {
+        'name': 'transport_metabolism',
+        'type': TransportMetabolism,
+        'config': {
+            'agents_path': ('..', '..', 'agents'),
         }
     },
 }
@@ -167,12 +175,15 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     parser = argparse.ArgumentParser(description='lattice_experiment')
-    parser.add_argument('--gd', '-g', action='store_true', default=False)
-    parser.add_argument('--gd_minimal', '-m', action='store_true', default=False)
+    parser.add_argument('--growth_division', '-g', action='store_true', default=False)
+    parser.add_argument('--growth_division_minimal', '-m', action='store_true', default=False)
+    parser.add_argument('--transport_metabolism', '-t', action='store_true', default=False)
     args = parser.parse_args()
     no_args = (len(sys.argv) == 1)
 
-    if args.gd_minimal or no_args:
+    if args.growth_division_minimal or no_args:
         run_growth_division('growth_division_minimal')
-    elif args.gd:
+    elif args.growth_division:
         run_growth_division('growth_division')
+    elif args.transport_metabolism:
+        run_growth_division('transport_metabolism')

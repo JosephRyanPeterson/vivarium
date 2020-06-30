@@ -144,7 +144,7 @@ class Multibody(Process):
                 'boundary': {
                     'location': {
                         '_emit': True,
-                        '_default': [0.5, 0.5],
+                        '_default': [0.5 * bound for bound in self.bounds],
                         '_updater': 'set',
                         '_divider': {
                             'divider': daughter_locations,
@@ -216,6 +216,9 @@ class Multibody(Process):
                 update['agents']['_delete'] = [
                     (agent_id,)
                     for agent_id in delete_agents]
+
+
+        import ipdb; ipdb.set_trace()
 
         return update
 
