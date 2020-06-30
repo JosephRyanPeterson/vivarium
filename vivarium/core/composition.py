@@ -65,10 +65,14 @@ def make_agents(agent_ids, compartment, config=None):
 
 
 def agent_environment_experiment(
-        agents_config={},
-        environment_config={},
-        initial_state={},
-        settings={}):
+        agents_config=None,
+        environment_config=None,
+        initial_state=None,
+        settings=None
+):
+    if settings is None:
+        settings = {}
+
     # experiment settings
     emitter = settings.get('emitter', {'type': 'timeseries'})
 

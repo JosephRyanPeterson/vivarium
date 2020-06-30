@@ -52,24 +52,20 @@ MotorActivityAgent = process_in_compartment(
 # agent types
 agents_library = {
     'motor': {
-        # 'number': number,
         'name': 'motor',
         'type': MotorActivityAgent,
         'config': DEFAULT_AGENT_CONFIG
     },
     'minimal': {
-        # 'number': number,
         'name': 'minimal',
         'type': ChemotaxisMinimal,
         'config': DEFAULT_AGENT_CONFIG},
     'variable': {
-        # 'number': number,
         'name': 'variable',
         'type': ChemotaxisVariableFlagella,
         'config': DEFAULT_AGENT_CONFIG
     },
     'expression': {
-        # 'number': number,
         'name': 'expression',
         'type': ChemotaxisExpressionFlagella,
         'config': DEFAULT_AGENT_CONFIG},

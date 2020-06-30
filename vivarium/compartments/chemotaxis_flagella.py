@@ -542,5 +542,5 @@ if __name__ == '__main__':
             n_flagella=args.flagella,
             # a cell cycle of 2520 sec is expected to express 8 flagella.
             # 2 flagella expected in 630 seconds.
-            total_time=200,
+            total_time=600,
             out_dir=expression_out_dir)

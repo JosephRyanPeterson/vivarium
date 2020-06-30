@@ -10,7 +10,8 @@ from vivarium.core.experiment import (
     Experiment
 )
 from vivarium.core.composition import (
-    make_agents,
+    agent_environment_experiment,
+    # make_agents,
     simulate_experiment,
     plot_agents_multigen,
     EXPERIMENT_OUT_DIR,
@@ -25,55 +26,26 @@ from vivarium.compartments.growth_division_minimal import GrowthDivisionMinimal
 
 
 NAME = 'lattice'
+DEFAULT_ENVIRONMENT_TYPE = Lattice
 
-
-def lattice_experiment(config):
-    # configure the experiment
-    n_agents = config.get('n_agents')
-    emitter = config.get('emitter', {'type': 'timeseries'})
-
-    # make lattice environment
-    environment = Lattice(config.get('environment', {}))
-    network = environment.generate()
-    processes = network['processes']
-    topology = network['topology']
-
-    # add the agents
-    agent_ids = [str(agent_id) for agent_id in range(n_agents)]
-    agent_config = config['agent']
-    agent_compartment = agent_config['compartment']
-    compartment_config = agent_config['config']
-    agent = agent_compartment(compartment_config)
-    agents = make_agents(agent_ids, agent, {})
-    processes['agents'] = agents['processes']
-    topology['agents'] = agents['topology']
-
-    return Experiment({
-        'processes': processes,
-        'topology': topology,
-        'emitter': emitter,
-        'initial_state': config.get('initial_state', {})})
-
-
-
-# configs
-def get_gd_config():
-    return {
-        'compartment': GrowthDivision,
+agents_library = {
+    'growth_division': {
+        'name': 'growth_division',
+        'type': GrowthDivision,
         'config': {
             'agents_path': ('..', '..', 'agents'),
         }
-    }
-
-def get_gd_minimal_config():
-    return {
-        'compartment': GrowthDivisionMinimal,
+    },
+    'growth_division_minimal': {
+        'name': 'growth_division_minimal',
+        'type': GrowthDivisionMinimal,
         'config': {
             'agents_path': ('..', '..', 'agents'),
             'growth_rate': 0.01,
             'division_volume': 2.6
         }
-    }
+    },
+}
 
 def get_lattice_config():
     bounds = [20, 20]
@@ -93,33 +65,89 @@ def get_lattice_config():
             'diffusion': 1e-2,
         }
     }
-    return {
-        'environment': environment_config}
+    return environment_config
 
-def run_lattice_experiment(agent_config=get_gd_minimal_config, filename='agents'):
-    n_agents = 1
 
-    experiment_config = get_lattice_config()
-    experiment_config['n_agents'] = n_agents
-    experiment_config['agent'] = agent_config()
-    experiment = lattice_experiment(experiment_config)
+def run_lattice_experiment(
+    agents_config=None,
+    environment_config=None,
+    initial_state=None,
+    simulation_settings=None,
+    experiment_settings=None):
+    if experiment_settings is None:
+        experiment_settings = {}
+    if initial_state is None:
+        initial_state = {}
+
+    total_time = simulation_settings['total_time']
+    emit_step = simulation_settings['emit_step']
+
+    # agents ids
+    agent_ids = []
+    for config in agents_config:
+        number = config['number']
+        if 'name' in config:
+            name = config['name']
+            if number > 1:
+                new_agent_ids = [name + '_' + str(num) for num in range(number)]
+            else:
+                new_agent_ids = [name]
+        else:
+            new_agent_ids = [str(uuid.uuid1()) for num in range(number)]
+        config['ids'] = new_agent_ids
+        agent_ids.extend(new_agent_ids)
+
+    # make the experiment
+    experiment = agent_environment_experiment(
+        agents_config,
+        environment_config,
+        initial_state,
+        experiment_settings)
 
     # simulate
     settings = {
-        'timestep': 1,
-        'total_time': 200,
+        'total_time': total_time,
+        'emit_step': emit_step,
         'return_raw_data': True}
-    data = simulate_experiment(experiment, settings)
+    return simulate_experiment(experiment, settings)
+
+
+def run_growth_division(agent_type='growth_division'):
+    agent_config = agents_library[agent_type]
+    agent_config['number'] = 1
+    agents_config = [
+        agent_config,
+    ]
+
+    environment_config = {
+        'type': DEFAULT_ENVIRONMENT_TYPE,
+        'config': get_lattice_config(),
+    }
+
+    # configure the simulation
+    total_time = 10
+    emit_step = 1
+    simulation_settings = {
+        'total_time': total_time,
+        'emit_step': emit_step,
+    }
+
+    # simulate
+    data = run_lattice_experiment(
+        agents_config=agents_config,
+        environment_config=environment_config,
+        simulation_settings=simulation_settings,
+    )
 
     # extract data
-    multibody_config = experiment_config['environment']['multibody']
+    multibody_config = environment_config['config']['multibody']
     agents = {time: time_data['agents'] for time, time_data in data.items()}
     fields = {time: time_data['fields'] for time, time_data in data.items()}
 
     # agents plot
     plot_settings = {
         'agents_key': 'agents'}
-    plot_agents_multigen(data, plot_settings, out_dir, filename)
+    plot_agents_multigen(data, plot_settings, out_dir, agent_type)
 
     # snapshot plot
     data = {
@@ -128,8 +156,9 @@ def run_lattice_experiment(agent_config=get_gd_minimal_config, filename='agents'
         'config': multibody_config}
     plot_config = {
         'out_dir': out_dir,
-        'filename': filename + '_snapshots'}
+        'filename': agent_type + '_snapshots'}
     plot_snapshots(data, plot_config)
+
 
 
 if __name__ == '__main__':
@@ -144,6 +173,6 @@ if __name__ == '__main__':
     no_args = (len(sys.argv) == 1)
 
     if args.gd_minimal or no_args:
-        run_lattice_experiment(get_gd_minimal_config, 'minimal_growth_division')
+        run_growth_division('growth_division_minimal')
     elif args.gd:
-        run_lattice_experiment(get_gd_config, 'growth_division')
+        run_growth_division('growth_division')

@@ -14,7 +14,10 @@ from vivarium.core.composition import (
 
 # processes
 from vivarium.processes.growth_protein import GrowthProtein
-from vivarium.processes.minimal_expression import MinimalExpression
+from vivarium.processes.minimal_expression import (
+    MinimalExpression,
+    get_toy_expression_config,
+)
 from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.convenience_kinetics import (
     ConvenienceKinetics,
@@ -33,7 +36,11 @@ class GrowthDivision(Compartment):
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'transport': get_glc_lct_config(),
-        'daughter_path': tuple()}
+        'daughter_path': tuple(),
+        'growth': {},
+        'expression': get_toy_expression_config(),
+        'mass': {},
+    }
 
     def __init__(self, config):
         self.config = copy.deepcopy(config)
@@ -65,18 +72,19 @@ class GrowthDivision(Compartment):
             agent_id=agent_id,
             compartment=self)
 
-        growth = GrowthProtein(config.get('growth', {}))
-        transport = ConvenienceKinetics(config.get('transport', {}))
+        growth = GrowthProtein(config['growth'])
+        transport = ConvenienceKinetics(config['transport'])
         division = MetaDivision(division_config)
-        expression = MinimalExpression(config.get('expression', {}))
-        mass = TreeMass(config.get('mass', {}))
+        expression = MinimalExpression(config['expression'])
+        mass = TreeMass(config['mass'])
 
         return {
             'transport': transport,
             'growth': growth,
             'expression': expression,
             'division': division,
-            'mass': mass}
+            'mass': mass
+        }
 
     def generate_topology(self, config):
         external_path = self.boundary_path + ('external',)
@@ -101,7 +109,8 @@ class GrowthDivision(Compartment):
                 'internal': ('internal',),
                 'external': external_path,
                 'concentrations': ('internal_concentrations',),
-                'global': self.boundary_path}}
+                'global': self.boundary_path}
+        }
 
 
 
