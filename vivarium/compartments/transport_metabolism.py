@@ -159,7 +159,8 @@ def test_txp_mtb_ge():
         'timestep': 1,
         'total_time': 10}
 
-    compartment = TransportMetabolism({})
+    agent_id = '0'
+    compartment = TransportMetabolism({'agent_id': agent_id})
     return simulate_compartment_in_experiment(compartment, default_test_setting)
 
 def simulate_txp_mtb_ge(config={}, out_dir='out'):
