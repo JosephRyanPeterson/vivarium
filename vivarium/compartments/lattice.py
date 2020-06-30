@@ -20,6 +20,9 @@ from vivarium.processes.diffusion_field import (
     DiffusionField,
     get_gaussian_config,
 )
+from vivarium.processes.derive_colony_cell_volume import (
+    ColonyCellVolumeDeriver
+)
 from vivarium.processes.derive_colony_mass import ColonyMassDeriver
 
 
@@ -48,6 +51,7 @@ class Lattice(Compartment):
                 'diffusion': 1e-2,
             },
             'colony_mass_deriver': None,
+            'colony_cell_volume_deriver': None,
         }
     }
 
@@ -66,6 +70,11 @@ class Lattice(Compartment):
         if colony_mass_config is not None:
             processes['colony_mass_deriver'] = ColonyMassDeriver(
                 colony_mass_config)
+        colony_cell_volume_config = config['colony_cell_volume_deriver']
+        if colony_cell_volume_config is not None:
+            processes[
+                'colony_cell_volume_deriver'
+            ] = ColonyCellVolumeDeriver(colony_cell_volume_config)
         return processes
 
     def generate_topology(self, config):
@@ -78,6 +87,10 @@ class Lattice(Compartment):
                 'fields': ('fields',),
             },
             'colony_mass_deriver': {
+                'colony_global': ('colony_global',),
+                'agents': ('agents',),
+            },
+            'colony_cell_volume_deriver': {
                 'colony_global': ('colony_global',),
                 'agents': ('agents',),
             },
