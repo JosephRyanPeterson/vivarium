@@ -19,22 +19,30 @@ from vivarium.processes.derive_colony_metric import (
 class ColonyMassDeriver(ColonyMetricDeriver):
 
     defaults = {
-        'metric_port': 'mass',
+        'metric_variable': 'mass',
         'metric_port_schema': {
             '_default': 0.0 * units.fg,
             '_divider': assert_no_divide,
             '_updater': 'set',
             '_emit': True,
         },
-        'agent_metric_path': ('boundary', 'mass'),
-        'variable_name': 'mass',
+        'agent_metric_glob_schema': {
+            'boundary': {
+                'mass': {
+                    '_default': 0.0 * units.fg,
+                    '_divider': 'split',
+                    '_updater': 'set',
+                    '_emit': True,
+                },
+            },
+        },
     }
 
     def __init__(self, parameters=None):
         if parameters is None:
             parameters = {}
         config = copy.deepcopy(self.defaults)
-        deep_merge(config, parameters)
+        config.update(parameters)
         super(ColonyMassDeriver, self).__init__(config)
 
 
@@ -107,7 +115,15 @@ class TestColonyMassDeriver():
 
     def test_configure_mass_path(self):
         deriver = ColonyMassDeriver({
-            'agent_metric_path': ('globals', 'metrics', 'mass'),
+            'agent_metric_glob_schema': {
+                'globals': {
+                    'metrics': {
+                        'mass': {
+                            '_default': 0.0 * units.fg,
+                        },
+                    },
+                },
+            },
         })
         states = {
             'agents': {

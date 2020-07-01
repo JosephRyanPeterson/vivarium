@@ -19,22 +19,30 @@ from vivarium.processes.derive_colony_metric import (
 class ColonyCellVolumeDeriver(ColonyMetricDeriver):
 
     defaults = {
-        'metric_port': 'volume',
+        'metric_variable': 'volume',
         'metric_port_schema': {
             '_default': 0.0,
             '_divider': assert_no_divide,
             '_updater': 'set',
             '_emit': True,
         },
-        'agent_metric_path': ('boundary', 'volume'),
-        'variable_name': 'volume',
+        'agent_metric_glob_schema': {
+            'boundary': {
+                'volume': {
+                    '_default': 0.0,
+                    '_divider': 'split',
+                    '_updater': 'set',
+                    '_emit': True,
+                }
+            }
+        }
     }
 
     def __init__(self, parameters=None):
         if parameters is None:
             parameters = {}
         config = copy.deepcopy(self.defaults)
-        deep_merge(config, parameters)
+        config.update(parameters)
         super(ColonyCellVolumeDeriver, self).__init__(config)
 
 class TestColonyCellVolumeDeriver():
@@ -106,7 +114,18 @@ class TestColonyCellVolumeDeriver():
 
     def test_configure_volume_path(self):
         deriver = ColonyCellVolumeDeriver({
-            'agent_metric_path': ('globals', 'metrics', 'volume'),
+            'agent_metric_glob_schema': {
+                'globals': {
+                    'metrics': {
+                        'volume': {
+                            '_default': 0.0,
+                            '_updater': 'set',
+                            '_divider': 'split',
+                            '_emit': True,
+                        }
+                    }
+                }
+            }
         })
         states = {
             'agents': {

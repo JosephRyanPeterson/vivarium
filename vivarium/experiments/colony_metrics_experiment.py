@@ -66,6 +66,9 @@ def get_lattice_with_metrics_config():
         'colony_cell_volume_deriver': {
             'metric_port_schema': {
                 '_default': 0.0 * units.fL,
+                '_updater': 'set',
+                '_divider': 'split',
+                '_emit': True,
             }
         },
     }
@@ -111,7 +114,10 @@ def test_experiment():
     test_output = load_timeseries(os.path.join(OUT_DIR, 'test_output.csv'))
     expected = load_timeseries(
         os.path.join(REFERENCE_DATA_DIR, NAME + '.csv'))
-    assert_timeseries_close(test_output, expected)
+    assert_timeseries_close(
+        test_output, expected,
+        default_tolerance=(1 - 1e-5),
+    )
 
 
 def main():
