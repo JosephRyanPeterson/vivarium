@@ -11,6 +11,7 @@ from vivarium.core.composition import (
     plot_simulation_output,
     PROCESS_OUT_DIR,
 )
+from vivarium.processes.derive_globals import AVOGADRO
 
 
 NAME = 'growth_protein'
@@ -18,8 +19,11 @@ NAME = 'growth_protein'
 class GrowthProtein(Process):
  
     defaults = {
-        'initial_protein': 5e7,
-        'growth_rate': 0.0006,
+        'initial_mass': 1339 * units.fg,
+        # 'initial_protein': 3.9e7,  # counts of protein
+        # the median E. coli protein is 209 amino acids long, and AAs ~ 100 Da
+        'protein_mw': 2.09e4 * units.g / units.mol,
+        'growth_rate': 0.000275,  # for doubling time about every 2520 seconds
         'global_deriver_key': 'global_deriver',
         'mass_deriver_key': 'mass_deriver',
     }
@@ -36,8 +40,11 @@ class GrowthProtein(Process):
 
         # default state
         # 1000 proteins per fg
-        self.initial_protein = self.or_default(
-            initial_parameters, 'initial_protein')  # counts of protein
+        initial_mass = self.or_default(
+            initial_parameters, 'initial_mass')
+        self.protein_mw = self.or_default(
+            initial_parameters, 'protein_mw')
+        self.initial_protein = (initial_mass.to('g') / self.protein_mw * AVOGADRO)
         self.divide_protein = self.initial_protein * 2
 
         parameters = {
@@ -54,7 +61,7 @@ class GrowthProtein(Process):
                     '_divider': 'split',
                     '_emit': True,
                     '_properties': {
-                        'mw': 2.09e4 * units.g / units.mol}}},  # the median E. coli protein is 209 amino acids long, and AAs ~ 100 Da
+                        'mw': self.protein_mw}}},
             'global': {
                 'volume': {
                     '_updater': 'set',
@@ -104,6 +111,12 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     process = GrowthProtein()
-    settings = {'total_time': 10}
+    settings = {'total_time': 2520}
     timeseries = simulate_process_in_experiment(process, settings)
+
+    volume_ts = timeseries['global']['volume']
+    mass_ts = timeseries['global']['mass']
+    print('volume growth: {}'.format(volume_ts[-1] / volume_ts[0]))
+    print('mass growth: {}'.format(mass_ts[-1] / mass_ts[0]))
+
     plot_simulation_output(timeseries, {}, out_dir)

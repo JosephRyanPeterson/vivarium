@@ -108,7 +108,7 @@ class ChemotaxisODEExpressionFlagella(Compartment):
         'ligand_id': 'MeAsp',
         'initial_ligand': DEFAULT_INITIAL_LIGAND,
         'initial_mass': 1339.0 * units.fg,
-        'growth_rate': 0.0001,
+        'growth_rate': 0.000275,
         'expression': get_flagella_expression(),
         'boundary_path': ('boundary',),
         'external_path': ('boundary', 'external',),
@@ -133,9 +133,9 @@ class ChemotaxisODEExpressionFlagella(Compartment):
         initial_ligand = config.get(
             'initial_ligand',
             self.defaults['initial_ligand'])
-        # initial_mass = config.get(
-        #     'initial_mass',
-        #     self.defaults['initial_mass'])
+        initial_mass = config.get(
+            'initial_mass',
+            self.defaults['initial_mass'])
         growth_rate = config.get(
             'growth_rate',
             self.defaults['growth_rate'])
@@ -149,10 +149,10 @@ class ChemotaxisODEExpressionFlagella(Compartment):
 
         # growth and division config
         self.config['growth'] = {
+            'initial_mass': initial_mass,
             'growth_rate': growth_rate}
-        # self.config['mass_deriver'] = {
-        #     'initial_mass': initial_mass}
-        # self.config['global_deriver'] = {}
+        self.config['mass_deriver'] = {}
+        self.config['global_deriver'] = {}
 
     def generate_processes(self, config):
         # division config
@@ -170,8 +170,8 @@ class ChemotaxisODEExpressionFlagella(Compartment):
             'expression': ODE_expression(config['expression']),
             'growth': GrowthProtein(config['growth']),
             'division': MetaDivision(division_config),
-            # 'mass_deriver': TreeMass(config['mass_deriver']),
-            # 'global_deriver': DeriveGlobals(config['global_deriver']),
+            'mass_deriver': TreeMass(config['mass_deriver']),
+            'global_deriver': DeriveGlobals(config['global_deriver']),
         }
 
     def generate_topology(self, config):
@@ -206,11 +206,11 @@ class ChemotaxisODEExpressionFlagella(Compartment):
                 'global': boundary_path,
                 'cells': agents_path},
 
-            # 'mass_deriver': {
-            #     'global': boundary_path},
-            #
-            # 'global_deriver': {
-            #     'global': boundary_path},
+            'mass_deriver': {
+                'global': boundary_path},
+
+            'global_deriver': {
+                'global': boundary_path},
         }
 
 
@@ -221,7 +221,7 @@ class ChemotaxisExpressionFlagella(Compartment):
         'ligand_id': 'MeAsp',
         'initial_ligand': 0.1,
         'initial_mass': 1339.0 * units.fg,
-        'growth_rate': 0.0006,
+        'growth_rate': 0.000275,
         'transcription': get_flagella_expression_config({})['transcription'],
         'translation': get_flagella_expression_config({})['translation'],
         'degradation': get_flagella_expression_config({})['degradation'],
@@ -265,9 +265,10 @@ class ChemotaxisExpressionFlagella(Compartment):
 
         # growth and division config
         self.config['growth'] = {
+            'initial_mass': initial_mass,
             'growth_rate': growth_rate}
-        self.config['mass_deriver'] = {
-            'initial_mass': initial_mass}
+        self.config['mass_deriver'] = {}
+        self.config['global_deriver'] = {}
 
     def generate_processes(self, config):
         # division config
@@ -289,6 +290,7 @@ class ChemotaxisExpressionFlagella(Compartment):
             'growth': GrowthProtein(config['growth']),
             'division': MetaDivision(division_config),
             'mass_deriver': TreeMass(config['mass_deriver']),
+            'global_deriver': DeriveGlobals(config['global_deriver']),
         }
 
     def generate_topology(self, config):
@@ -345,6 +347,9 @@ class ChemotaxisExpressionFlagella(Compartment):
                 'cells': agents_path},
 
             'mass_deriver': {
+                'global': boundary_path},
+
+            'global_deriver': {
                 'global': boundary_path},
         }
 
@@ -455,6 +460,8 @@ def test_expression_chemotaxis(
         compartment,
         experiment_settings)
 
+    print_growth(timeseries)
+
     # plot
     plot_timeseries(timeseries, out_dir)
 
@@ -541,5 +548,5 @@ if __name__ == '__main__':
             n_flagella=args.flagella,
             # a cell cycle of 2520 sec is expected to express 8 flagella.
             # 2 flagella expected in 630 seconds.
-            total_time=600,
+            total_time=700,
             out_dir=expression_out_dir)
