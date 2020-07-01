@@ -46,7 +46,7 @@ NAME = 'chemotaxis_flagella'
 
 DEFAULT_ENVIRONMENT_PORT = 'external'
 DEFAULT_LIGAND = 'MeAsp'
-DEFAULT_INITIAL_LIGAND = 0.0
+DEFAULT_INITIAL_LIGAND = 1e-2
 
 
 class ChemotaxisVariableFlagella(Compartment):
@@ -106,7 +106,7 @@ class ChemotaxisODEExpressionFlagella(Compartment):
     defaults = {
         'n_flagella': 5,
         'ligand_id': 'MeAsp',
-        'initial_ligand': 0.1,
+        'initial_ligand': DEFAULT_INITIAL_LIGAND,
         'initial_mass': 1339.0 * units.fg,
         'growth_rate': 0.0001,
         'expression': get_flagella_expression(),
@@ -133,9 +133,9 @@ class ChemotaxisODEExpressionFlagella(Compartment):
         initial_ligand = config.get(
             'initial_ligand',
             self.defaults['initial_ligand'])
-        initial_mass = config.get(
-            'initial_mass',
-            self.defaults['initial_mass'])
+        # initial_mass = config.get(
+        #     'initial_mass',
+        #     self.defaults['initial_mass'])
         growth_rate = config.get(
             'growth_rate',
             self.defaults['growth_rate'])
@@ -150,9 +150,9 @@ class ChemotaxisODEExpressionFlagella(Compartment):
         # growth and division config
         self.config['growth'] = {
             'growth_rate': growth_rate}
-        self.config['mass_deriver'] = {
-            'initial_mass': initial_mass}
-        self.config['global_deriver'] = {}
+        # self.config['mass_deriver'] = {
+        #     'initial_mass': initial_mass}
+        # self.config['global_deriver'] = {}
 
     def generate_processes(self, config):
         # division config
@@ -169,8 +169,8 @@ class ChemotaxisODEExpressionFlagella(Compartment):
             'flagella_activity': FlagellaActivity(config['flagella']),
             'expression': ODE_expression(config['expression']),
             'growth': GrowthProtein(config['growth']),
-            # 'division': MetaDivision(division_config),
-            'mass_deriver': TreeMass(config['mass_deriver']),
+            'division': MetaDivision(division_config),
+            # 'mass_deriver': TreeMass(config['mass_deriver']),
             # 'global_deriver': DeriveGlobals(config['global_deriver']),
         }
 
@@ -194,21 +194,21 @@ class ChemotaxisODEExpressionFlagella(Compartment):
 
             'expression': {
                 'internal': ('internal_concentrations',),
-                'counts': ('internal',),
+                'counts': ('proteins',),
                 'external': external_path,
                 'global': boundary_path},
 
             'growth': {
-                'internal': ('protein',),
+                'internal': ('proteins',),
                 'global': boundary_path},
 
-            # 'division': {
-            #     'global': boundary_path,
-            #     'cells': agents_path},
+            'division': {
+                'global': boundary_path,
+                'cells': agents_path},
 
-            'mass_deriver': {
-                'global': boundary_path},
-
+            # 'mass_deriver': {
+            #     'global': boundary_path},
+            #
             # 'global_deriver': {
             #     'global': boundary_path},
         }
@@ -287,7 +287,7 @@ class ChemotaxisExpressionFlagella(Compartment):
             'degradation': RnaDegradation(config['degradation']),
             'complexation': Complexation(config['complexation']),
             'growth': GrowthProtein(config['growth']),
-            # 'division': MetaDivision(division_config),
+            'division': MetaDivision(division_config),
             'mass_deriver': TreeMass(config['mass_deriver']),
         }
 
@@ -340,9 +340,9 @@ class ChemotaxisExpressionFlagella(Compartment):
                 'internal': ('aggregate_protein',),
                 'global': boundary_path},
 
-            # 'division': {
-            #     'global': boundary_path,
-            #     'cells': agents_path},
+            'division': {
+                'global': boundary_path,
+                'cells': agents_path},
 
             'mass_deriver': {
                 'global': boundary_path},
@@ -371,7 +371,6 @@ def get_baseline_config(
     n_flagella=5
 ):
     return {
-        'external_path': (DEFAULT_ENVIRONMENT_PORT,),
         'agents_path': ('agents',),  # Note -- should go two level up for experiments with environment
         'ligand_id': DEFAULT_LIGAND,
         'initial_ligand': DEFAULT_INITIAL_LIGAND,

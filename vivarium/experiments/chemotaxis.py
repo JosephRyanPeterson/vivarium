@@ -29,6 +29,7 @@ from vivarium.compartments.chemotaxis_master import ChemotaxisMaster
 from vivarium.compartments.chemotaxis_flagella import (
     ChemotaxisVariableFlagella,
     ChemotaxisExpressionFlagella,
+    ChemotaxisODEExpressionFlagella,
 )
 
 # processes
@@ -156,6 +157,11 @@ agents_library = {
         'type': ChemotaxisExpressionFlagella,
         'config': DEFAULT_AGENT_CONFIG
     },
+    'ode': {
+        'name': 'ode_expression',
+        'type': ChemotaxisODEExpressionFlagella,
+        'config': DEFAULT_AGENT_CONFIG
+    }
 }
 
 def make_agent_config(agent_specs):
