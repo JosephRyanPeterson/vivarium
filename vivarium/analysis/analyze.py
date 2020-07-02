@@ -145,7 +145,7 @@ def run():
     parser.add_argument(
         '--host', '-o',
         default='localhost',
-        type=int,
+        type=str,
         help=(
             'Host at which to access local mongoDB instance. '
             'Defaults to "localhost".'
