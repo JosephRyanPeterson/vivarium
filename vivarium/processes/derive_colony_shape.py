@@ -108,10 +108,14 @@ class ColonyShapeDeriver(Deriver):
             else:
                 axes.append((0, 0))
 
+        # Calculate colony circumference
+        circumference = [shape.length for shape in shapes]
+
         return {
             'colony_global': {
                 'surface_area': areas,
                 'axes': axes,
+                'circumference': circumference,
             }
         }
 
@@ -165,6 +169,7 @@ class TestDeriveColonyShape():
         assert metrics['surface_area'] == [2]
         assert approx([np.sqrt(2), np.sqrt(2)]) == self.flatten(
             metrics['axes'])
+        assert metrics['circumference'] == approx([4 * np.sqrt(2)])
 
     def test_concave(self):
         # *-*-*-*-*
@@ -186,6 +191,7 @@ class TestDeriveColonyShape():
         metrics = self.calc_shape_metrics(points)
         assert metrics['surface_area'] == [11]
         assert metrics['axes'] == [(4, 4)]
+        assert metrics['circumference'] == approx([18 + 2 * np.sqrt(2)])
 
     def test_ignore_outliers(self):
         #    *
@@ -202,6 +208,7 @@ class TestDeriveColonyShape():
         assert metrics['surface_area'] == [2]
         assert approx([np.sqrt(2), np.sqrt(2)]) == self.flatten(
             metrics['axes'])
+        assert metrics['circumference'] == approx([4 * np.sqrt(2)])
 
     def test_colony_too_diffuse(self):
         #    *
@@ -218,6 +225,7 @@ class TestDeriveColonyShape():
         expected_metrics = {
             'surface_area': [],
             'axes': [],
+            'circumference': [],
         }
         assert metrics == expected_metrics
 
@@ -236,3 +244,4 @@ class TestDeriveColonyShape():
         assert metrics['surface_area'] == [2, 2]
         assert self.flatten(metrics['axes']) == approx(
             [np.sqrt(2), np.sqrt(2), np.sqrt(2), np.sqrt(2)])
+        assert metrics['circumference'] == approx([4 * np.sqrt(2)] * 2)
