@@ -1,9 +1,9 @@
 '''
-=====================
-Colony Metric Deriver
-=====================
+====================
+Total Metric Deriver
+====================
 
-This is used as the base class for other colony metric derivers.
+This is used as the base class for other total metric derivers.
 '''
 
 
@@ -15,7 +15,7 @@ from vivarium.core.process import Deriver
 from vivarium.core.experiment import get_in
 
 def assert_no_divide(state):
-    raise AssertionError('Colony mass cannot be divided!')
+    raise AssertionError('Total mass cannot be divided!')
 
 
 def path_from_schema(schema):
@@ -38,7 +38,7 @@ def path_from_schema(schema):
     return path
 
 
-class ColonyMetricDeriver(Deriver):
+class TotalMetricDeriver(Deriver):
 
     defaults = {}
 
@@ -50,14 +50,14 @@ class ColonyMetricDeriver(Deriver):
         for parameter in required:
             if parameter not in parameters:
                 raise ValueError(
-                    'ColonyMetricDeriver requires parameter {}'.format(
+                    'TotalMetricDeriver requires parameter {}'.format(
                         parameter
                     )
                 )
         if 'metric_zero' not in parameters:
             parameters['metric_zero'] = parameters[
                 'metric_port_schema']['_default']
-        super(ColonyMetricDeriver, self).__init__(parameters)
+        super(TotalMetricDeriver, self).__init__(parameters)
         # Superclass does a deep merge, between parameters and
         # self.defaults, which we don't want because we don't want to
         # merge schemas. Thus, we override self.parameters here
@@ -65,7 +65,7 @@ class ColonyMetricDeriver(Deriver):
 
     def ports_schema(self):
         return {
-            'colony_global': {
+            'total_global': {
                 self.parameters['metric_variable']: (
                     self.parameters['metric_port_schema'])
             },
@@ -90,7 +90,7 @@ class ColonyMetricDeriver(Deriver):
                 # Ignore agents that don't have the variable
                 metric += agent_metric
         return {
-            'colony_global': {
+            'total_global': {
                 self.parameters['metric_variable']: metric,
             }
         }

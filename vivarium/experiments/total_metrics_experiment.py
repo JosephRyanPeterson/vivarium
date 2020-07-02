@@ -26,11 +26,11 @@ from vivarium.library.timeseries import (
 from vivarium.library.units import units
 
 
-NAME = 'colony_metrics'
+NAME = 'total_metrics'
 OUT_DIR = os.path.join(EXPERIMENT_OUT_DIR, NAME)
 
 
-def colony_metrics_experiment(config):
+def total_metrics_experiment(config):
     # configure the experiment
     n_agents = config.get('n_agents')
     emitter = config.get('emitter', {'type': 'timeseries'})
@@ -61,9 +61,9 @@ def colony_metrics_experiment(config):
 
 def get_lattice_with_metrics_config():
     config = get_lattice_config()
-    colony_metrics_config = {
-        'colony_mass_deriver': {},
-        'colony_cell_volume_deriver': {
+    total_metrics_config = {
+        'total_mass_deriver': {},
+        'total_cell_volume_deriver': {
             'metric_port_schema': {
                 '_default': 0.0 * units.fL,
                 '_updater': 'set',
@@ -72,7 +72,7 @@ def get_lattice_with_metrics_config():
             }
         },
     }
-    config['environment'].update(colony_metrics_config)
+    config['environment'].update(total_metrics_config)
     return config
 
 
@@ -85,7 +85,7 @@ def run_experiment(agent_config=None):
     experiment_config = get_lattice_with_metrics_config()
     experiment_config['n_agents'] = n_agents
     experiment_config['agent'] = agent_config
-    experiment = colony_metrics_experiment(experiment_config)
+    experiment = total_metrics_experiment(experiment_config)
 
     # simulate
     settings = {
@@ -97,6 +97,8 @@ def run_experiment(agent_config=None):
 
 
 def test_experiment():
+    if not os.path.exists(OUT_DIR):
+        os.makedirs(OUT_DIR)
     data, _ = run_experiment()
     path_ts = path_timeseries_from_data(data)
     filtered = {
