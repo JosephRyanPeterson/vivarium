@@ -137,7 +137,8 @@ DEFAULT_AGENT_CONFIG = {
     'ligand_id': DEFAULT_LIGAND_ID,
     'initial_ligand': DEFAULT_INITIAL_LIGAND,
     'external_path': ('global',),
-    'agents_path': ('..', '..', 'agents')
+    'agents_path': ('..', '..', 'agents'),
+    'daughter_path': tuple(),
 }
 
 def set_agent_config(config={}):
@@ -204,7 +205,9 @@ preset_experiments = {
                 'number': 1,
                 'name': 'ode_expression',
                 'type': ChemotaxisODEExpressionFlagella,
-                'config': DEFAULT_AGENT_CONFIG
+                'config': deep_merge(
+                    dict(DEFAULT_AGENT_CONFIG),
+                    {'growth_rate': 0.0005})  # fast growth
             }
         ],
         'environment_config': DEFAULT_ENVIRONMENT_CONFIG,
