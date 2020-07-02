@@ -68,6 +68,9 @@ def random_body_position(body):
     return location
 
 def get_shape(agent_shape, boundary):
+    '''
+    shape documentation at: https://pymunk-tutorial.readthedocs.io/en/latest/shape/shape.html
+    '''
 
     if agent_shape == 'capsule':
         width = boundary['width']
@@ -75,12 +78,11 @@ def get_shape(agent_shape, boundary):
 
         half_length = length / 2
         half_width = width / 2
-
-        shape = pymunk.Poly(None, (
-            (-half_length, -half_width),
-            (half_length, -half_width),
-            (half_length, half_width),
-            (-half_length, half_width)))
+        shape = pymunk.Segment(
+            None,
+            (-half_length, 0),
+            (half_length, 0),
+            radius=half_width)
 
     elif agent_shape == 'rectangle':
         width = boundary['width']
@@ -89,8 +91,8 @@ def get_shape(agent_shape, boundary):
         half_length = length / 2
         half_width = width / 2
 
-        shape = pymunk.Poly(None, (
-            (-half_length, -half_width),
+        shape = pymunk.Poly(None,
+            ((-half_length, -half_width),
             (half_length, -half_width),
             (half_length, half_width),
             (-half_length, half_width)))
