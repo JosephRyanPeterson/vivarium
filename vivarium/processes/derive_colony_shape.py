@@ -57,6 +57,9 @@ def gen_agent_colony_map(agents, colony_shapes):
     an agent intersects with multiple colonies, we choose arbitrarily
     which colony the agent belongs to.
 
+    Points containing any nan coordinate are considered to be outside of
+    all shapes.
+
     .. note:: An agent may be part of no colony at all, in which case it
         will not be included in the returned map.
 
@@ -73,6 +76,8 @@ def gen_agent_colony_map(agents, colony_shapes):
     agent_colony_map = {}
     for agent_id, agent_state in agents.items():
         loc = agent_state['boundary']['location']
+        if np.any(np.isnan(loc)):
+            continue
         point = Point(*loc)
         for i, colony_shape in enumerate(colony_shapes):
             if colony_shape.intersects(point):
@@ -111,7 +116,13 @@ class ColonyShapeDeriver(Deriver):
                     '_divider': assert_no_divide,
                     '_emit': True,
                 },
-                'axes': {
+                'major_axis': {
+                    '_default': [],
+                    '_updater': 'set',
+                    '_divider': assert_no_divide,
+                    '_emit': True,
+                },
+                'minor_axis': {
                     '_default': [],
                     '_updater': 'set',
                     '_divider': assert_no_divide,
@@ -132,6 +143,7 @@ class ColonyShapeDeriver(Deriver):
             agent['boundary']['location']
             for agent in agents.values()
         ]
+        points = [point for point in points if np.all(~np.isnan(point))]
         alpha_shape = alphashape.alphashape(
             points, self.parameters['alpha'])
         if isinstance(alpha_shape, Polygon):
@@ -151,12 +163,16 @@ class ColonyShapeDeriver(Deriver):
 
         # Calculate colony major and minor axes based on bounding
         # rectangles
-        axes = []
+        major_axes = []
+        minor_axes = []
         for shape in shapes:
             if isinstance(shape, Polygon):
-                axes.append(major_minor_axes(shape))
+                major, minor = major_minor_axes(shape)
+                major_axes.append(major)
+                minor_axes.append(minor)
             else:
-                axes.append((0, 0))
+                major_axes.append(0)
+                minor_axes.append(0)
 
         # Calculate colony circumference
         circumference = [shape.length for shape in shapes]
@@ -175,7 +191,8 @@ class ColonyShapeDeriver(Deriver):
         return {
             'colony_global': {
                 'surface_area': areas,
-                'axes': axes,
+                'major_axis': major_axes,
+                'minor_axis': minor_axes,
                 'circumference': circumference,
                 'mass': mass,
             }
@@ -203,7 +220,8 @@ class TestDeriveColonyShape():
             },
             'colony_global': {
                 'surface_area': [],
-                'axes': [],
+                'major_axis': [],
+                'minor_axis': [],
             }
         }
         # Timestep does not matter
@@ -230,8 +248,8 @@ class TestDeriveColonyShape():
         ]
         metrics = self.calc_shape_metrics(points)
         assert metrics['surface_area'] == [2]
-        assert approx([np.sqrt(2), np.sqrt(2)]) == self.flatten(
-            metrics['axes'])
+        assert metrics['major_axis'] == approx([np.sqrt(2)])
+        assert metrics['minor_axis'] == approx([np.sqrt(2)])
         assert metrics['circumference'] == approx([4 * np.sqrt(2)])
         assert metrics['mass'] == [5 * units.fg]
 
@@ -254,11 +272,12 @@ class TestDeriveColonyShape():
         )
         metrics = self.calc_shape_metrics(points)
         assert metrics['surface_area'] == [11]
-        assert metrics['axes'] == [(4, 4)]
+        assert metrics['major_axis'] == [4]
+        assert metrics['minor_axis'] == [4]
         assert metrics['circumference'] == approx([18 + 2 * np.sqrt(2)])
         assert metrics['mass'] == [22 * units.fg]
 
-    def test_ignore_outliers(self):
+    def test_ignore_outliers_and_nan(self):
         #    *
         #   / \
         #  * * *            *
@@ -268,11 +287,12 @@ class TestDeriveColonyShape():
             (1, 2),
             (0, 1), (1, 1), (2, 1), (10, 1),
             (1, 0),
+            (np.nan, np.nan),
         ]
         metrics = self.calc_shape_metrics(points)
         assert metrics['surface_area'] == [2]
-        assert approx([np.sqrt(2), np.sqrt(2)]) == self.flatten(
-            metrics['axes'])
+        assert metrics['major_axis'] == approx([np.sqrt(2)])
+        assert metrics['minor_axis'] == approx([np.sqrt(2)])
         assert metrics['circumference'] == approx([4 * np.sqrt(2)])
         assert metrics['mass'] == [5 * units.fg]
 
@@ -290,7 +310,8 @@ class TestDeriveColonyShape():
         metrics = self.calc_shape_metrics(points)
         expected_metrics = {
             'surface_area': [],
-            'axes': [],
+            'major_axis': [],
+            'minor_axis': [],
             'circumference': [],
             'mass': [],
         }
@@ -306,7 +327,8 @@ class TestDeriveColonyShape():
         metrics = self.calc_shape_metrics(points)
         expected_metrics = {
             'surface_area': [],
-            'axes': [],
+            'major_axis': [],
+            'minor_axis': [],
             'circumference': [],
             'mass': [],
         }
@@ -322,7 +344,8 @@ class TestDeriveColonyShape():
         metrics = self.calc_shape_metrics(points)
         expected_metrics = {
             'surface_area': [],
-            'axes': [],
+            'major_axis': [],
+            'minor_axis': [],
             'circumference': [],
             'mass': [],
         }
@@ -333,7 +356,8 @@ class TestDeriveColonyShape():
         metrics = self.calc_shape_metrics(points)
         expected_metrics = {
             'surface_area': [],
-            'axes': [],
+            'major_axis': [],
+            'minor_axis': [],
             'circumference': [],
             'mass': [],
         }
@@ -352,7 +376,7 @@ class TestDeriveColonyShape():
         ]
         metrics = self.calc_shape_metrics(points)
         assert metrics['surface_area'] == [2, 2]
-        assert self.flatten(metrics['axes']) == approx(
-            [np.sqrt(2), np.sqrt(2), np.sqrt(2), np.sqrt(2)])
+        assert metrics['major_axis'] == approx([np.sqrt(2), np.sqrt(2)])
+        assert metrics['minor_axis'] == approx([np.sqrt(2), np.sqrt(2)])
         assert metrics['circumference'] == approx([4 * np.sqrt(2)] * 2)
         assert metrics['mass'] == [5 * units.fg] * 2
