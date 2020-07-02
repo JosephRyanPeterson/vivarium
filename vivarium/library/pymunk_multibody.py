@@ -67,7 +67,35 @@ def random_body_position(body):
             location = (width, random.uniform(0, length))
     return location
 
+def get_shape(agent_shape, boundary):
 
+    if agent_shape == 'capsule':
+        width = boundary['width']
+        length = boundary['length']
+
+        half_length = length / 2
+        half_width = width / 2
+
+        shape = pymunk.Poly(None, (
+            (-half_length, -half_width),
+            (half_length, -half_width),
+            (half_length, half_width),
+            (-half_length, half_width)))
+
+    elif agent_shape == 'rectangle':
+        width = boundary['width']
+        length = boundary['length']
+
+        half_length = length / 2
+        half_width = width / 2
+
+        shape = pymunk.Poly(None, (
+            (-half_length, -half_width),
+            (half_length, -half_width),
+            (half_length, half_width),
+            (-half_length, half_width)))
+
+    return shape
 
 class MultiBody(object):
     """
@@ -75,6 +103,7 @@ class MultiBody(object):
     """
 
     defaults = {
+        'agent_shape': 'rectangle',
         # hardcoded parameters
         'elasticity': 0.9,
         'damping': 0.5,  # 1 is no damping, 0 is full damping
@@ -100,6 +129,7 @@ class MultiBody(object):
         self.force_scaling = self.defaults['force_scaling']
 
         # configured parameters
+        self.agent_shape = config.get('agent_shape', self.defaults['agent_shape'])
         self.jitter_force = config.get('jitter_force', self.defaults['jitter_force'])
         self.bounds = config.get('bounds', self.defaults['bounds'])
         barriers = config.get('barriers', self.defaults['barriers'])
@@ -243,21 +273,15 @@ class MultiBody(object):
 
     def add_body_from_center(self, body_id, specs):
         boundary = specs['boundary']
-        width = boundary['width']
-        length = boundary['length']
         mass = boundary['mass']
         center_position = boundary['location']
         angle = boundary['angle']
         angular_velocity = boundary.get('angular_velocity', 0.0)
+        width = boundary['width']
+        length = boundary['length']
 
-        half_length = length / 2
-        half_width = width / 2
-
-        shape = pymunk.Poly(None, (
-            (-half_length, -half_width),
-            (half_length, -half_width),
-            (half_length, half_width),
-            (-half_length, half_width)))
+        # get agent_shape
+        shape = get_shape(self.agent_shape, boundary)
 
         inertia = pymunk.moment_for_poly(mass, shape.get_vertices())
         body = pymunk.Body(mass, inertia)
@@ -292,13 +316,7 @@ class MultiBody(object):
         angle = body.angle
 
         # make shape, moment of inertia, and add a body
-        half_length = length/2
-        half_width = width/2
-        new_shape = pymunk.Poly(None, (
-            (-half_length, -half_width),
-            (half_length, -half_width),
-            (half_length, half_width),
-            (-half_length, half_width)))
+        new_shape = get_shape(self.agent_shape, boundary)
 
         inertia = pymunk.moment_for_poly(mass, new_shape.get_vertices())
         new_body = pymunk.Body(mass, inertia)
