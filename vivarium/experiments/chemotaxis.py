@@ -1,3 +1,12 @@
+'''
+====================
+Chemotaxis Experiments
+====================
+
+Chemotaxis provides several pre-configured :py:class:`Experiments`
+with different chemotactic agents and environments.
+'''
+
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -189,6 +198,21 @@ preset_experiments = {
             'emit_step': 0.1,
         },
     },
+    'ode': {
+        'agents_config': [
+            {
+                'number': 1,
+                'name': 'ode_expression',
+                'type': ChemotaxisODEExpressionFlagella,
+                'config': DEFAULT_AGENT_CONFIG
+            }
+        ],
+        'environment_config': DEFAULT_ENVIRONMENT_CONFIG,
+        'simulation_settings': {
+            'total_time': 5000,
+            'emit_step': 1.0,
+        },
+    },
     'master': {
         'agents_config': [
             {
@@ -357,7 +381,7 @@ def add_arguments():
         default='"minimal 1"',
         help='A list of agent types and numbers in the format "agent_type1 number1 agent_type2 number2"')
     parser.add_argument(
-        '--environment', '-e',
+        '--environment', '-v',
         type=str,
         default='exponential',
         help='the environment type ("linear" or "exponential")')
@@ -372,7 +396,7 @@ def add_arguments():
         default=1,
         help='emit interval, in seconds')
     parser.add_argument(
-        '--experiment', '-x',
+        '--experiment', '-e',
         type=str,
         default=None,
         help='preconfigured experiments')
