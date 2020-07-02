@@ -16,7 +16,6 @@ from vivarium.core.emitter import (
     get_atlas_client,
     get_local_client,
     data_from_database,
-    get_atlas_database_emitter_config,
     SECRETS_PATH,
 )
 
@@ -28,7 +27,8 @@ def plot(args):
     if args.atlas:
         client = get_atlas_client(SECRETS_PATH)
     else:
-        client = get_local_client(args.port, args.database_name)
+        client = get_local_client(
+            args.host, args.port, args.database_name)
     data, environment_config = data_from_database(
         args.experiment_id, client)
     del data[0]
@@ -138,7 +138,17 @@ def run():
         default=27017,
         type=int,
         help=(
-            'Port at which to access local mongoDB instance.'
+            'Port at which to access local mongoDB instance. '
+            'Defaults to "27017".'
+        ),
+    )
+    parser.add_argument(
+        '--host', '-o',
+        default='localhost',
+        type=int,
+        help=(
+            'Host at which to access local mongoDB instance. '
+            'Defaults to "localhost".'
         ),
     )
     parser.add_argument(
@@ -146,7 +156,8 @@ def run():
         default='simulations',
         type=str,
         help=(
-            'Name of database on local mongoDB instance to read from.'
+            'Name of database on local mongoDB instance to read from. '
+            'Defaults to "simulations".'
         )
     )
     args = parser.parse_args()
