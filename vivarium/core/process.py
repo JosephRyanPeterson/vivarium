@@ -1,7 +1,14 @@
+"""
+==========================================
+Process and Compartment Classes
+==========================================
+"""
+
 from __future__ import absolute_import, division, print_function
 
 import copy
 
+from vivarium.core.repository import deriver_library
 from vivarium.library.dict_utils import deep_merge
 
 DEFAULT_TIME_STEP = 1.0
@@ -88,3 +95,129 @@ class Process(object):
 class Deriver(Process):
     def is_deriver(self):
         return True
+
+
+class Compartment(object):
+    """Compartment parent class
+
+    All :term:`compartment` classes must inherit from this class.
+    """
+    def __init__(self, config):
+        self.config = config
+
+    def generate_processes(self, config):
+        """Generate processes dictionary
+
+        Every subclass must override this method.
+
+        Arguments:
+            config (dict): A dictionary of configuration options. All
+                subclass implementation must accept this parameter, but
+                some may ignore it.
+
+        Returns:
+            dict: Subclass implementations must return a dictionary
+            mapping process names to instantiated and configured process
+            objects.
+        """
+        return {}
+
+    def generate_topology(self, config):
+        """Generate topology dictionary
+
+        Every subclass must override this method.
+
+        Arguments:
+            config (dict): A dictionary of configuration options. All
+                subclass implementation must accept this parameter, but
+                some may ignore it.
+
+        Returns:
+            dict: Subclass implementations must return a :term:`topology`
+            dictionary.
+        """
+        return {}
+
+    def generate(self, config=None, path=tuple()):
+        '''Generate processes and topology dictionaries for the compartment
+
+        Arguments:
+            config (dict): Updates values in the configuration declared
+                in the constructor
+            path (tuple): Tuple with ('path', 'to', 'level') associates
+                the processes and topology at this level
+
+        Returns:
+            dict: Dictionary with two keys: ``processes``, which has a
+            value of a processes dictionary, and ``topology``, which has
+            a value of a topology dictionary. Both are suitable to be
+            passed to the constructor for
+            :py:class:`vivarium.core.experiment.Experiment`.
+        '''
+
+        # merge config with self.config
+        if config is None:
+            config = self.config
+        else:
+            default = copy.deepcopy(self.config)
+            config = deep_merge(default, config)
+
+        processes = self.generate_processes(config)
+        topology = self.generate_topology(config)
+
+        # add derivers
+        derivers = generate_derivers(processes, topology)
+        processes = deep_merge(derivers['processes'], processes)
+        topology = deep_merge(derivers['topology'], topology)
+
+        return {
+            'processes': assoc_in({}, path, processes),
+            'topology': assoc_in({}, path, topology)}
+
+    def or_default(self, parameters, key):
+        return parameters.get(key, self.defaults[key])
+
+    def get_parameters(self):
+        network = self.generate({})
+        processes = network['processes']
+        return {
+            process_id: process.parameters
+            for process_id, process in processes.items()}
+
+
+def generate_derivers(processes, topology):
+    deriver_processes = {}
+    deriver_topology = {}
+    for process_key, node in processes.items():
+        subtopology = topology[process_key]
+        if isinstance(node, Process):
+            for deriver_key, config in node.derivers().items():
+                if deriver_key not in deriver_processes:
+                    # generate deriver process
+                    deriver_config = config.get('config', {})
+                    generate = config['deriver']
+                    if isinstance(generate, str):
+                        generate = deriver_library[generate]
+
+                    deriver = generate(deriver_config)
+                    deriver_processes[deriver_key] = deriver
+
+                    # generate deriver topology
+                    deriver_topology[deriver_key] = {}
+                    for target, source in config.get('port_mapping', {}).items():
+                        path = subtopology[source]
+                        deriver_topology[deriver_key][target] = path
+        else:
+            subderivers = generate_derivers(node, subtopology)
+            deriver_processes[process_key] = subderivers['processes']
+            deriver_topology[process_key] = subderivers['topology']
+    return {
+        'processes': deriver_processes,
+        'topology': deriver_topology}
+
+
+def assoc_in(d, path, value):
+    if path:
+        return dict(d, **{path[0]: assoc_in(d.get(path[0], {}), path[1:], value)})
+    else:
+        return value

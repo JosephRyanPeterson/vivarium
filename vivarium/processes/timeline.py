@@ -3,8 +3,7 @@ from __future__ import absolute_import, division, print_function
 import copy
 
 from vivarium.library.dict_utils import deep_merge_combine_lists
-from vivarium.core.experiment import Compartment
-from vivarium.core.process import Process
+from vivarium.core.process import Process, Compartment
 
 
 class TimelineProcess(Process):

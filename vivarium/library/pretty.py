@@ -4,8 +4,7 @@ import numpy as np
 import re
 
 from vivarium.library.units import units
-from vivarium.core.experiment import Compartment
-from vivarium.core.process import Process
+from vivarium.core.process import Process, Compartment
 
 
 def _json_serialize(elem):

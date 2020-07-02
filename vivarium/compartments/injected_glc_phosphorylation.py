@@ -10,7 +10,8 @@ from vivarium.processes.glucose_phosphorylation import (
     GlucosePhosphorylation,
 )
 from vivarium.processes.injector import Injector
-from vivarium.core.experiment import Compartment, Experiment
+from vivarium.core.experiment import Experiment
+from vivarium.core.process import Compartment
 from vivarium.library.pretty import format_dict
 
 

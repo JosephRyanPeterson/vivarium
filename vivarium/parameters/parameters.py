@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from vivarium.library.units import units
 from vivarium.core.composition import simulate_compartment_in_experiment
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Compartment
 
 # processes for testing
 from vivarium.processes.convenience_kinetics import ConvenienceKinetics, get_glc_lct_config

@@ -16,11 +16,9 @@ from vivarium.core.emitter import (
 )
 from vivarium.core.experiment import (
     Experiment,
-    Compartment,
     update_in,
-    generate_derivers,
 )
-from vivarium.core.process import Process, Deriver
+from vivarium.core.process import Process, Deriver, Compartment, generate_derivers
 from vivarium.core import emitter as emit
 from vivarium.library.dict_utils import (
     deep_merge,

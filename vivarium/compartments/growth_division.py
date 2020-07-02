@@ -5,7 +5,7 @@ import uuid
 import copy
 
 from vivarium.library.units import units
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Compartment
 from vivarium.core.composition import (
     COMPARTMENT_OUT_DIR,
     simulate_compartment_in_experiment,
