@@ -9,11 +9,14 @@ from __future__ import absolute_import, division, print_function
 import alphashape
 import numpy as np
 from pytest import approx
-from shapely.geometry.polygon import Polygon
 from shapely.geometry.collection import GeometryCollection
 from shapely.geometry.multipolygon import MultiPolygon
+from shapely.geometry.point import Point
+from shapely.geometry.polygon import Polygon
 
+from vivarium.core.experiment import get_in
 from vivarium.core.process import Deriver
+from vivarium.library.units import units
 from vivarium.processes.derive_colony_metric import assert_no_divide
 
 
@@ -45,6 +48,38 @@ def major_minor_axes(shape):
     return major, minor
 
 
+def gen_agent_colony_map(agents, colony_shapes):
+    '''Create a map from agent to the colony to which the agent belongs
+
+    An agent is considered within a colony if its ``location``
+    :term:`variable` intersects with the colony's interior or border. If
+    an agent intersects with multiple colonies, we choose arbitrarily
+    which colony the agent belongs to.
+
+    .. note:: An agent may be part of no colony at all, in which case it
+        will not be included in the returned map.
+
+    Arguments:
+        agents (dict): Dictionary of ``agents`` :term:`port` state whose
+            keys are agent IDs and whose values are agent state
+            dictionaries.
+        colony_shapes (List[Polygon]): List of polygons that define the
+            colonies.
+
+    Returns:
+        dict: Map from agent ID to index of colony in ``colony_shapes``.
+    '''
+    agent_colony_map = {}
+    for agent_id, agent_state in agents.items():
+        loc = agent_state['boundary']['location']
+        point = Point(*loc)
+        for i, colony_shape in enumerate(colony_shapes):
+            if colony_shape.intersects(point):
+                agent_colony_map[agent_id] = i
+                break
+    return agent_colony_map
+
+
 class ColonyShapeDeriver(Deriver):
     '''Derives colony shape metrics from cell locations
     '''
@@ -62,6 +97,9 @@ class ColonyShapeDeriver(Deriver):
                         'location': {
                             '_default': [0.5, 0.5],
                         },
+                        'mass': {
+                            '_default': 0.0 * units.fg,
+                        },
                     },
                 },
             },
@@ -73,6 +111,12 @@ class ColonyShapeDeriver(Deriver):
                     '_emit': True,
                 },
                 'axes': {
+                    '_default': [],
+                    '_updater': 'set',
+                    '_divider': assert_no_divide,
+                    '_emit': True,
+                },
+                'mass': {
                     '_default': [],
                     '_updater': 'set',
                     '_divider': assert_no_divide,
@@ -96,6 +140,8 @@ class ColonyShapeDeriver(Deriver):
                 alpha_shape, (MultiPolygon, GeometryCollection))
             shapes = list(alpha_shape)
 
+        agent_colony_map = gen_agent_colony_map(agents, shapes)
+
         # Calculate colony surface areas
         areas = [shape.area for shape in shapes]
 
@@ -111,11 +157,23 @@ class ColonyShapeDeriver(Deriver):
         # Calculate colony circumference
         circumference = [shape.length for shape in shapes]
 
+        # Calculate colony masses
+        mass = [0] * len(shapes)
+        for agent_id, agent_state in agents.items():
+            if agent_id not in agent_colony_map:
+                # We ignore agents not in any colony
+                continue
+            colony_index = agent_colony_map[agent_id]
+            agent_mass = get_in(agent_state, ('boundary', 'mass'))
+            mass[colony_index] += agent_mass
+
+
         return {
             'colony_global': {
                 'surface_area': areas,
                 'axes': axes,
                 'circumference': circumference,
+                'mass': mass,
             }
         }
 
@@ -134,6 +192,7 @@ class TestDeriveColonyShape():
                 str(i): {
                     'boundary': {
                         'location': list(point),
+                        'mass': 1.0 * units.fg,
                     },
                 }
                 for i, point in enumerate(points)
@@ -170,6 +229,7 @@ class TestDeriveColonyShape():
         assert approx([np.sqrt(2), np.sqrt(2)]) == self.flatten(
             metrics['axes'])
         assert metrics['circumference'] == approx([4 * np.sqrt(2)])
+        assert metrics['mass'] == [5 * units.fg]
 
     def test_concave(self):
         # *-*-*-*-*
@@ -192,6 +252,7 @@ class TestDeriveColonyShape():
         assert metrics['surface_area'] == [11]
         assert metrics['axes'] == [(4, 4)]
         assert metrics['circumference'] == approx([18 + 2 * np.sqrt(2)])
+        assert metrics['mass'] == [22 * units.fg]
 
     def test_ignore_outliers(self):
         #    *
@@ -209,6 +270,7 @@ class TestDeriveColonyShape():
         assert approx([np.sqrt(2), np.sqrt(2)]) == self.flatten(
             metrics['axes'])
         assert metrics['circumference'] == approx([4 * np.sqrt(2)])
+        assert metrics['mass'] == [5 * units.fg]
 
     def test_colony_too_diffuse(self):
         #    *
@@ -226,6 +288,7 @@ class TestDeriveColonyShape():
             'surface_area': [],
             'axes': [],
             'circumference': [],
+            'mass': [],
         }
         assert metrics == expected_metrics
 
@@ -245,3 +308,4 @@ class TestDeriveColonyShape():
         assert self.flatten(metrics['axes']) == approx(
             [np.sqrt(2), np.sqrt(2), np.sqrt(2), np.sqrt(2)])
         assert metrics['circumference'] == approx([4 * np.sqrt(2)] * 2)
+        assert metrics['mass'] == [5 * units.fg] * 2
