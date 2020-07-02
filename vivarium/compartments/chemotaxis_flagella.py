@@ -8,7 +8,7 @@ import argparse
 
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units
-from vivarium.core.process import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     plot_simulation_output,
@@ -40,7 +40,7 @@ from vivarium.compartments.flagella_expression import (
 NAME = 'chemotaxis_flagella'
 
 
-class ChemotaxisVariableFlagella(Compartment):
+class ChemotaxisVariableFlagella(Generator):
 
     defaults = {
         'n_flagella': 5,
@@ -93,7 +93,7 @@ class ChemotaxisVariableFlagella(Compartment):
 
 
 
-class ChemotaxisExpressionFlagella(Compartment):
+class ChemotaxisExpressionFlagella(Generator):
 
     defaults = {
         'n_flagella': 5,

@@ -9,7 +9,6 @@ import numpy as np
 from vivarium.core.process import Deriver
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge
-from vivarium.core.repository import deriver_repository
 
 
 
@@ -56,6 +55,7 @@ class DeriveGlobals(Deriver):
     Process for deriving volume, mmol_to_counts, and shape from the cell mass
     """
 
+    name = 'globals_deriver'
     defaults = {
         'width': 1,  # um
         'initial_mass': 1339 * units.fg,  # wet mass in fg
@@ -132,10 +132,6 @@ class DeriveGlobals(Deriver):
                 'length': length,
                 'surface_area': surface_area}}
 
-# register the deriver
-deriver_repository.register('globals', DeriveGlobals)
-
-
 def get_default_global_state():
     mass = 1339 * units.fg  # wet mass in fg
     density = 1100 * units.g / units.L
@@ -186,6 +182,9 @@ def test_deriver(total_time=10):
 
 
     return saved_state
+
+# register process by invoking the process upon import
+DeriveGlobals()
 
 if __name__ == '__main__':
     saved_data = test_deriver(100)

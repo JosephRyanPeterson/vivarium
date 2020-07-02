@@ -94,6 +94,8 @@ class Repository(object):
         self.repository = {}
 
     def register(self, key, item):
+        if key in self.repository:
+            raise Exception('repository already contains {}'.format(key))
         self.repository[key] = item
 
     def access(self, key):
@@ -220,11 +222,6 @@ divider_repository.register('set', divide_set)
 divider_repository.register('split', divide_split)
 divider_repository.register('split_dict', divide_split_dict)
 divider_repository.register('zero', divide_zero)
-
-
-# Derivers
-#: Maps deriver names to :term:`process classes`
-deriver_repository = Repository()
 
 
 # Serializers

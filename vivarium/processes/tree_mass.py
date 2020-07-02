@@ -4,8 +4,6 @@ from vivarium.core.process import Deriver
 from vivarium.library.units import units
 
 from vivarium.processes.derive_globals import AVOGADRO
-from vivarium.core.repository import deriver_repository
-
 
 
 
@@ -27,6 +25,7 @@ class TreeMass(Deriver):
 
     """
 
+    name = 'mass_deriver'
     defaults = {
         'from_path': ('..', '..'),
         'initial_mass': 0.0 * units.fg,
@@ -63,5 +62,5 @@ class TreeMass(Deriver):
                         'from': self.from_path,
                         'initial': initial_mass}}}}
 
-# register the deriver
-deriver_repository.register('mass', TreeMass)
+# register process by invoking upon import
+TreeMass()

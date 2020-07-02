@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import math
 import os
 
-from vivarium.core.process import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     plot_simulation_output,
@@ -30,7 +30,7 @@ DIVISION_TIME = 2400  # seconds to divide
 
 
 
-class Antibiotics(Compartment):
+class Antibiotics(Generator):
 
     def __init__(self, config):
         self.config = config

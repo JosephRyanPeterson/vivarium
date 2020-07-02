@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function
 from vivarium.processes.derive_globals import get_default_global_state
 from vivarium.core.process import Deriver
 from vivarium.library.units import units
-from vivarium.core.repository import deriver_repository
 
 
 
@@ -11,6 +10,7 @@ class DeriveCounts(Deriver):
     """
     Process for deriving counts from concentrations
     """
+    name = 'mmol_to_counts_deriver'
     defaults = {
         'concentration_keys': [],
         'initial_state': get_default_global_state(),
@@ -58,5 +58,5 @@ class DeriveCounts(Deriver):
         return {
             'counts': counts}
 
-# register the deriver
-deriver_repository.register('mmol_to_counts', DeriveCounts)
+# register process by invoking upon import
+DeriveCounts()

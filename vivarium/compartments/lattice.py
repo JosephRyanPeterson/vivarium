@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-from vivarium.core.process import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     compartment_in_experiment,
     COMPARTMENT_OUT_DIR,
@@ -23,7 +23,7 @@ from vivarium.processes.diffusion_field import (
 NAME = 'lattice'
 
 
-class Lattice(Compartment):
+class Lattice(Generator):
     """
     Lattice:  A two-dimensional lattice environmental model with multibody physics and diffusing molecular fields.
     """

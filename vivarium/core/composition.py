@@ -18,7 +18,7 @@ from vivarium.core.experiment import (
     Experiment,
     update_in,
 )
-from vivarium.core.process import Process, Deriver, Compartment, generate_derivers
+from vivarium.core.process import Process, Deriver, Generator, generate_derivers
 from vivarium.core import emitter as emit
 from vivarium.library.dict_utils import (
     deep_merge,
@@ -38,6 +38,7 @@ import vivarium.processes.derive_counts
 import vivarium.processes.derive_concentrations
 import vivarium.processes.tree_mass
 from vivarium.processes.derive_globals import AVOGADRO
+
 
 REFERENCE_DATA_DIR = os.path.join('vivarium', 'reference_data')
 TEST_OUT_DIR = os.path.join('out', 'tests')
@@ -114,7 +115,7 @@ def agent_environment_experiment(
 
 def process_in_compartment(process, paths={}):
     """ put a lone process in a compartment"""
-    class ProcessCompartment(Compartment):
+    class ProcessCompartment(Generator):
         def __init__(self, config):
             self.config = config
             self.paths = paths
@@ -1056,7 +1057,7 @@ class ToyDeath(Process):
 
         return update
 
-class ToyCompartment(Compartment):
+class ToyCompartment(Generator):
     '''
     a toy compartment for testing
 

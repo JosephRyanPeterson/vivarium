@@ -11,11 +11,11 @@ from vivarium.processes.glucose_phosphorylation import (
 )
 from vivarium.processes.injector import Injector
 from vivarium.core.experiment import Experiment
-from vivarium.core.process import Compartment
+from vivarium.core.process import Generator
 from vivarium.library.pretty import format_dict
 
 
-class InjectedGlcPhosphorylation(Compartment):
+class InjectedGlcPhosphorylation(Generator):
 
     defaults = {
         'glucose_phosphorylation': {
