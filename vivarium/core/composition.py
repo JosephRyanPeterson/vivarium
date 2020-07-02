@@ -29,9 +29,15 @@ from vivarium.library.dict_utils import (
 from vivarium.library.units import units
 
 # processes
-from vivarium.processes.derive_globals import AVOGADRO
 from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.nonspatial_environment import NonSpatialEnvironment
+
+# derivers
+import vivarium.processes.derive_globals
+import vivarium.processes.derive_counts
+import vivarium.processes.derive_concentrations
+import vivarium.processes.tree_mass
+from vivarium.processes.derive_globals import AVOGADRO
 
 REFERENCE_DATA_DIR = os.path.join('vivarium', 'reference_data')
 TEST_OUT_DIR = os.path.join('out', 'tests')

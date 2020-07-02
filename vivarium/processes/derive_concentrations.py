@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 from vivarium.processes.derive_globals import get_default_global_state
 from vivarium.core.process import Deriver
 from vivarium.library.units import units
+from vivarium.core.repository import deriver_repository
 
 
 
@@ -63,3 +64,6 @@ class DeriveConcentrations(Deriver):
 
         return {
             'concentrations': concentrations}
+
+# register the deriver
+deriver_repository.register('counts_to_mmol', DeriveConcentrations)

@@ -29,10 +29,9 @@ from vivarium.library.dict_utils import merge_dicts, deep_merge, deep_merge_chec
 from vivarium.core.emitter import get_emitter
 from vivarium.core.process import Process
 from vivarium.core.repository import (
-    divider_library,
-    updater_library,
-    deriver_library,
-    serializer_library,
+    divider_repository,
+    updater_repository,
+    serializer_repository,
 )
 
 
@@ -242,9 +241,9 @@ class Store(object):
         if '_divider' in config:
             self.divider = config['_divider']
             if isinstance(self.divider, str):
-                self.divider = divider_library[self.divider]
+                self.divider = divider_repository.access(self.divider)
             if isinstance(self.divider, dict) and isinstance(self.divider['divider'], str):
-                self.divider['divider'] = divider_library[self.divider['divider']]
+                self.divider['divider'] = divider_repository.access(self.divider['divider'])
             config = without(config, '_divider')
 
         if self.schema_keys & set(config.keys()):
@@ -255,14 +254,14 @@ class Store(object):
             if '_serializer' in config:
                 self.serializer = config['_serializer']
                 if isinstance(self.serializer, str):
-                    self.serializer = serializer_library[self.serializer]
+                    self.serializer = serializer_repository.access(self.serializer)
 
             if '_default' in config:
                 self.default = self.check_default(config.get('_default'))
                 if isinstance(self.default, Quantity):
                     self.units = self.default.units
                 if isinstance(self.default, np.ndarray):
-                    self.serializer = self.serializer or serializer_library['numpy']
+                    self.serializer = self.serializer or serializer_repository.access('numpy')
 
             if '_value' in config:
                 self.value = self.check_value(config.get('_value'))
@@ -271,7 +270,7 @@ class Store(object):
 
             self.updater = config.get('_updater', self.updater or 'accumulate')
             if isinstance(self.updater, str):
-                self.updater = updater_library[self.updater]
+                self.updater = updater_repository.access(self.updater)
 
             self.properties = deep_merge(
                 self.properties,

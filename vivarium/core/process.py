@@ -8,7 +8,7 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 
-from vivarium.core.repository import deriver_library
+from vivarium.core.repository import deriver_repository
 from vivarium.library.dict_utils import deep_merge
 
 DEFAULT_TIME_STEP = 1.0
@@ -197,7 +197,7 @@ def generate_derivers(processes, topology):
                     deriver_config = config.get('config', {})
                     generate = config['deriver']
                     if isinstance(generate, str):
-                        generate = deriver_library[generate]
+                        generate = deriver_repository.access(generate)
 
                     deriver = generate(deriver_config)
                     deriver_processes[deriver_key] = deriver

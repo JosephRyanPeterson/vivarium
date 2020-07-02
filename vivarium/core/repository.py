@@ -21,8 +21,8 @@ Updaters
 
 Each :term:`updater` is defined as a function whose name begins with
 ``update_``. Vivarium uses these functions to apply :term:`updates` to
-:term:`variables`. Updater names are defined in
-:py:data:`updater_library`, which maps these names to updater functions.
+:term:`variables`. Updater names are registered in
+:py:data:`updater_repository`, which maps these names to updater functions.
 
 Updater API
 ===========
@@ -40,8 +40,8 @@ Dividers
 
 Each :term:`divider` is defined by a function that follows the API we
 describe below. Vivarium uses these dividers to generate daughter cell
-states from the mother cell's state. Divider names are defined in
-:py:data:`divider_library`, which maps these names to divider functions.
+states from the mother cell's state. Divider names are registered in
+:py:data:`divider_repository`, which maps these names to divider functions.
 
 Divider API
 ===========
@@ -61,7 +61,7 @@ Derivers
 --------
 
 Each :term:`deriver` is defined as a separate :term:`process`, but here
-deriver names are mapped to processes by :py:data:`deriver_library`. The
+deriver names are mapped to processes by :py:data:`deriver_repository`. The
 available derivers are:
 
 * **mmol_to_counts**: :py:class:`vivarium.processes.derive_counts.DeriveCounts`
@@ -86,11 +86,18 @@ import numpy as np
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import Quantity
 
-# deriver processes
-from vivarium.processes.derive_concentrations import DeriveConcentrations
-from vivarium.processes.derive_counts import DeriveCounts
-from vivarium.processes.derive_globals import DeriveGlobals
-from vivarium.processes.tree_mass import TreeMass
+
+
+
+class Repository(object):
+    def __init__(self):
+        self.repository = {}
+
+    def register(self, key, item):
+        self.repository[key] = item
+
+    def access(self, key):
+        return self.repository[key]
 
 
 ## updater functions
@@ -132,10 +139,12 @@ def update_accumulate(current_value, new_value):
     return current_value + new_value
 
 #: Maps updater names to updater functions
-updater_library = {
-    'accumulate': update_accumulate,
-    'set': update_set,
-    'merge': update_merge}
+updater_repository = Repository()
+updater_repository.register('accumulate', update_accumulate)
+updater_repository.register('set', update_set)
+updater_repository.register('merge', update_merge)
+
+
 
 ## divider functions
 def divide_set(state):
@@ -206,24 +215,16 @@ def divide_split_dict(state):
     return [d1, d2]
 
 #: Maps divider names to divider functions
-divider_library = {
-    'set': divide_set,
-    'split': divide_split,
-    'split_dict': divide_split_dict,
-    'zero': divide_zero}
+divider_repository = Repository()
+divider_repository.register('set', divide_set)
+divider_repository.register('split', divide_split)
+divider_repository.register('split_dict', divide_split_dict)
+divider_repository.register('zero', divide_zero)
 
-def default_divide_condition(compartment):
-    return False
 
 # Derivers
-
 #: Maps deriver names to :term:`process classes`
-deriver_library = {
-    'mmol_to_counts': DeriveCounts,
-    'counts_to_mmol': DeriveConcentrations,
-    'mass': TreeMass,
-    'globals': DeriveGlobals,
-}
+deriver_repository = Repository()
 
 
 # Serializers
@@ -241,6 +242,5 @@ class NumpySerializer(Serializer):
     def deserialize(self, data):
         return np.array(data)
 
-serializer_library = {
-    'numpy': NumpySerializer(),
-}
+serializer_repository = Repository()
+serializer_repository.register('numpy', NumpySerializer())

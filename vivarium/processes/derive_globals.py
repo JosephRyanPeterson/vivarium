@@ -9,6 +9,8 @@ import numpy as np
 from vivarium.core.process import Deriver
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge
+from vivarium.core.repository import deriver_repository
+
 
 
 PI = math.pi
@@ -129,6 +131,9 @@ class DeriveGlobals(Deriver):
                 'mmol_to_counts': mmol_to_counts,
                 'length': length,
                 'surface_area': surface_area}}
+
+# register the deriver
+deriver_repository.register('globals', DeriveGlobals)
 
 
 def get_default_global_state():
