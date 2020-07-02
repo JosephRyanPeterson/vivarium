@@ -198,6 +198,7 @@ class DatabaseEmitter(Emitter):
         create_indexes(self.configuration, CONFIGURATION_INDEXES)
         create_indexes(self.phylogeny, CONFIGURATION_INDEXES)
 
+
     def emit(self, data_config):
         data = data_config['data']
         data.update({

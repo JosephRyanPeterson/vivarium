@@ -77,7 +77,7 @@ def get_lattice_config():
     return environment_config
 
 def get_simulation_settings(
-        total_time=2000,
+        total_time=10000,
         emit_step=10,
         return_raw_data=True,
 ):
@@ -115,6 +115,14 @@ def run_lattice_experiment(
         config['ids'] = new_agent_ids
         agent_ids.extend(new_agent_ids)
 
+
+    experiment_settings['emitter'] = {
+        'type': 'database',
+        'host': 'mongodb+srv://cyteam_user:cy2019!@cyteam-db-sanud.gcp.mongodb.net/vivarium?retryWrites=true&w=majority',
+        'database': 'simulations2'}
+
+
+
     # make the experiment
     experiment = agent_environment_experiment(
         agents_config,
@@ -122,6 +130,7 @@ def run_lattice_experiment(
         initial_state,
         experiment_settings
     )
+
 
     # simulate
     settings = {
@@ -244,12 +253,14 @@ if __name__ == '__main__':
         run_growth_division(
             agent_type='growth_division_minimal',
             out_dir=minimal_out_dir)
+
     elif args.growth_division:
         gd_out_dir = os.path.join(out_dir, 'growth_division')
         make_dir(gd_out_dir)
         run_growth_division(
             agent_type='growth_division',
             out_dir=gd_out_dir)
+
     elif args.transport_metabolism:
         txp_mtb_out_dir = os.path.join(out_dir, 'transport_metabolism')
         make_dir(txp_mtb_out_dir)
