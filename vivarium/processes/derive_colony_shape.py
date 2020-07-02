@@ -10,6 +10,7 @@ import alphashape
 import numpy as np
 from pytest import approx
 from shapely.geometry.collection import GeometryCollection
+from shapely.geometry.linestring import LineString
 from shapely.geometry.multipolygon import MultiPolygon
 from shapely.geometry.point import Point
 from shapely.geometry.polygon import Polygon
@@ -135,6 +136,9 @@ class ColonyShapeDeriver(Deriver):
             points, self.parameters['alpha'])
         if isinstance(alpha_shape, Polygon):
             shapes = [alpha_shape]
+        elif isinstance(alpha_shape, (Point, LineString)):
+            # We need at least 3 cells to form a colony polygon
+            shapes = []
         else:
             assert isinstance(
                 alpha_shape, (MultiPolygon, GeometryCollection))
@@ -283,6 +287,49 @@ class TestDeriveColonyShape():
             (0, 1), (2, 1),
             (1, 0),
         ]
+        metrics = self.calc_shape_metrics(points)
+        expected_metrics = {
+            'surface_area': [],
+            'axes': [],
+            'circumference': [],
+            'mass': [],
+        }
+        assert metrics == expected_metrics
+
+    def test_two_cells(self):
+        #
+        #  *
+        #
+        points = [
+            (1, 1),
+        ]
+        metrics = self.calc_shape_metrics(points)
+        expected_metrics = {
+            'surface_area': [],
+            'axes': [],
+            'circumference': [],
+            'mass': [],
+        }
+        assert metrics == expected_metrics
+
+    def test_single_cells(self):
+        #
+        #  *   *
+        #
+        points = [
+            (0, 1), (2, 1),
+        ]
+        metrics = self.calc_shape_metrics(points)
+        expected_metrics = {
+            'surface_area': [],
+            'axes': [],
+            'circumference': [],
+            'mass': [],
+        }
+        assert metrics == expected_metrics
+
+    def test_no_cells(self):
+        points = []
         metrics = self.calc_shape_metrics(points)
         expected_metrics = {
             'surface_area': [],
