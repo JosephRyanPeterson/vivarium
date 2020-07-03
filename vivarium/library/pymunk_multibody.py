@@ -332,10 +332,9 @@ class MultiBody(object):
         position = body.position
         angle = body.angle
 
-        # make shape, moment of inertia, and add a body
+        # get shape, inertia, make body, assign body to shape
         new_shape = self.get_shape(boundary)
-
-        inertia = pymunk.moment_for_poly(mass, new_shape.get_vertices())
+        inertia = self.get_inertia(new_shape, mass)
         new_body = pymunk.Body(mass, inertia)
         new_shape.body = new_body
 
