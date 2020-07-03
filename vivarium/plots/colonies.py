@@ -78,10 +78,10 @@ def plot_colony_metrics(
     # Create the subplots
     for i in range(n_rows):
         for j in range(n_cols):
-            ax = fig.add_subplot(grid[i, j])
             path = paths_grid[i, j]
             if path is None:
                 continue
+            ax = fig.add_subplot(grid[i, j])
             # Configure axes and titles
             for tick_type in ('major', 'minor'):
                 ax.tick_params(
