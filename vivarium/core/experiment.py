@@ -136,7 +136,9 @@ class Store(object):
     * **_updater** (:py:class:`str`): The name of the :term:`updater` to
       use. By default this is ``accumulate``.
     * **_divider** (:py:class:`str`): The name of the :term:`divider` to
-      use.
+      use. Note that ``_divider`` is not included in the ``schema_keys``
+      set because it can be applied to any node in the hierarchy, not
+      just leaves (which represent variables).
     * **_value** (Type should match the variable value): The current
       value of the variable. This is ``None`` by default.
     * **_properties** (:py:class:`dict`): Extra properties of the
@@ -1030,7 +1032,10 @@ def inverse_topology(outer, update, topology):
             else:
                 for child, child_update in update.items():
                     inner = normalize_path(outer + path + (child,))
-                    assoc_path(inverse, inner, child_update)
+                    if isinstance(child_update, dict):
+                        update_in(inverse, inner, lambda current: deep_merge(current, child_update))
+                    else:
+                        assoc_path(inverse, inner, child_update)
 
         elif key in update:
             value = update[key]
@@ -1051,7 +1056,10 @@ def inverse_topology(outer, update, topology):
 
             else:
                 inner = normalize_path(outer + path)
-                assoc_path(inverse, inner, value)
+                if isinstance(value, dict):
+                    update_in(inverse, inner, lambda current: deep_merge(current, value))
+                else:
+                    assoc_path(inverse, inner, value)
 
     return inverse
 
@@ -1758,6 +1766,45 @@ def test_timescales():
 
     experiment.update(10.0)
 
+
+def test_inverse_topology():
+    update = {
+        'port1': {
+            'a': 5,
+        },
+        'port2': {
+            'b': 10,
+        },
+        'port3': {
+            'b': 10,
+        },
+        'global': {
+            'c': 20,
+        },
+    }
+    topology = {
+        'port1': ('boundary', 'x'),
+        'global': ('boundary',),
+        'port2': ('boundary', 'y'),
+        'port3': ('boundary', 'x'),
+    }
+    path = ('agent',)
+    inverse = inverse_topology(path, update, topology)
+    expected_inverse = {
+        'agent': {
+            'boundary': {
+                'x': {
+                    'a': 5,
+                    'b': 10,
+                },
+                'y': {
+                    'b': 10,
+                },
+                'c': 20,
+            }
+        }
+    }
+    assert inverse == expected_inverse
 
 
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ with open("requirements.txt", 'r') as requirements:
 
 setup(
     name='wholecell-vivarium',
-    version='0.0.51',
+    version='0.0.52',
     packages=[
         'vivarium',
         'vivarium.actor',
