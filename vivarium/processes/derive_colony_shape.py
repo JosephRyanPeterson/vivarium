@@ -183,7 +183,7 @@ class ColonyShapeDeriver(Deriver):
                 # We ignore agents not in any colony
                 continue
             colony_index = agent_colony_map[agent_id]
-            agent_mass = get_in(agent_state, ('boundary', 'mass'))
+            agent_mass = get_in(agent_state, ('boundary', 'mass'), 0)
             mass[colony_index] += agent_mass
 
 
