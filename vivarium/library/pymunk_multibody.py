@@ -393,24 +393,28 @@ class MultiBody(object):
 def test_multibody(
         total_time=2,
         agent_shape='rectangle',
+        n_agents=1,
+        jitter_force=1e1,
         screen=None):
 
     bounds = [500, 500]
     center_location = [0.5*loc for loc in bounds]
     agents = {
-        '1': {
+        str(agent_idx): {
             'boundary': {
                 'location': center_location,
-                'angle': PI/2,
+                'angle': random.uniform(0,2*PI),
                 'volume': 15,
                 'length': 30,
                 'width': 10,
                 'mass': 1,
                 'thrust': 1e3,
-                'torque': 0.0}}}
+                'torque': 0.0}}
+        for agent_idx in range(n_agents)
+    }
     config = {
         'agent_shape': agent_shape,
-        'jitter_force': 1e1,
+        'jitter_force': jitter_force,
         'bounds': bounds,
         'barriers': False,
         'initial_agents': agents,
@@ -420,7 +424,7 @@ def test_multibody(
 
     # run simulation
     time = 0
-    time_step = 0.1
+    time_step = 1
     while time < total_time:
         time += time_step
         multibody.run(time_step)

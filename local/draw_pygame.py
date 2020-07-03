@@ -54,6 +54,8 @@ class DrawPygame(object):
 
 if __name__ == '__main__':
     test_multibody(
-        total_time=10,
-        agent_shape='circle',
+        total_time=60,
+        n_agents=10,
+        jitter_force=1e2,
+        agent_shape='segment',
         screen=DrawPygame())
