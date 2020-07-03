@@ -183,7 +183,8 @@ class DatabaseEmitter(Emitter):
     ...     'host': 'localhost:27017',
     ...     'database': 'DB_NAME',
     ... }
-    >>> emitter = DatabaseEmitter(config)
+    >>> # The line below works only if you have to have 27017 open locally
+    >>> # emitter = DatabaseEmitter(config)
     '''
     client = None
     default_host = 'localhost:27017'
