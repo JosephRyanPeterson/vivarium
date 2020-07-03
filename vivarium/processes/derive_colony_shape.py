@@ -132,6 +132,12 @@ class ColonyShapeDeriver(Deriver):
                     '_divider': assert_no_divide,
                     '_emit': True,
                 },
+                'circumference': {
+                    '_default': [],
+                    '_updater': 'set',
+                    '_divider': assert_no_divide,
+                    '_emit': True,
+                }
             },
         }
 
@@ -218,6 +224,7 @@ class TestDeriveColonyShape():
                 'surface_area': [],
                 'major_axis': [],
                 'minor_axis': [],
+                'circumference': [],
             }
         }
         # Timestep does not matter
