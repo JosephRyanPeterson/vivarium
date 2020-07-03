@@ -91,7 +91,6 @@ class ColonyShapeDeriver(Deriver):
     '''
 
     defaults = {
-        'agents_path': tuple(),
         'alpha': 1.0,
     }
 
@@ -201,10 +200,8 @@ class ColonyShapeDeriver(Deriver):
 
 class TestDeriveColonyShape():
 
-    def calc_shape_metrics(self, points, agents_path=None, alpha=None):
+    def calc_shape_metrics(self, points, alpha=None):
         config = {}
-        if agents_path is not None:
-            config['agents_path'] = agents_path
         if alpha is not None:
             config['alpha'] = alpha
         deriver = ColonyShapeDeriver(config)
