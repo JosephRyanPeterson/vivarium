@@ -55,5 +55,5 @@ class DrawPygame(object):
 if __name__ == '__main__':
     test_multibody(
         total_time=10,
-        shape='capsule',
+        agent_shape='circle',
         screen=DrawPygame())

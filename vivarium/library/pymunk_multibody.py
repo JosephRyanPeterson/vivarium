@@ -61,38 +61,6 @@ def random_body_position(body):
             location = (width, random.uniform(0, length))
     return location
 
-def get_shape(agent_shape, boundary):
-    '''
-    shape documentation at: https://pymunk-tutorial.readthedocs.io/en/latest/shape/shape.html
-    '''
-
-    if agent_shape == 'capsule':
-        width = boundary['width']
-        length = boundary['length']
-
-        half_length = length / 2
-        half_width = width / 2
-        shape = pymunk.Segment(
-            None,
-            (-half_length, 0),
-            (half_length, 0),
-            radius=half_width)
-
-    elif agent_shape == 'rectangle':
-        width = boundary['width']
-        length = boundary['length']
-
-        half_length = length / 2
-        half_width = width / 2
-
-        shape = pymunk.Poly(None,
-            ((-half_length, -half_width),
-            (half_length, -half_width),
-            (half_length, half_width),
-            (-half_length, half_width)))
-
-    return shape
-
 
 class NullScreen(object):
     def update_screen(self):
@@ -272,6 +240,55 @@ class MultiBody(object):
             line.friction = 0.8
         self.space.add(static_lines)
 
+    def get_shape(self, boundary):
+        '''
+        shape documentation at: https://pymunk-tutorial.readthedocs.io/en/latest/shape/shape.html
+        '''
+
+        if self.agent_shape == 'segment':
+            width = boundary['width']
+            length = boundary['length']
+
+            half_length = length / 2
+            half_width = width / 2
+            shape = pymunk.Segment(
+                None,
+                (-half_length, 0),
+                (half_length, 0),
+                radius=half_width)
+
+        elif self.agent_shape == 'circle':
+            length = boundary['length']
+            half_length = length / 2
+            shape = pymunk.Circle(None, radius=half_length, offset=(0, 0))
+
+        elif self.agent_shape == 'rectangle':
+            width = boundary['width']
+            length = boundary['length']
+            half_length = length / 2
+            half_width = width / 2
+            shape = pymunk.Poly(None,
+                ((-half_length, -half_width),
+                 (half_length, -half_width),
+                 (half_length, half_width),
+                 (-half_length, half_width)))
+
+        return shape
+
+    def get_inertia(self, shape, mass):
+        if self.agent_shape == 'rectangle':
+            inertia = pymunk.moment_for_poly(mass, shape.get_vertices())
+        elif self.agent_shape == 'circle':
+            radius = shape.radius
+            inertia = pymunk.moment_for_circle(mass, radius, radius)
+        elif self.agent_shape == 'segment':
+            a = shape.a
+            b = shape.b
+            radius = shape.radius
+            inertia = pymunk.moment_for_segment(mass, a, b, radius)
+
+        return inertia
+
     def add_body_from_center(self, body_id, specs):
         boundary = specs['boundary']
         mass = boundary['mass']
@@ -281,10 +298,9 @@ class MultiBody(object):
         width = boundary['width']
         length = boundary['length']
 
-        # get agent_shape
-        shape = get_shape(self.agent_shape, boundary)
-
-        inertia = pymunk.moment_for_poly(mass, shape.get_vertices())
+        # get shape, inertia, make body, assign body to shape
+        shape = self.get_shape(boundary)
+        inertia = self.get_inertia(shape, mass)
         body = pymunk.Body(mass, inertia)
         shape.body = body
 
@@ -317,7 +333,7 @@ class MultiBody(object):
         angle = body.angle
 
         # make shape, moment of inertia, and add a body
-        new_shape = get_shape(self.agent_shape, boundary)
+        new_shape = self.get_shape(boundary)
 
         inertia = pymunk.moment_for_poly(mass, new_shape.get_vertices())
         new_body = pymunk.Body(mass, inertia)
@@ -376,7 +392,7 @@ class MultiBody(object):
 
 def test_multibody(
         total_time=2,
-        shape='rectangle',
+        agent_shape='rectangle',
         screen=None):
 
     bounds = [500, 500]
@@ -393,7 +409,7 @@ def test_multibody(
                 'thrust': 1e3,
                 'torque': 0.0}}}
     config = {
-        'shape': shape,
+        'agent_shape': agent_shape,
         'jitter_force': 1e1,
         'bounds': bounds,
         'barriers': False,
