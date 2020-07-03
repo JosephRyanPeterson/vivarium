@@ -21,6 +21,8 @@ INCH_PER_ROW = 2
 SUBPLOT_W_SPACE = 0.4
 SUBPLOT_H_SPACE = 1.5
 
+NUM_COLONIES_PATH = 'Number of Colonies'
+
 
 def plot_colony_metrics(
     path_ts, title_size=16, tick_label_size=12, max_cols=5
@@ -53,6 +55,10 @@ def plot_colony_metrics(
     path_ts = {
         str(key): val for key, val in path_ts.items()
     }
+    arbitrary_metric = list(path_ts.keys())[0]
+    path_ts[NUM_COLONIES_PATH] = [
+        len(timepoint) for timepoint in path_ts[arbitrary_metric]
+    ]
     # Create Figure
     paths = sorted(path_ts.keys())
     n_cols = min(len(paths), max_cols)
@@ -88,16 +94,24 @@ def plot_colony_metrics(
             ax.set_xlim([times[0], times[-1]])
             # Plot data
             data = path_ts[path]
-            means = []
-            sems = []
-            plot_times = []
-            for i_time, metrics_list in enumerate(data):
-                if not metrics_list:
-                    continue
-                array = np.array(metrics_list)
-                means.append(np.mean(array))
-                sems.append(stats.sem(array))
-                plot_times.append(times[i_time])
-            ax.errorbar(plot_times, means, yerr=sems)
+            if path == NUM_COLONIES_PATH:
+                ax.plot(times, data)
+            else:
+                means = []
+                sems = []
+                plot_times = []
+                for i_time, metrics_list in enumerate(data):
+                    if not metrics_list:
+                        continue
+                    array = np.array(metrics_list)
+                    means.append(np.mean(array))
+                    sems.append(stats.sem(array))
+                    plot_times.append(times[i_time])
+                x = np.array(plot_times)
+                y = np.array(means)
+                yerr = np.array(sems)
+                yerr[np.isnan(yerr)] = 0
+                ax.plot(x, y)
+                ax.fill_between(x, y - yerr, y + yerr, alpha=0.2)
 
     return fig
