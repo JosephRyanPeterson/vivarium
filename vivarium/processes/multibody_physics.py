@@ -89,17 +89,35 @@ class Multibody(Process):
     To run with animation on set animate: True, and use the TKAgg matplotlib backend:
     > MPLBACKEND=TKAgg python vivarium/processes/multibody_physics.py
 
+    Ports:
+
+        * ``agents``: The store containing all agent sub-compartments. Each agent in
+          this store has values for location, angle, length, width, mass, thrust, and torque.
+
+    Arguments:
+        initial_parameters(dict): Accepts the following configuration keys:
+
+            * **jitter_force**: force applied to random positions along agent
+              bodies to mimic thermal fluctuations. Produces Brownian motion.
+            * **agent_shape** (:py:class:`str`): agents can take the shapes
+              ``rectangle``, `segment```, or ``circle``.
+            * **bounds** (:py:class:`list`): size of the environment in
+              micrometers, with [x, y].
+            * **mother_machine** (:py:class:`bool`): if True, mother machine
+              barriers are introduced.
+
     Notes:
-    - rotational diffusion in liquid medium with viscosity = 1 mPa.s: Dr = 3.5+/-0.3 rad^2/s
-        (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
-    - translational diffusion in liquid medium with viscosity = 1 mPa.s: Dt=100 micrometers^2/s
-        (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
+        * rotational diffusion in liquid medium with viscosity = 1 mPa.s: Dr = 3.5+/-0.3 rad^2/s
+          (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
+        * translational diffusion in liquid medium with viscosity = 1 mPa.s: Dt=100 micrometers^2/s
+          (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
 
     """
 
     defaults = {
         'agents': {},
         'jitter_force': 1e-3,  # pN
+        'agent_shape': 'segment',
         'bounds': DEFAULT_BOUNDS,
         'mother_machine': False,
         'animate': False,
