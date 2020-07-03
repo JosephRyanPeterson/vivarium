@@ -282,10 +282,12 @@ def plot_tags(data, plot_config):
 
     for time, time_data in agents.items():
         for agent_id, agent_data in time_data.items():
-            volume = agent_data['boundary']['volume']
+            volume = agent_data.get('boundary', {}).get('volume', 0)
             for tag_id in tagged_molecules:
                 report_type, molecule = tag_id
-                count = agent_data['boundary'][report_type][molecule]
+                count = agent_data.get(
+                    'boundary', {}
+                ).get(report_type, {}).get(molecule, 0)
                 conc = count / volume if volume else 0
                 if tag_id in tag_ranges:
                     tag_ranges[tag_id] = [
@@ -327,8 +329,10 @@ def plot_tags(data, plot_config):
 
                 # get current tag concentration, and determine color
                 report_type, molecule = tag_id
-                counts = agent_data['boundary'][report_type][molecule]
-                volume = agent_data['boundary']['volume']
+                counts = agent_data.get(
+                    'boundary', {}
+                ).get(report_type, {}).get(molecule, 0)
+                volume = agent_data.get('boundary', {}).get('volume', 0)
                 level = counts / volume if volume else 0
                 min_tag, max_tag = tag_ranges[tag_id]
                 if min_tag != max_tag:
