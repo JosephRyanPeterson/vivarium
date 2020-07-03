@@ -75,7 +75,7 @@ class MultiBody(object):
     """
 
     defaults = {
-        'agent_shape': 'rectangle',
+        'agent_shape': 'segment',
         # hardcoded parameters
         'elasticity': 0.9,
         'damping': 0.5,  # 1 is no damping, 0 is full damping
