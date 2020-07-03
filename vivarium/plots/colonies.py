@@ -13,6 +13,7 @@ import numpy as np
 from scipy import stats
 
 from vivarium.library.units import remove_units
+from vivarium.processes.derive_colony_shape import Variables
 
 
 INCH_PER_COL = 4
@@ -20,7 +21,61 @@ INCH_PER_ROW = 2
 SUBPLOT_W_SPACE = 0.4
 SUBPLOT_H_SPACE = 1.5
 
+
+#: Key for circumference in path timeseries
+CIRCUMFERENCE_PATH = (Variables.CIRCUMFERENCE,)
+#: Key for surface area in path timeseries
+AREA_PATH = (Variables.AREA,)
+#: Key for major axis in path timeseries
+MAJOR_AXIS_PATH = (Variables.MAJOR_AXIS,)
+#: Key for minor axis in path timeseries
+MINOR_AXIS_PATH = (Variables.MINOR_AXIS,)
+#: Key to which the cirumference-to-area ratio will be written in the
+#: path timeseries
+CIRCUMFERENCE_AREA_RATIO_PATH = 'circumference / surface_area'
+#: Key to which the number of colonies is written in the path timeseries
 NUM_COLONIES_PATH = 'Number of Colonies'
+#: Key to which the ratio of major axis to minor axis is written in the
+#: path timeseries
+AXIS_RATIO_PATH = '(Major Axis) / (Minor Axis)'
+
+
+# METRIC DERIVERS
+
+def _derive_circumference_area_ratio(path_ts):
+    if not (CIRCUMFERENCE_PATH in path_ts and AREA_PATH in path_ts):
+        return
+    circumference = path_ts[CIRCUMFERENCE_PATH]
+    area = path_ts[AREA_PATH]
+    ratio = [
+        [
+            c / a
+            for c, a in zip(circumference_list, area_list)
+        ]
+        for circumference_list, area_list in zip(circumference, area)
+    ]
+    path_ts[CIRCUMFERENCE_AREA_RATIO_PATH] = ratio
+
+def _derive_axis_ratio(path_ts):
+    if not (MAJOR_AXIS_PATH in path_ts and MINOR_AXIS_PATH in path_ts):
+        return
+    major = path_ts[MAJOR_AXIS_PATH]
+    minor = path_ts[MINOR_AXIS_PATH]
+    ratio = [
+        [
+            major_val / minor_val
+            for major_val, minor_val in zip(major_list, minor_list)
+        ]
+        for major_list, minor_list in zip(major, minor)
+    ]
+    path_ts[AXIS_RATIO_PATH] = ratio
+
+
+#: List of metric derivers that will be applied to the path timeseries
+_METRIC_DERIVERS = [
+    _derive_circumference_area_ratio,
+    _derive_axis_ratio,
+]
 
 
 def plot_colony_metrics(
@@ -47,6 +102,8 @@ def plot_colony_metrics(
         matplotlib.figure.Figure: The plot as a Figure object.
     '''
     path_ts = remove_units(path_ts)
+    for deriver in _METRIC_DERIVERS:
+        deriver(path_ts)
     times = path_ts['time']
     del path_ts['time']
     # path_ts has tuples for keys. Here we turn those into strings so

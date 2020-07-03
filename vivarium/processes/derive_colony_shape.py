@@ -21,6 +21,15 @@ from vivarium.library.units import units
 from vivarium.processes.derive_total_metric import assert_no_divide
 
 
+class Variables():
+    AREA = 'surface_area'
+    MASS = 'mass'
+    CIRCUMFERENCE = 'circumference'
+    MAJOR_AXIS = 'major_axis'
+    MINOR_AXIS = 'minor_axis'
+
+
+
 def major_minor_axes(shape):
     '''Calculate the lengths of the major and minor axes of a shape
 
@@ -181,8 +190,9 @@ class ColonyShapeDeriver(Deriver):
         # Calculate colony circumference
         circumference = [shape.length for shape in shapes]
 
-        # Calculate colony masses
+        # Calculate colony masses and cell surface areas
         mass = [0] * len(shapes)
+        cell_area = [0] * len(shapes)
         for agent_id, agent_state in agents.items():
             if agent_id not in agent_colony_map:
                 # We ignore agents not in any colony
@@ -190,7 +200,6 @@ class ColonyShapeDeriver(Deriver):
             colony_index = agent_colony_map[agent_id]
             agent_mass = get_in(agent_state, ('boundary', 'mass'), 0)
             mass[colony_index] += agent_mass
-
 
         return {
             'colony_global': {
