@@ -22,6 +22,7 @@ NAME = 'growth_division_minimal'
 class GrowthDivisionMinimal(Compartment):
 
     defaults = {
+        'growth_rate': 0.006,  # very fast growth
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple()}
@@ -32,37 +33,34 @@ class GrowthDivisionMinimal(Compartment):
             if key not in self.config:
                 self.config[key] = value
 
-        # paths
-        self.boundary_path = config.get('boundary_path', self.defaults['boundary_path'])
-        self.agents_path = config.get('agents_path', self.defaults['agents_path'])
-        # self.daughter_path = config.get('daughter_path', self.defaults['daughter_path'])
-
     def generate_processes(self, config):
-        # declare the processes
+        # division config
         daughter_path = config['daughter_path']
         agent_id = config['agent_id']
-
         division_config = dict(
             config.get('division', {}),
             daughter_path=daughter_path,
             agent_id=agent_id,
             compartment=self)
 
-        growth = GrowthProtein(config.get('growth', {}))
-        division = MetaDivision(division_config)
+        growth_config = config.get('growth', {})
+        growth_rate = config['growth_rate']
+        growth_config['growth_rate'] = growth_rate
 
         return {
-            'growth': growth,
-            'division': division}
+            'growth': GrowthProtein(growth_config),
+            'division': MetaDivision(division_config)}
 
     def generate_topology(self, config):
+        boundary_path = config['boundary_path']
+        agents_path = config['agents_path']
         return {
             'growth': {
                 'internal': ('internal',),
-                'global': self.boundary_path},
+                'global': boundary_path},
             'division': {
-                'global': self.boundary_path,
-                'cells': self.agents_path},
+                'global': boundary_path,
+                'cells': agents_path},
             }
 
 

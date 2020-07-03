@@ -28,7 +28,7 @@ class MinimalExpression(Process):
     defaults = {
         'step_size': 1,
         'regulation': {},
-        'concentrations_deriver_key': 'expression_concentrations_deriver',
+        'concentrations_deriver_key': 'concentrations_deriver',
     }
 
     def __init__(self, initial_parameters=None):
@@ -104,15 +104,17 @@ class MinimalExpression(Process):
 
 
 # test functions
-def test_expression(end_time=10):
+def get_toy_expression_config():
     toy_expression_rates = {
         'protein1': 1e-2,
         'protein2': 1e-1,
         'protein3': 1e0}
 
-    expression_config = {
+    return {
         'expression_rates': toy_expression_rates}
 
+def test_expression(end_time=10):
+    expression_config = get_toy_expression_config()
     # load process
     expression = MinimalExpression(expression_config)
     settings = {'total_time': end_time}
