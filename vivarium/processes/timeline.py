@@ -8,6 +8,8 @@ from vivarium.core.process import Process, Generator
 
 class TimelineProcess(Process):
 
+    name = 'timeline'
+
     def __init__(self, initial_parameters=None):
         if initial_parameters is None:
             initial_parameters = {}

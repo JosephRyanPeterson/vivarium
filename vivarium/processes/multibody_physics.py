@@ -97,6 +97,7 @@ class Multibody(Process):
 
     """
 
+    name = NAME
     defaults = {
         'agents': {},
         'jitter_force': 1e-3,  # pN

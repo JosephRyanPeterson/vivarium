@@ -38,6 +38,8 @@ def build_complexation_stoichiometry(
 
 
 class Complexation(Process):
+
+    name = 'complexation'
     defaults = {
         'monomer_ids': chromosome.complexation_monomer_ids,
         'complex_ids': chromosome.complexation_complex_ids,

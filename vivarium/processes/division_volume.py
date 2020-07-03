@@ -7,6 +7,7 @@ from vivarium.core.process import Process
 
 class DivisionVolume(Process):
 
+    name = 'division_volume'
     defaults = {
         'initial_state': {},
         'division_volume': 2.4 * units.fL,  # fL

@@ -208,6 +208,7 @@ class ConvenienceKinetics(Process):
      >>> kinetic_process = ConvenienceKinetics(configuration)
      '''
 
+    name = NAME
     defaults = {
         'reactions': {},
         'initial_state': {

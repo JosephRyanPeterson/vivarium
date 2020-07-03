@@ -14,7 +14,7 @@ from vivarium.data.nucleotides import nucleotides
 from vivarium.library.units import units
 
 
-NAME = 'degradation'
+NAME = 'rna_degradation'
 
 def all_subkeys(d):
     subkeys = set([])
@@ -51,6 +51,8 @@ TOY_CONFIG = {
 
 
 class RnaDegradation(Process):
+
+    name = NAME
     defaults = {
         'sequences': {},
         'catalysis_rates': {

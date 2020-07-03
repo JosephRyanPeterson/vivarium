@@ -60,6 +60,7 @@ class FlagellaActivity(Process):
         - Flagella will need to be separated upon division, rather than having each daughter inherit all the flagella.
     '''
 
+    name = NAME
     defaults = {
         'n_flagella': 5,
         'parameters': DEFAULT_PARAMETERS,

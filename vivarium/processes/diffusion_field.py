@@ -158,6 +158,7 @@ class DiffusionField(Process):
 
     '''
 
+    name = NAME
     defaults = {
         'molecules': ['glc'],
         'initial_state': {},

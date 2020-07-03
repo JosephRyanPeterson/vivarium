@@ -16,7 +16,8 @@ from vivarium.core.composition import (
 NAME = 'growth_protein'
 
 class GrowthProtein(Process):
- 
+
+    name = NAME
     defaults = {
         'initial_protein': 5e7,
         'growth_rate': 0.006,

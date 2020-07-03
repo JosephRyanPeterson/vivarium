@@ -166,6 +166,7 @@ class ODE_expression(Process):
 
      '''
 
+    name = NAME
     defaults = {
         'transcription_rates': {},
         'translation_rates': {},

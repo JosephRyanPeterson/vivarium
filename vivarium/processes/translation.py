@@ -65,6 +65,8 @@ def transcripts_to_gene_counts(transcripts, operons):
     return counts
 
 class Translation(Process):
+
+    name = 'translation'
     defaults = {
 
         'sequences': {

@@ -24,6 +24,7 @@ NAME = 'static_field'
 
 class StaticField(Deriver):
 
+    name = NAME
     defaults = {
         'molecules': ['glc'],
         'n_bins': [10, 10],

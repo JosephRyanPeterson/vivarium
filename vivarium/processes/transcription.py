@@ -31,6 +31,8 @@ monomer_ids = list(nucleotides.values())
 
 #: The default configuration parameters for :py:class:`Transcription`
 class Transcription(Process):
+
+    name = 'transcription'
     defaults = {
         'promoter_affinities': {},
         'transcription_factors': [],

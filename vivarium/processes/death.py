@@ -126,6 +126,8 @@ DETECTOR_CLASSES = {
 
 class DeathFreezeState(Process):
 
+    name = 'death'
+
     def __init__(self, initial_parameters=None):
         '''Model Death by Removing Processes
 

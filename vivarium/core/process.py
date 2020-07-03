@@ -150,7 +150,6 @@ class Process(Generator):
 
     def __init__(self, parameters=None):
         if parameters is None:
-        if parameters is None:
              parameters = {}
         self.parameters = copy.deepcopy(self.defaults)
         deep_merge(self.parameters, parameters)
@@ -163,10 +162,10 @@ class Process(Generator):
 
     def generate_topology(self, config):
         ports_schema = self.ports_schema()
-        paths = config.get('paths', {})
+        topology = config.get('topology', {})
         return {
             'process': {
-                port: paths.get(port, (port,)) for port in ports_schema().keys()}}
+                port: topology.get(port, (port,)) for port in ports_schema().keys()}}
 
     def ports(self):
         ports_schema = self.ports_schema()

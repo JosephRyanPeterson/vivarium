@@ -46,6 +46,7 @@ class MotorActivity(Process):
     TODO -- add CheB phosphorylation
     '''
 
+    name = NAME
     defaults = {
         'parameters': {
             # 'k_A': 5.0,  #

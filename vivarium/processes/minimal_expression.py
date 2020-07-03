@@ -25,6 +25,7 @@ class MinimalExpression(Process):
         expression_rates (dict) with {'mol_id': probability_of_expression (1/sec)}
     '''
 
+    name = NAME
     defaults = {
         'step_size': 1,
         'regulation': {},

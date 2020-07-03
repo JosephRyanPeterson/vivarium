@@ -106,6 +106,8 @@ class Metabolism(Process):
             * **reversible_reactions** (:py:class:`list`)
 
     """
+
+    name = NAME
     defaults = {
         'constrained_reaction_ids': [],
         'model_path': 'models/iAF1260b.json',

@@ -56,6 +56,7 @@ class Growth(Process):
 
     """
 
+    name = NAME
     defaults = {
         'growth_rate': 0.0006,
         'global_deriver_key': 'global_deriver',

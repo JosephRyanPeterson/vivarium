@@ -44,7 +44,7 @@ from vivarium.processes.static_field import make_field
 # make an agent from a lone MotorActivity process
 MotorActivityAgent = process_in_compartment(
     MotorActivity,
-    paths={
+    topology={
         'external': ('boundary',),
         'internal': ('cell',)
     })

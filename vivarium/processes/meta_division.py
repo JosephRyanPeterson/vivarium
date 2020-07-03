@@ -19,6 +19,7 @@ def daughter_phylogeny_id(mother_id):
 
 class MetaDivision(Deriver):
 
+    name = 'meta_division'
     defaults = {
         'initial_state': {},
         'daughter_path': ('cell',),
