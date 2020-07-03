@@ -226,8 +226,8 @@ def get_atlas_client(secrets_path):
     return client[emitter_config['database']]
 
 
-def get_local_client(port, database_name):
-    client = MongoClient('localhost:{}'.format(port))
+def get_local_client(host, port, database_name):
+    client = MongoClient('{}:{}'.format(host, port))
     return client[database_name]
 
 
