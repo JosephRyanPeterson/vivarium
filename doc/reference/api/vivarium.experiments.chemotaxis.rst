@@ -1,7 +1,7 @@
-vivarium.analysis.run\_analysis module
+vivarium.experiments.chemotaxis module
 ======================================
 
-.. automodule:: vivarium.analysis.run_analysis
+.. automodule:: vivarium.experiments.chemotaxis
    :members:
    :undoc-members:
    :show-inheritance:

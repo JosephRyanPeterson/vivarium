@@ -149,10 +149,13 @@ class KafkaEmitter(Emitter):
     '''
     Emit data to kafka
 
-    example:
-    config = {
-        'host': 'localhost:9092',
-        'topic': 'EMIT'}
+    Example:
+
+    >>> config = {
+    ...     'host': 'localhost:9092',
+    ...     'topic': 'EMIT',
+    ... }
+    >>> emitter = KafkaEmitter(config)
     '''
     def __init__(self, config):
         self.config = config
@@ -174,10 +177,13 @@ class DatabaseEmitter(Emitter):
     '''
     Emit data to a mongoDB database
 
-    example:
-    config = {
-        'host': 'localhost:27017',
-        'database': 'DB_NAME'}
+    Example:
+
+    >>> config = {
+    ...     'host': 'localhost:27017',
+    ...     'database': 'DB_NAME',
+    ... }
+    >>> emitter = DatabaseEmitter(config)
     '''
     client = None
     default_host = 'localhost:27017'

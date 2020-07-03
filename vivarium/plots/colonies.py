@@ -9,7 +9,6 @@ This module contains tools to help you plot colony data.
 from __future__ import division, absolute_import, print_function
 
 from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
 import numpy as np
 from scipy import stats
 
@@ -29,7 +28,7 @@ def plot_colony_metrics(
 ):
     '''Plot colony metrics over time.
 
-    Metric mean is plotted with SEM error bars.
+    Metric mean is plotted with SEM error bands.
 
     Arguments:
         path_ts (dict): Path timeseries of the data to plot. Each item
@@ -45,7 +44,7 @@ def plot_colony_metrics(
             until we hit this limit, and only then do we add rows.
 
     Returns:
-        Figure: The plot as a Figure object.
+        matplotlib.figure.Figure: The plot as a Figure object.
     '''
     path_ts = remove_units(path_ts)
     times = path_ts['time']

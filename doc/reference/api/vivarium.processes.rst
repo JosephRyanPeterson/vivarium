@@ -16,9 +16,13 @@ Submodules
    vivarium.processes.convenience_kinetics
    vivarium.processes.death
    vivarium.processes.degradation
+   vivarium.processes.derive_colony_shape
    vivarium.processes.derive_concentrations
    vivarium.processes.derive_counts
    vivarium.processes.derive_globals
+   vivarium.processes.derive_total_cell_volume
+   vivarium.processes.derive_total_mass
+   vivarium.processes.derive_total_metric
    vivarium.processes.diffusion_field
    vivarium.processes.diffusion_network
    vivarium.processes.division_volume
@@ -31,8 +35,9 @@ Submodules
    vivarium.processes.metabolism
    vivarium.processes.minimal_expression
    vivarium.processes.multibody_physics
+   vivarium.processes.nonspatial_environment
    vivarium.processes.ode_expression
-   vivarium.processes.one_dim_environment
+   vivarium.processes.static_field
    vivarium.processes.template_process
    vivarium.processes.timeline
    vivarium.processes.toxin-antitoxin

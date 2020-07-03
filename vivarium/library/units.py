@@ -23,7 +23,6 @@ False
 from __future__ import division, absolute_import, print_function
 
 import pint
-
 from pint.quantity import _Quantity as Quantity
 
 
@@ -47,8 +46,8 @@ def remove_units(collection):
     {'a': [1, 3, {4: 3}, 2]}
 
     Arguments:
-        collection (Union[List, Dict, Quantity, int, float]): The
-            collection or scalar to strip units from.
+        collection (object): The collection or scalar to strip units
+            from.
 
     Returns:
         The collection or scalar without any units.

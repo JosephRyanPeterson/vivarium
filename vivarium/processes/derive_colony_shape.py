@@ -30,11 +30,11 @@ def major_minor_axes(shape):
     and concave shapes.
 
     Arguments:
-        shape (Polygon): The shape to compute axes for.
+        shape (shapely.polygon.Polygon): The shape to compute axes for.
 
     Returns:
-        Tuple[float, float]: A tuple with the major axis first and the
-        minor axis second.
+        tuple: A tuple with the major axis first and the minor axis
+        second.
     '''
     rect = shape.minimum_rotated_rectangle
     points = list(rect.exterior.coords)
@@ -67,8 +67,7 @@ def gen_agent_colony_map(agents, colony_shapes):
         agents (dict): Dictionary of ``agents`` :term:`port` state whose
             keys are agent IDs and whose values are agent state
             dictionaries.
-        colony_shapes (List[Polygon]): List of polygons that define the
-            colonies.
+        colony_shapes (list): List of polygons that define the colonies.
 
     Returns:
         dict: Map from agent ID to index of colony in ``colony_shapes``.

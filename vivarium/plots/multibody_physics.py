@@ -4,8 +4,6 @@ import os
 import math
 import random
 
-import numpy as np
-
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -13,7 +11,7 @@ import matplotlib.lines as mlines
 from matplotlib.colors import hsv_to_rgb
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
-
+import numpy as np
 
 
 DEFAULT_BOUNDS = [10, 10]
@@ -83,6 +81,7 @@ def plot_snapshots(data, plot_config):
 
     Arguments:
         data (dict): A dictionary with the following keys:
+
             * **agents** (:py:class:`dict`): A mapping from times to
               dictionaries of agent data at that timepoint. Agent data
               dictionaries should have the same form as the hierarchy
@@ -93,10 +92,13 @@ def plot_snapshots(data, plot_config):
               form as the hierarchy tree rooted at ``fields``.
             * **config** (:py:class:`dict`): The environmental
               configuration dictionary  with the following keys:
+
                 * **bounds** (:py:class:`tuple`): The dimensions of the
                   environment.
+
         plot_config (dict): Accepts the following configuration options.
             Any options with a default is optional.
+
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
             * **out_dir** (:py:class:`str`): Output directory, which is
@@ -230,25 +232,29 @@ def plot_tags(data, plot_config):
 
     Arguments:
         data (dict): A dictionary with the following keys:
+
             * **agents** (:py:class:`dict`): A mapping from times to
               dictionaries of agent data at that timepoint. Agent data
               dictionaries should have the same form as the hierarchy
               tree rooted at ``agents``.
             * **config** (:py:class:`dict`): The environmental
               configuration dictionary  with the following keys:
+
                 * **bounds** (:py:class:`tuple`): The dimensions of the
                   environment.
+
         plot_config (dict): Accepts the following configuration options.
             Any options with a default is optional.
+
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
             * **out_dir** (:py:class:`str`): Output directory, which is
               ``out`` by default.
             * **filename** (:py:class:`str`): Base name of output file.
               ``tags`` by default.
-            * **tagged_molecules** (:py:class:`Iterable`): The tagged
-              molecules whose concentrations will be indicated by agent
-              color. Each molecule should be specified as a
+            * **tagged_molecules** (:py:class:`typing.Iterable`): The
+              tagged molecules whose concentrations will be indicated by
+              agent color. Each molecule should be specified as a
               :py:class:`tuple` of the store in the agent's boundary
               where the molecule's count can be found and the name of
               the molecule's count variable.

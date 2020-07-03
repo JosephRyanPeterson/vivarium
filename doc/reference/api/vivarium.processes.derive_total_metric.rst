@@ -1,7 +1,7 @@
-vivarium.processes.one\_dim\_environment module
+vivarium.processes.derive\_total\_metric module
 ===============================================
 
-.. automodule:: vivarium.processes.one_dim_environment
+.. automodule:: vivarium.processes.derive_total_metric
    :members:
    :undoc-members:
    :show-inheritance:
