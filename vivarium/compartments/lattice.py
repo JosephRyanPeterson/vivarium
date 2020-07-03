@@ -24,6 +24,7 @@ from vivarium.processes.derive_total_cell_volume import (
     TotalCellVolumeDeriver
 )
 from vivarium.processes.derive_total_mass import TotalMassDeriver
+from vivarium.processes.derive_colony_shape import ColonyShapeDeriver
 
 
 NAME = 'lattice'
@@ -52,6 +53,7 @@ class Lattice(Compartment):
             },
             'total_mass_deriver': None,
             'total_cell_volume_deriver': None,
+            'colony_shape_deriver': None,
         }
     }
 
@@ -75,6 +77,10 @@ class Lattice(Compartment):
             processes[
                 'total_cell_volume_deriver'
             ] = TotalCellVolumeDeriver(total_cell_volume_config)
+        colony_shape_config = config['colony_shape_deriver']
+        if colony_shape_config is not None:
+            processes['colony_shape_deriver'] = ColonyShapeDeriver(
+                colony_shape_config)
         return processes
 
     def generate_topology(self, config):
@@ -94,6 +100,10 @@ class Lattice(Compartment):
                 'total_global': ('total_global',),
                 'agents': ('agents',),
             },
+            'colony_shape_deriver': {
+                'colony_global': ('colony_global',),
+                'agents': ('agents',),
+            }
         }
         return {
             process: process_topology
