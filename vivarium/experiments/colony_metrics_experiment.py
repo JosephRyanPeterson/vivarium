@@ -25,7 +25,7 @@ from vivarium.core.emitter import (
 )
 from vivarium.core.experiment import Experiment
 from vivarium.experiments.lattice_experiment import (
-    get_gd_minimal_config,
+    agents_library,
     get_lattice_config,
 )
 from vivarium.plots.multibody_physics import plot_snapshots
@@ -91,7 +91,7 @@ def colony_metrics_experiment(config):
     # add the agents
     agent_ids = [str(agent_id) for agent_id in range(n_agents)]
     agent_config = config['agent']
-    agent_compartment = agent_config['compartment']
+    agent_compartment = agent_config['type']
     compartment_config = agent_config['config']
     agent = agent_compartment(compartment_config)
     agents = make_agents(agent_ids, agent, {})
@@ -125,7 +125,7 @@ def colony_metrics_experiment(config):
 
 
 def get_lattice_with_metrics_config():
-    config = get_lattice_config()
+    config = {'environment': get_lattice_config()}
     colony_metrics_config = {
         'colony_shape_deriver': {
             'alpha': 1 / 5,
@@ -149,7 +149,7 @@ def run_experiment(runtime=400, n_agents=2, start_locations=None):
     Returns:
         Simulation data as :term:`raw data`.
     '''
-    agent_config = get_gd_minimal_config()
+    agent_config = agents_library['growth_division_minimal']
     agent_config['config']['growth_rate_noise'] = 0
 
     experiment_config = get_lattice_with_metrics_config()
@@ -162,7 +162,7 @@ def run_experiment(runtime=400, n_agents=2, start_locations=None):
 
     # simulate
     settings = {
-        'timestep': 1,
+        'emit_step': 1,
         'total_time': runtime,
         'return_raw_data': True,
     }
@@ -202,6 +202,7 @@ def main():
         os.makedirs(OUT_DIR)
 
     data, experiment_config = run_experiment(
+        runtime=1200,
         start_locations=[[0, 0], [0.5, 0.5]],
     )
 
