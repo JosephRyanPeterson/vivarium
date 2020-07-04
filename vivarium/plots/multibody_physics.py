@@ -33,7 +33,7 @@ def check_plt_backend():
         matplotlib.use('Agg')
 
 
-def plot_agent(ax, data, color):
+def plot_agent(ax, data, color, agent_shape):
     # location, orientation, length
     x_center = data['boundary']['location'][0]
     y_center = data['boundary']['location'][1]
@@ -54,14 +54,35 @@ def plot_agent(ax, data, color):
     # get color, convert to rgb
     rgb = hsv_to_rgb(color)
 
-    # Create a rectangle
-    rect = patches.Rectangle(
-        (x, y), width, length, angle=theta, linewidth=2, edgecolor='w', facecolor=rgb)
+    if agent_shape is 'rectangle':
+        # Create a rectangle
+        shape = patches.Rectangle(
+            (x, y), width, length,
+            angle=theta,
+            linewidth=2,
+            edgecolor='w',
+            facecolor=rgb
+        )
+    elif agent_shape is 'segment':
+        shape = patches.Rectangle(
+            (x, y), width, length,
+            angle=theta,
+            # capstyle='projecting',
+            linewidth=2,
+            edgecolor='w',
+            facecolor=rgb
+        )
+        # shape = patches.FancyBboxPatch(
+        #     (x, y), width, length, #theta,
+        #     boxstyle='round',
+        #     linewidth=2,
+        #     edgecolor='w',
+        #     facecolor=rgb
+        # )
 
-    ax.add_patch(rect)
+    ax.add_patch(shape)
 
-
-def plot_agents(ax, agents, agent_colors={}):
+def plot_agents(ax, agents, agent_colors={}, agent_shape='segment'):
     '''
     - ax: the axis for plot
     - agents: a dict with {agent_id: agent_data} and
@@ -70,7 +91,7 @@ def plot_agents(ax, agents, agent_colors={}):
     '''
     for agent_id, agent_data in agents.items():
         color = agent_colors.get(agent_id, [DEFAULT_HUE]+DEFAULT_SV)
-        plot_agent(ax, agent_data, color)
+        plot_agent(ax, agent_data, color, agent_shape)
 
 
 def plot_snapshots(data, plot_config):
@@ -111,6 +132,7 @@ def plot_snapshots(data, plot_config):
     n_snapshots = plot_config.get('n_snapshots', 6)
     out_dir = plot_config.get('out_dir', 'out')
     filename = plot_config.get('filename', 'snapshots')
+    agent_shape = plot_config.get('agent_shape', 'segment')
 
     # get data
     agents = data.get('agents', {})
@@ -186,7 +208,7 @@ def plot_snapshots(data, plot_config):
                                 cmap='BuPu')
                 if agents:
                     agents_now = agents[time]
-                    plot_agents(ax, agents_now, agent_colors)
+                    plot_agents(ax, agents_now, agent_colors, agent_shape)
 
                 # colorbar in new column after final snapshot
                 if col_idx == n_snapshots-1 and (vmin != vmax):
@@ -201,7 +223,7 @@ def plot_snapshots(data, plot_config):
             ax = init_axes(fig, bounds[0], bounds[1], grid, row_idx, col_idx, time)
             if agents:
                 agents_now = agents[time]
-                plot_agents(ax, agents_now, agent_colors)
+                plot_agents(ax, agents_now, agent_colors, agent_shape)
 
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.1)
@@ -264,6 +286,7 @@ def plot_tags(data, plot_config):
     n_snapshots = plot_config.get('n_snapshots', 6)
     out_dir = plot_config.get('out_dir', 'out')
     filename = plot_config.get('filename', 'tags')
+    agent_shape = plot_config.get('agent_shape', 'segment')
     tagged_molecules = plot_config['tagged_molecules']
 
     if tagged_molecules == []:
@@ -350,7 +373,7 @@ def plot_tags(data, plot_config):
 
                 agent_tag_colors[agent_id] = agent_color
 
-            plot_agents(ax, agents[time], agent_tag_colors)
+            plot_agents(ax, agents[time], agent_tag_colors, agent_shape)
 
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.1)
