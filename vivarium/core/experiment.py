@@ -1,8 +1,8 @@
-"""
+'''
 ==========================================
 Experiment, Compartment, and Store Classes
 ==========================================
-"""
+'''
 
 
 from __future__ import absolute_import, division, print_function
@@ -1210,6 +1210,28 @@ def timestamp(dt=None):
         dt.year, dt.month, dt.day,
         dt.hour, dt.minute, dt.second)
 
+def invoke_process(process, path, topology, interval, states):
+    update = process.next_update(interval, states)
+    absolute = inverse_topology(path[:-1], update, topology)
+    return absolute
+
+class InvokeProcess(object):
+    def __init__(self, process, path, topology, interval, states):
+        self.process = process
+        self.path = path
+        self.topology = topology
+        self.interval = interval
+        self.states = states
+        self.update = invoke_process(
+            self.process,
+            self.path,
+            self.topology,
+            self.interval,
+            self.states)
+
+    def get(self, timeout=0):
+        return self.update
+
 
 class Experiment(object):
     def __init__(self, config):
@@ -1258,6 +1280,8 @@ class Experiment(object):
         self.topology = config['topology']
         self.initial_state = config.get('initial_state', {})
         self.emit_step = config.get('emit_step')
+
+        self.invoke = config.get('invoke', InvokeProcess)
 
         self.state = generate_state(
             self.processes,
@@ -1314,16 +1338,23 @@ class Experiment(object):
         # that this process expects, based on its declared topology
         ports = state.outer.schema_topology(process.schema, process_topology)
 
-        # perform the process update with the current states
-        update = process.next_update(interval, ports)
+        update = self.invoke(
+            process,
+            path,
+            process_topology,
+            interval,
+            ports)
 
-        # translate the values from the process update back into the
-        # paths they have in the state tree
-        # inverse = inverse_topology(path[:-1], update, process_topology)
-        # absolute = assoc_in({}, path[:-1], inverse)
-        absolute = inverse_topology(path[:-1], update, process_topology)
+        return update
 
-        return absolute
+        # # perform the process update with the current states
+        # update = process.next_update(interval, ports)
+
+        # # translate the values from the process update back into the
+        # # paths they have in the state tree
+        # absolute = inverse_topology(path[:-1], update, process_topology)
+
+        # return absolute
 
     def apply_update(self, update):
         topology_updates = self.state.apply_update(update)
@@ -1331,11 +1362,14 @@ class Experiment(object):
             self.topology = deep_merge(self.topology, topology_updates)
 
     def run_derivers(self, derivers):
+        updates = []
         for path, deriver in derivers.items():
             # timestep shouldn't influence derivers
             if not deriver.deleted:
                 update = self.process_update(path, deriver, 0)
-                self.apply_update(update)
+                updates.append(update)
+        for update in updates:
+            self.apply_update(update.get())
 
     def emit_data(self):
         data = self.state.emit_data()
@@ -1348,7 +1382,7 @@ class Experiment(object):
 
     def send_updates(self, updates, derivers=None):
         for update in updates:
-            self.apply_update(update)
+            self.apply_update(update.get())
         if derivers is None:
             derivers = {
                 path: state
@@ -1430,7 +1464,7 @@ class Experiment(object):
                 for path, advance in front.items():
                     if advance['time'] <= future:
                         new_update = advance['update']
-                        new_update['_path'] = path
+                        # new_update['_path'] = path
                         updates.append(new_update)
                         advance['update'] = {}
                         paths.append(path)
@@ -1450,11 +1484,6 @@ class Experiment(object):
         for process_name, advance in front.items():
             assert advance['time'] == time == interval
             assert len(advance['update']) == 0
-
-
-    # def update_interval(self, time, interval):
-    #     while self.local_time < time:
-    #         self.update(interval)
 
 
 # Tests
