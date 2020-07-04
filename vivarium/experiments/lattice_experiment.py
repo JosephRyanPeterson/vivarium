@@ -41,7 +41,7 @@ agents_library = {
         'type': GrowthDivisionMinimal,
         'config': {
             'agents_path': ('..', '..', 'agents'),
-            'growth_rate': 0.002,
+            'growth_rate': 0.001,
             'division_volume': 2.6
         }
     },
@@ -54,22 +54,26 @@ agents_library = {
     },
 }
 
-def get_lattice_config():
-    bounds = [20, 20]
-    n_bins = [10, 10]
-    molecules = ['glc__D_e', 'lcts_e']
+def get_lattice_config(
+    bounds=[20, 20],
+    n_bins=[10, 10],
+    jitter_force=1e-3,
+    depth=3000.0,
+    diffusion=1e-2,
+    molecules=['glc__D_e', 'lcts_e'],
+):
     environment_config = {
         'multibody': {
             'bounds': bounds,
-            'jitter_force': 1e-4,
+            'jitter_force': jitter_force,
             'agents': {}
         },
         'diffusion': {
             'molecules': molecules,
             'n_bins': n_bins,
             'bounds': bounds,
-            'depth': 3000.0,
-            'diffusion': 1e-2,
+            'depth': depth,
+            'diffusion': diffusion,
         }
     }
     return environment_config

@@ -7,6 +7,7 @@ Colony Metrics Experiment
 from __future__ import absolute_import, division, print_function
 
 import os
+import random
 
 from vivarium.compartments.lattice import Lattice
 from vivarium.core.composition import (
@@ -39,6 +40,8 @@ from vivarium.processes.multibody_physics import single_agent_config
 
 NAME = 'colony_metrics'
 OUT_DIR = os.path.join(EXPERIMENT_OUT_DIR, NAME)
+DEFAULT_BOUNDS = [40, 40]
+DEFAULT_EMIT_STEP = 30
 
 
 def colony_metrics_experiment(config):
@@ -98,14 +101,17 @@ def colony_metrics_experiment(config):
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
 
+    # initial agent state
+    locations = config.get('locations')
+    if locations is None:
+        locations = [[0.5, 0.5]]
     agent_config_settings = [
         {
             'bounds': environment.config['multibody']['bounds'],
+            'location': random.choice(locations) if len(locations) <= index else locations[index]
         }
-        for agent_id in agent_ids
+        for index, agent_id in enumerate(agent_ids)
     ]
-    for i, location in enumerate(config.get('locations', [])):
-        agent_config_settings[i]['location'] = location
 
     initial_state = {
         'agents': {
@@ -125,7 +131,11 @@ def colony_metrics_experiment(config):
 
 
 def get_lattice_with_metrics_config():
-    config = {'environment': get_lattice_config()}
+    config = {
+        'environment': get_lattice_config(
+            bounds=DEFAULT_BOUNDS,
+        )
+    }
     colony_metrics_config = {
         'colony_shape_deriver': {
             'alpha': 1 / 5,
@@ -162,7 +172,7 @@ def run_experiment(runtime=400, n_agents=2, start_locations=None):
 
     # simulate
     settings = {
-        'emit_step': 1,
+        'emit_step': DEFAULT_EMIT_STEP,
         'total_time': runtime,
         'return_raw_data': True,
     }
@@ -202,8 +212,9 @@ def main():
         os.makedirs(OUT_DIR)
 
     data, experiment_config = run_experiment(
-        runtime=1200,
-        start_locations=[[0, 0], [0.5, 0.5]],
+        runtime=1600,
+        n_agents=3,
+        start_locations=[[0.3, 0.3], [0.5, 0.5]],
     )
 
     # extract data
