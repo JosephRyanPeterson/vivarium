@@ -175,7 +175,7 @@ def plot_snapshots(data, plot_config):
 
                 ax = init_axes(fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time)
 
-                # transpose field to align with agent
+                # transpose field to align with agents
                 field = np.transpose(np.array(fields[time][field_id])).tolist()
                 vmin, vmax = field_range[field_id]
                 im = plt.imshow(field,
@@ -189,7 +189,7 @@ def plot_snapshots(data, plot_config):
                     plot_agents(ax, agents_now, agent_colors)
 
                 # colorbar in new column after final snapshot
-                if col_idx == n_snapshots-1:
+                if col_idx == n_snapshots-1 and (vmin != vmax):
                     cbar_col = col_idx + 1
                     ax = fig.add_subplot(grid[row_idx, cbar_col])
                     divider = make_axes_locatable(ax)
