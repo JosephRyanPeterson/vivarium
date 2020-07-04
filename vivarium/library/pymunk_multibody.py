@@ -249,8 +249,8 @@ class MultiBody(object):
             width = boundary['width']
             length = boundary['length']
 
-            half_length = length / 2
             half_width = width / 2
+            half_length = length / 2 - half_width
             shape = pymunk.Segment(
                 None,
                 (-half_length, 0),
