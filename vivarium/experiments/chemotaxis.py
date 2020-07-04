@@ -21,7 +21,7 @@ from arpeggio import (
 )
 
 from vivarium.library.dict_utils import deep_merge
-from vivarium.core.emitter import timeseries_from_data
+from vivarium.core.emitter import time_indexed_timeseries_from_data
 from vivarium.core.composition import (
     agent_environment_experiment,
     make_agents,
@@ -190,7 +190,7 @@ preset_experiments = {
                 'number': 6,
                 'name': 'minimal',
                 'type': ChemotaxisMinimal,
-                'config': DEFAULT_AGENT_CONFIG
+                'config': DEFAULT_AGENT_CONFIG,
             }
         ],
         'environment_config': DEFAULT_ENVIRONMENT_CONFIG,
@@ -205,6 +205,7 @@ preset_experiments = {
                 'number': 1,
                 'name': 'ode_expression',
                 'type': ChemotaxisODEExpressionFlagella,
+                # 'config': DEFAULT_AGENT_CONFIG,
                 'config': deep_merge(
                     dict(DEFAULT_AGENT_CONFIG),
                     {'growth_rate': 0.0005})  # fast growth
@@ -342,7 +343,7 @@ def plot_chemotaxis_experiment(
     plot_agents_multigen(data, plot_settings, out_dir, 'agents')
 
     # trajectory and motility
-    agents_timeseries = timeseries_from_data(data)
+    agents_timeseries = time_indexed_timeseries_from_data(data)
     field = make_field(field_config)
     trajectory_config = {
         'bounds': field_config['bounds'],
@@ -350,7 +351,7 @@ def plot_chemotaxis_experiment(
         'rotate_90': True}
 
     plot_temporal_trajectory(copy.deepcopy(agents_timeseries), trajectory_config, out_dir, filename + 'temporal')
-    plot_agent_trajectory(agents_timeseries, trajectory_config, out_dir, filename + 'trajectory')
+    plot_agent_trajectory(copy.deepcopy(agents_timeseries), trajectory_config, out_dir, filename + 'trajectory')
     try:
         plot_motility(agents_timeseries, out_dir, filename + 'motility_analysis')
     except:
