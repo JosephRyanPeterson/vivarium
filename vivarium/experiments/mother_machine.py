@@ -45,12 +45,6 @@ def mother_machine_experiment(config):
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
 
-
-    # import ipdb;
-    # ipdb.set_trace()
-    # get location initialize?
-
-
     return Experiment({
         'processes': processes,
         'topology': topology,
@@ -109,8 +103,7 @@ def get_mother_machine_config():
     growth_division_config = {
         'agents_path': ('..', '..', 'agents'),
         'global_path': ('global',),
-        'growth_rate': 0.03,
-        'growth_rate_noise': 0.02,
+        'growth_rate': 0.006,  # fast!
         'division_volume': 2.6}
 
     ## environment
@@ -160,7 +153,7 @@ def run_mother_machine(time=5, out_dir='out'):
 
     # simulate
     settings = {
-        'timestep': 1,
+        'emit_step': 5,
         'total_time': time,
         'return_raw_data': True}
     data = simulate_experiment(experiment, settings)
