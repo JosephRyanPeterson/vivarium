@@ -24,6 +24,8 @@ def pp(x):
 def pf(x):
     return pretty.pformat(x)
 
+from multiprocessing import Pool
+
 from vivarium.library.units import Quantity
 from vivarium.library.dict_utils import merge_dicts, deep_merge, deep_merge_check
 from vivarium.core.emitter import get_emitter
@@ -1215,6 +1217,7 @@ def invoke_process(process, path, topology, interval, states):
     absolute = inverse_topology(path[:-1], update, topology)
     return absolute
 
+
 class InvokeProcess(object):
     def __init__(self, process, path, topology, interval, states):
         self.process = process
@@ -1231,6 +1234,16 @@ class InvokeProcess(object):
 
     def get(self, timeout=0):
         return self.update
+
+
+class MultiInvoke(object):
+    def __init__(self, pool):
+        self.pool = pool
+
+    def invoke(self, process, path, topology, interval, states):
+        args = (process, path, topology, interval, states)
+        result = self.pool.apply_async(invoke_process, args)
+        return result
 
 
 class Experiment(object):
@@ -1564,6 +1577,7 @@ def test_recursive_store():
     state.apply_update({})
     state.state_for(['environment'], ['temperature'])
 
+
 def test_in():
     blank = {}
     path = ['where', 'are', 'we']
@@ -1573,97 +1587,100 @@ def test_in():
     update_in(blank, path, lambda x: x + 6)
     print(blank)
 
-def test_topology_ports():
-    quark_colors = ['green', 'red', 'blue']
-    quark_spins = ['up', 'down']
-    electron_spins = ['-1/2', '1/2']
-    electron_orbitals = [
-        str(orbit) + 's'
-        for orbit in range(1, 8)]
 
-    class Proton(Process):
-        defaults = {
-            'time_step': 1.0,
-            'radius': 0.0}
+quark_colors = ['green', 'red', 'blue']
+quark_spins = ['up', 'down']
+electron_spins = ['-1/2', '1/2']
+electron_orbitals = [
+    str(orbit) + 's'
+    for orbit in range(1, 8)]
 
-        def __init__(self, parameters=None):
-            if not parameters:
-                parameters = {}
+
+class Proton(Process):
+    defaults = {
+        'time_step': 1.0,
+        'radius': 0.0}
+
+    def __init__(self, parameters=None):
+        if not parameters:
+            parameters = {}
             self.radius = self.or_default(parameters, 'radius')
             self.parameters = parameters
             self.time_step = self.or_default(parameters, 'time_step')
 
-        def ports_schema(self):
-            return {
+    def ports_schema(self):
+        return {
+            'radius': {
+                '_updater': 'set',
+                '_default': self.radius},
+            'quarks': {
+                '_divider': 'split_dict',
+                '*': {
+                    'color': {
+                        '_updater': 'set',
+                        '_default': quark_colors[0]},
+                    'spin': {
+                        '_updater': 'set',
+                        '_default': quark_spins[0]}}},
+            'electrons': {
+                '*': {
+                    'orbital': {
+                        '_updater': 'set',
+                        '_default': electron_orbitals[0]},
+                    'spin': {
+                        '_default': electron_spins[0]}}}}
+
+    def next_update(self, timestep, states):
+        update = {}
+
+        collapse = np.random.random()
+        if collapse < states['radius'] * timestep:
+            update['radius'] = collapse
+            update['quarks'] = {}
+
+            for name, quark in states['quarks'].items():
+                update['quarks'][name] = {
+                    'color': np.random.choice(quark_colors),
+                    'spin': np.random.choice(quark_spins)}
+
+            update['electrons'] = {}
+            orbitals = electron_orbitals.copy()
+            for name, electron in states['electrons'].items():
+                np.random.shuffle(orbitals)
+                update['electrons'][name] = {
+                    'orbital': orbitals.pop()}
+
+        return update
+
+class Electron(Process):
+    defaults = {
+        'time_step': 1.0,
+        'spin': electron_spins[0]}
+
+    def __init__(self, parameters=None):
+        self.parameters = parameters or {}
+        self.spin = self.or_default(self.parameters, 'spin')
+        self.time_step = self.or_default(self.parameters, 'time_step')
+
+    def ports_schema(self):
+        return {
+            'spin': {
+                '_updater': 'set',
+                '_default': self.spin},
+            'proton': {
                 'radius': {
-                    '_updater': 'set',
-                    '_default': self.radius},
-                'quarks': {
-                    '_divider': 'split_dict',
-                    '*': {
-                        'color': {
-                            '_updater': 'set',
-                            '_default': quark_colors[0]},
-                        'spin': {
-                            '_updater': 'set',
-                            '_default': quark_spins[0]}}},
-                'electrons': {
-                    '*': {
-                        'orbital': {
-                            '_updater': 'set',
-                            '_default': electron_orbitals[0]},
-                        'spin': {
-                            '_default': electron_spins[0]}}}}
+                    '_default': 0.0}}}
 
-        def next_update(self, timestep, states):
-            update = {}
+    def next_update(self, timestep, states):
+        update = {}
 
-            collapse = np.random.random()
-            if collapse < states['radius'] * timestep:
-                update['radius'] = collapse
-                update['quarks'] = {}
+        if np.random.random() < states['proton']['radius']:
+            update['spin'] = np.random.choice(electron_spins)
 
-                for name, quark in states['quarks'].items():
-                    update['quarks'][name] = {
-                        'color': np.random.choice(quark_colors),
-                        'spin': np.random.choice(quark_spins)}
+        return update
 
-                update['electrons'] = {}
-                orbitals = electron_orbitals.copy()
-                for name, electron in states['electrons'].items():
-                    np.random.shuffle(orbitals)
-                    update['electrons'][name] = {
-                        'orbital': orbitals.pop()}
 
-            return update
-
-    class Electron(Process):
-        defaults = {
-            'time_step': 1.0,
-            'spin': electron_spins[0]}
-
-        def __init__(self, parameters=None):
-            self.parameters = parameters or {}
-            self.spin = self.or_default(self.parameters, 'spin')
-            self.time_step = self.or_default(self.parameters, 'time_step')
-
-        def ports_schema(self):
-            return {
-                'spin': {
-                    '_updater': 'set',
-                    '_default': self.spin},
-                'proton': {
-                    'radius': {
-                        '_default': 0.0}}}
-
-        def next_update(self, timestep, states):
-            update = {}
-
-            if np.random.random() < states['proton']['radius']:
-                update['spin'] = np.random.choice(electron_spins)
-
-            return update
-
+def make_proton():
     processes = {
         'proton': Proton(),
         'electrons': {
@@ -1713,10 +1730,16 @@ def test_topology_ports():
                     'color': 'blue',
                     'spin': 'down'}}}}
 
-    experiment = Experiment({
+    return {
         'processes': processes,
         'topology': topology,
-        'initial_state': initial_state})
+        'initial_state': initial_state}
+
+
+def test_topology_ports():
+    proton = make_proton()
+
+    experiment = Experiment(proton)
 
     log.debug(pf(experiment.state.get_config(True)))
 
@@ -1836,8 +1859,25 @@ def test_inverse_topology():
     assert inverse == expected_inverse
 
 
+def test_multi():
+    with Pool(processes=4) as pool:
+        multi = MultiInvoke(pool)
+        proton = make_proton()
+        experiment = Experiment(dict(
+            proton,
+            invoke=multi.invoke))
+
+        log.debug(pf(experiment.state.get_config(True)))
+
+        experiment.update(10.0)
+
+        log.debug(pf(experiment.state.get_config(True)))
+        log.debug(pf(experiment.state.divide_value()))
+
+
 if __name__ == '__main__':
     # test_recursive_store()
     # test_in()
     # test_timescales()
-    test_topology_ports()
+    # test_topology_ports()
+    test_multi()
