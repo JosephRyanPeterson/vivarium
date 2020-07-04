@@ -266,7 +266,7 @@ class Multibody(Process):
         plt.xlim([0, self.bounds[0]])
         plt.ylim([0, self.bounds[1]])
         plt.draw()
-        plt.pause(0.005)
+        plt.pause(0.01)
 
 
 # configs
@@ -368,7 +368,6 @@ def simulate_growth_division(config, settings):
     growth_rate = settings.get('growth_rate', 0.0006)
     growth_rate_noise = settings.get('growth_rate_noise', 0.0)
     division_volume = settings.get('division_volume', 0.4)
-    channel_height = settings.get('channel_height')
     total_time = settings.get('total_time', 10)
     timestep = 1
 
@@ -395,11 +394,7 @@ def simulate_growth_division(config, settings):
             new_length = length + length * growth_rate2
             new_volume = volume_from_length(new_length, width)
 
-            if channel_height and location[1] > channel_height:
-                update = {'_delete': [(agent_id,)]}
-                experiment.send_updates([{'agents': update}])
-
-            elif new_volume > division_volume:
+            if new_volume > division_volume:
                 daughter_ids = [str(agent_id) + '0', str(agent_id) + '1']
 
                 daughter_updates = []
@@ -602,7 +597,10 @@ def run_growth_division():
     gd_data = simulate_growth_division(gd_config, settings)
 
     # snapshots plot
-    agents = {time: time_data['agents'] for time, time_data in gd_data.items()}
+    agents = {
+        time: time_data['agents']
+        for time, time_data in gd_data.items()
+        if bool(time_data)}
     data = {
         'agents': agents,
         'config': gd_config}
