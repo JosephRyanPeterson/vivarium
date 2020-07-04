@@ -1,8 +1,8 @@
+from __future__ import absolute_import, division, print_function
+
 import os
 import argparse
-
-import matplotlib.pyplot as plt
-import numpy as np
+import random
 
 from vivarium.core.experiment import Experiment
 from vivarium.core.composition import (
@@ -14,6 +14,7 @@ from vivarium.core.composition import (
 from vivarium.data.nucleotides import nucleotides
 from vivarium.data.amino_acids import amino_acids
 from vivarium.data.chromosomes.flagella_chromosome import FlagellaChromosome
+from vivarium.plots.gene_expression import plot_timeseries_heatmaps
 from vivarium.states.chromosome import Chromosome, rna_bases, sequence_monomers
 from vivarium.processes.transcription import UNBOUND_RNAP_KEY
 from vivarium.processes.translation import UNBOUND_RIBOSOME_KEY
@@ -61,9 +62,9 @@ def get_flagella_expression_config(config):
         'degradation': {
 
             'sequences': sequences,
-            'catalysis_rates': {
+            'catalytic_rates': {
                 'endoRNAse': 0.01},
-            'degradation_rates': {
+            'michaelis_constants': {
                 'transcripts': {
                     'endoRNAse': {
                         transcript: 1e-23
@@ -116,72 +117,6 @@ def get_flagella_compartment(config):
     return GeneExpression(flagella_expression_config)
 
 
-def plot_timeseries_heatmaps(timeseries, config, out_dir='out'):
-    ''' make a timeseries heatmap for each port specified in config['plot_ports'] '''
-
-    name = config.get('name', 'timeseries')
-    plot_ports = config.get('plot_ports', {})
-    ports = config.get('ports', {})
-    time = timeseries['time']
-
-    def relative_to_max(series):
-        relative = max(max(series), 1)
-        return [
-            value / relative
-            for value in series]
-
-    # make timeseries heatmaps
-    ts_heatmap = {}
-    for port_id, order in plot_ports.items():
-        port = timeseries[ports[port_id]]
-        var_keys = list(order)
-
-        var_series = [
-            relative_to_max(port[key])
-            for key in var_keys]
-
-        var_keys.reverse()  # reverse to get proper labeling with imshow
-
-        ts_heatmap[port_id] = {
-            'keys': var_keys,
-            'timeseries': var_series}
-
-    # make figure for each port in plot_ports
-    for port_id, heatmap in ts_heatmap.items():
-        n_cols = 1
-        n_vars = len(heatmap['keys'])
-
-        fig = plt.figure(figsize=(4 * n_cols, 0.6 * n_vars))
-
-        var_keys = heatmap['keys']
-        var_series = heatmap['timeseries']
-        n_vars = len(var_keys)
-        ax = fig.add_subplot(111)
-
-        im = ax.imshow(var_series,
-            extent=[time[0], time[-1], 0, n_vars],
-            interpolation='nearest',
-            aspect='auto',
-            cmap='cividis'
-            )
-        ax.locator_params(axis='y', nbins=n_vars)
-
-        # set y ticks locations and labels
-        y_tick_locs = np.asarray([loc+0.5 for loc in range(n_vars)])
-        ax.set_yticks(y_tick_locs)
-        ax.set_yticklabels(var_keys)
-        ax.set_xlabel('time (s)')
-
-        # colorbar
-        cbar = fig.colorbar(im)
-        cbar.set_label('relative flourescence', rotation=270, labelpad=20)
-
-        # save figure
-        figname = name + '_' + port_id
-        fig_path = os.path.join(out_dir, figname)
-        plt.savefig(fig_path, bbox_inches='tight')
-
-
 def make_compartment_topology(out_dir='out'):
     # load the compartment
     flagella_compartment = get_flagella_compartment({})
@@ -219,7 +154,6 @@ def run_flagella_expression(out_dir='out'):
     # run simulation
     initial_state = get_flagella_initial_state()
     settings = {
-        'timestep': 1,
         # a cell cycle of 2520 sec is expected to express 8 flagella.
         # 2 flagella expected in ~630 seconds.
         'total_time': 760,
@@ -262,6 +196,38 @@ def run_flagella_expression(out_dir='out'):
         timeseries,
         plot_settings,
         out_dir)
+
+
+def test_flagella_expression():
+    flagella_compartment = get_flagella_compartment({})
+
+    # initial state for flagella complexation
+    initial_state = get_flagella_initial_state()
+    initial_state['proteins'].update({
+        'Ribosome': 400,  # plenty of ribosomes
+        'flagella': 0,
+        # required flagella components
+        'flagellar export apparatus': 1,
+        'flagellar motor': 1,
+        'fliC': 1,
+        'flgL': 1,
+        'flgK': 1,
+        'fliD': 5,
+        'flgE': 120
+    })
+
+    # run simulation
+    random.seed(0)  # set seed because process is stochastic
+    settings = {
+        'total_time': 100,
+        'emit_step': 10,
+        'initial_state': initial_state}
+    timeseries = simulate_compartment_in_experiment(flagella_compartment, settings)
+
+    print(timeseries['proteins']['flagella'])
+    final_flagella = timeseries['proteins']['flagella'][-1]
+    # this should have been long enough for flagellar complexation to occur
+    assert final_flagella == 1
 
 
 def scan_flagella_expression_parameters():

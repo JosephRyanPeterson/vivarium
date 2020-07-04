@@ -7,6 +7,7 @@ Colony Metrics Experiment
 from __future__ import absolute_import, division, print_function
 
 import os
+import random
 
 from vivarium.compartments.lattice import Lattice
 from vivarium.core.composition import (
@@ -25,7 +26,7 @@ from vivarium.core.emitter import (
 )
 from vivarium.core.experiment import Experiment
 from vivarium.experiments.lattice_experiment import (
-    get_gd_minimal_config,
+    agents_library,
     get_lattice_config,
 )
 from vivarium.plots.multibody_physics import plot_snapshots
@@ -39,6 +40,8 @@ from vivarium.processes.multibody_physics import single_agent_config
 
 NAME = 'colony_metrics'
 OUT_DIR = os.path.join(EXPERIMENT_OUT_DIR, NAME)
+DEFAULT_BOUNDS = [40, 40]
+DEFAULT_EMIT_STEP = 30
 
 
 def colony_metrics_experiment(config):
@@ -91,21 +94,24 @@ def colony_metrics_experiment(config):
     # add the agents
     agent_ids = [str(agent_id) for agent_id in range(n_agents)]
     agent_config = config['agent']
-    agent_compartment = agent_config['compartment']
+    agent_compartment = agent_config['type']
     compartment_config = agent_config['config']
     agent = agent_compartment(compartment_config)
     agents = make_agents(agent_ids, agent, {})
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
 
+    # initial agent state
+    locations = config.get('locations')
+    if locations is None:
+        locations = [[0.5, 0.5]]
     agent_config_settings = [
         {
             'bounds': environment.config['multibody']['bounds'],
+            'location': random.choice(locations) if len(locations) <= index else locations[index]
         }
-        for agent_id in agent_ids
+        for index, agent_id in enumerate(agent_ids)
     ]
-    for i, location in enumerate(config.get('locations', [])):
-        agent_config_settings[i]['location'] = location
 
     initial_state = {
         'agents': {
@@ -125,7 +131,11 @@ def colony_metrics_experiment(config):
 
 
 def get_lattice_with_metrics_config():
-    config = get_lattice_config()
+    config = {
+        'environment': get_lattice_config(
+            bounds=DEFAULT_BOUNDS,
+        )
+    }
     colony_metrics_config = {
         'colony_shape_deriver': {
             'alpha': 1 / 5,
@@ -149,7 +159,7 @@ def run_experiment(runtime=400, n_agents=2, start_locations=None):
     Returns:
         Simulation data as :term:`raw data`.
     '''
-    agent_config = get_gd_minimal_config()
+    agent_config = agents_library['growth_division_minimal']
     agent_config['config']['growth_rate_noise'] = 0
 
     experiment_config = get_lattice_with_metrics_config()
@@ -162,7 +172,7 @@ def run_experiment(runtime=400, n_agents=2, start_locations=None):
 
     # simulate
     settings = {
-        'timestep': 1,
+        'emit_step': DEFAULT_EMIT_STEP,
         'total_time': runtime,
         'return_raw_data': True,
     }
@@ -202,7 +212,9 @@ def main():
         os.makedirs(OUT_DIR)
 
     data, experiment_config = run_experiment(
-        start_locations=[[0, 0], [0.5, 0.5]],
+        runtime=1600,
+        n_agents=3,
+        start_locations=[[0.3, 0.3], [0.5, 0.5]],
     )
 
     # extract data

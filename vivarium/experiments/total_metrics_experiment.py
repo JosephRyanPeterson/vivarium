@@ -15,7 +15,7 @@ from vivarium.core.composition import (
 from vivarium.core.emitter import path_timeseries_from_data
 from vivarium.core.experiment import Experiment
 from vivarium.experiments.lattice_experiment import (
-    get_gd_minimal_config,
+    agents_library,
     get_lattice_config,
 )
 from vivarium.plots.multibody_physics import plot_snapshots
@@ -44,7 +44,7 @@ def total_metrics_experiment(config):
     # add the agents
     agent_ids = [str(agent_id) for agent_id in range(n_agents)]
     agent_config = config['agent']
-    agent_compartment = agent_config['compartment']
+    agent_compartment = agent_config['type']
     compartment_config = agent_config['config']
     agent = agent_compartment(compartment_config)
     agents = make_agents(agent_ids, agent, {})
@@ -60,7 +60,7 @@ def total_metrics_experiment(config):
 
 
 def get_lattice_with_metrics_config():
-    config = get_lattice_config()
+    config = {'environment': get_lattice_config()}
     total_metrics_config = {
         'total_mass_deriver': {},
         'total_cell_volume_deriver': {
@@ -78,7 +78,7 @@ def get_lattice_with_metrics_config():
 
 def run_experiment(agent_config=None):
     if agent_config is None:
-        agent_config = get_gd_minimal_config()
+        agent_config = agents_library['growth_division_minimal']
         agent_config['config']['growth_rate_noise'] = 0
     n_agents = 2
 
@@ -89,7 +89,7 @@ def run_experiment(agent_config=None):
 
     # simulate
     settings = {
-        'timestep': 1,
+        'emit_step': 1,
         'total_time': 200,
         'return_raw_data': True,
     }
