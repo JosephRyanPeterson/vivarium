@@ -8,7 +8,7 @@ generic way to represent rate laws that follow Michaelis-Menten-style
 enzyme kinetics. The generalized law can model arbitrary reaction
 stoichiometries, catalytic enzymes, activators, and inhibitors.
 
-If you are looking to model a catalyzed proess, this may be the
+If you are looking to model a catalyzed process, this may be the
 :term:`process class` you need.
 
 Executing this file directly simulates an instance of

@@ -161,17 +161,28 @@ def keys_list(d):
     return list(d.keys())
 
 
-def value_in_embedded_dict(data, timeseries={}):
-    '''converts data from a single time step into an embedded dictionary with lists of values'''
+def value_in_embedded_dict(data, timeseries={}, time_index=None):
+    '''
+    converts data from a single time step into an embedded dictionary with lists of values
+    '''
     for key, value in data.items():
         if isinstance(value, dict):
             if key not in timeseries:
                 timeseries[key] = {}
-            timeseries[key] = value_in_embedded_dict(value, timeseries[key])
-        else:
+            timeseries[key] = value_in_embedded_dict(value, timeseries[key], time_index)
+        elif time_index is None:
             if key not in timeseries:
                 timeseries[key] = []
             timeseries[key].append(value)
+        else:
+            if key not in timeseries:
+                timeseries[key] = {
+                    'value': [],
+                    'time_index': []
+                }
+            timeseries[key]['value'].append(value)
+            timeseries[key]['time_index'].append(time_index)
+
     return timeseries
 
 
