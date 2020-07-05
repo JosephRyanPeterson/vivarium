@@ -21,6 +21,7 @@ class InclusionBody(Process):
     # declare default parameters as class variables
     defaults = {
         'growth_rate': 1e-1,
+        'molecules_list': [],
     }
 
     def __init__(self, initial_parameters=None):
@@ -30,6 +31,7 @@ class InclusionBody(Process):
 
         # get the parameters out of initial_parameters if available, or use defaults
         self.growth_rate = self.parameters['growth_rate']
+        self.molecules_list = self.parameters['molecules_list']
 
     def ports_schema(self):
 
@@ -39,6 +41,13 @@ class InclusionBody(Process):
                     '_default': 1.0,
                     '_updater': 'accumulate',
                     '_emit': True,
+                },
+                'molecules': {
+                    mol_id: {
+                        '_default': 0.0,
+                        '_updater': 'accumulate',
+                    }
+                    for mol_id in self.molecules_list
                 }
             },
             'back': {
@@ -46,6 +55,13 @@ class InclusionBody(Process):
                     '_default': 0.0,
                     '_updater': 'accumulate',
                     '_emit': True,
+                },
+                'molecules': {
+                    mol_id: {
+                        '_default': 0.0,
+                        '_updater': 'accumulate',
+                    }
+                    for mol_id in self.molecules_list
                 }
             },
         }
@@ -64,8 +80,12 @@ class InclusionBody(Process):
 
 # functions to configure and run the process
 def run_inclusion_body(out_dir='out'):
+
     # initialize the process by passing initial_parameters
-    initial_parameters = {}
+    initial_parameters = {
+        'molecules_list': ['glucose'],
+        'growth_rate': 1e-1,
+    }
     inclusion_body_process = InclusionBody(initial_parameters)
 
     # run the simulation

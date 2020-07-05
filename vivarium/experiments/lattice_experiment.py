@@ -22,7 +22,7 @@ from vivarium.compartments.lattice import Lattice
 from vivarium.compartments.growth_division import GrowthDivision
 from vivarium.compartments.growth_division_minimal import GrowthDivisionMinimal
 from vivarium.compartments.transport_metabolism import TransportMetabolism
-
+from vivarium.compartments.inclusion_body_growth import InclusionBodyGrowth
 
 
 NAME = 'lattice'
@@ -54,7 +54,15 @@ agents_library = {
             'agents_path': ('..', '..', 'agents'),
         }
     },
+    'inclusion_body': {
+        'name': 'inclusion_body',
+        'type': InclusionBodyGrowth,
+        'config': {
+            'agents_path': ('..', '..', 'agents'),
+        }
+    },
 }
+
 
 def get_lattice_config():
     bounds = [20, 20]
@@ -134,7 +142,7 @@ def run_lattice_experiment(
     )
 
 
-def run_growth_division(
+def run_pipeline(
         agent_type='growth_division_minimal',
         out_dir='out',
         simulation_settings=get_simulation_settings()
@@ -235,24 +243,37 @@ if __name__ == '__main__':
     parser.add_argument('--growth_division', '-g', action='store_true', default=False)
     parser.add_argument('--growth_division_minimal', '-m', action='store_true', default=False)
     parser.add_argument('--transport_metabolism', '-t', action='store_true', default=False)
+    parser.add_argument('--inclusion_body', '-i', action='store_true', default=False)
     args = parser.parse_args()
     no_args = (len(sys.argv) == 1)
 
     if args.growth_division_minimal or no_args:
         minimal_out_dir = os.path.join(out_dir, 'minimal')
         make_dir(minimal_out_dir)
-        run_growth_division(
+        run_pipeline(
             agent_type='growth_division_minimal',
             out_dir=minimal_out_dir)
     elif args.growth_division:
         gd_out_dir = os.path.join(out_dir, 'growth_division')
         make_dir(gd_out_dir)
-        run_growth_division(
+        run_pipeline(
             agent_type='growth_division',
             out_dir=gd_out_dir)
     elif args.transport_metabolism:
         txp_mtb_out_dir = os.path.join(out_dir, 'transport_metabolism')
         make_dir(txp_mtb_out_dir)
-        run_growth_division(
+        run_pipeline(
             agent_type='transport_metabolism',
             out_dir=txp_mtb_out_dir)
+    elif args.inclusion_body:
+        inclusion_body_out_dir = os.path.join(out_dir, 'inclusion_body')
+        make_dir(inclusion_body_out_dir)
+        run_pipeline(
+            agent_type='inclusion_body',
+            out_dir=inclusion_body_out_dir,
+            simulation_settings={
+                'total_time': 600,
+                'emit_step': 1,
+                'return_raw_data': True
+            }
+        )
