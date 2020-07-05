@@ -63,15 +63,14 @@ def plot_agent(ax, data, color, agent_shape):
             edgecolor='w',
             facecolor=rgb
         )
+        ax.add_patch(shape)
+
     elif agent_shape is 'segment':
-        shape = patches.Rectangle(
-            (x, y), width, length,
-            angle=theta,
-            # capstyle='projecting',
-            linewidth=2,
-            edgecolor='w',
-            facecolor=rgb
-        )
+        # segment plot
+        plt.plot([x - dx / 2, x + dx / 2], [y - dy / 2, y + dy / 2],
+                 color=rgb,
+                 linewidth=width*20,  # TODO -- how should linewidth be scaled?
+                 solid_capstyle='round')
         # shape = patches.FancyBboxPatch(
         #     (x, y), width, length, #theta,
         #     boxstyle='round',
@@ -80,7 +79,6 @@ def plot_agent(ax, data, color, agent_shape):
         #     facecolor=rgb
         # )
 
-    ax.add_patch(shape)
 
 def plot_agents(ax, agents, agent_colors={}, agent_shape='segment'):
     '''

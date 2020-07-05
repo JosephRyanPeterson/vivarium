@@ -212,7 +212,7 @@ def main():
         os.makedirs(OUT_DIR)
 
     data, experiment_config = run_experiment(
-        runtime=400,
+        runtime=1000,
         n_agents=3,
         start_locations=[
             [0.3, 0.3],
