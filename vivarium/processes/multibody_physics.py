@@ -95,21 +95,23 @@ class Multibody(Process):
         * **jitter_force**: force applied to random positions along agent
           bodies to mimic thermal fluctuations. Produces Brownian motion.
         * **agent_shape** (:py:class:`str`): agents can take the shapes
-        ``rectangle``, `segment```, or ``circle``.
+          ``rectangle``, ``segment``, or ``circle``.
         * **bounds** (:py:class:`list`): size of the environment in
           micrometers, with ``[x, y]``.
-        * **mother_machine** (:py:class:`bool`): if True, mother machine
-          barriers are introduced.
+        * **mother_machine** (:py:class:`bool`): if set to ``True``, mother
+          machine barriers are introduced.
         * ***animate*** (:py:class:`bool`): interactive matplotlib option to
           animate multibody. To run with animation turned on set True, and use
           the TKAgg matplotlib backend:
+
           .. code-block:: console
+
               $ MPLBACKEND=TKAgg python vivarium/processes/multibody_physics.py
 
     Notes:
-        * rotational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dr = 3.5\pm0.3 rad^{2}/s}`
+        * rotational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dr = 3.5 \pm0.3 rad^{2}/s`
           (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
-        * translational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dt = 100 micrometers^{2}/s`
+        * translational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dt = 100 um^{2}/s`
           (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
     """
 
