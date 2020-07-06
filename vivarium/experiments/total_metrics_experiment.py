@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import random
 
+import numpy as np
 import pytest
 
 from vivarium.compartments.lattice import Lattice
@@ -99,9 +101,11 @@ def run_experiment(agent_config=None):
 
 
 @pytest.mark.slow
-def test_experiment():
+def test_experiment(seed=0):
     if not os.path.exists(OUT_DIR):
         os.makedirs(OUT_DIR)
+    random.seed(seed)
+    np.random.seed(seed)
     data, _ = run_experiment()
     path_ts = path_timeseries_from_data(data)
     filtered = {
