@@ -142,7 +142,15 @@ def test_antibiotics_composite_similar_to_reference():
     flattened = flatten_timeseries(timeseries)
     reference = load_timeseries(
         os.path.join(REFERENCE_DATA_DIR, NAME + '.csv'))
-    assert_timeseries_close(flattened, reference)
+    assert_timeseries_close(
+        flattened, reference,
+        tolerances={
+            'cell_counts_AcrAB-TolC': 99999,
+            'cell_counts_antibiotic': 999,
+            'cell_counts_AcrAB-TolC_RNA': 9,
+            'cell_counts_porin': 9999,
+        }
+    )
 
 
 def main():
