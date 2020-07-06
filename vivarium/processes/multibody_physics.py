@@ -1,3 +1,9 @@
+"""
+==========================
+Multibody physics process
+==========================
+"""
+
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -83,35 +89,36 @@ def daughter_locations(parent_location, parent_values):
 
 
 class Multibody(Process):
-    """
-    A multi-body physics process using pymunk
+    """Simulates collisions and forces between agent bodies with a multi-body physics engine.
 
-    To run with animation on set animate: True, and use the TKAgg matplotlib backend:
-    > MPLBACKEND=TKAgg python vivarium/processes/multibody_physics.py
-
-    Ports:
-
-        * ``agents``: The store containing all agent sub-compartments. Each agent in
-          this store has values for location, angle, length, width, mass, thrust, and torque.
+    :term:`Ports`:
+    * ``agents``: The store containing all agent sub-compartments. Each agent in
+      this store has values for location, angle, length, width, mass, thrust, and torque.
 
     Arguments:
         initial_parameters(dict): Accepts the following configuration keys:
 
-            * **jitter_force**: force applied to random positions along agent
-              bodies to mimic thermal fluctuations. Produces Brownian motion.
-            * **agent_shape** (:py:class:`str`): agents can take the shapes
-              ``rectangle``, `segment```, or ``circle``.
-            * **bounds** (:py:class:`list`): size of the environment in
-              micrometers, with [x, y].
-            * **mother_machine** (:py:class:`bool`): if True, mother machine
-              barriers are introduced.
+        * **jitter_force**: force applied to random positions along agent
+          bodies to mimic thermal fluctuations. Produces Brownian motion.
+        * **agent_shape** (:py:class:`str`): agents can take the shapes
+          ``rectangle``, ``segment``, or ``circle``.
+        * **bounds** (:py:class:`list`): size of the environment in
+          micrometers, with ``[x, y]``.
+        * **mother_machine** (:py:class:`bool`): if set to ``True``, mother
+          machine barriers are introduced.
+        * ***animate*** (:py:class:`bool`): interactive matplotlib option to
+          animate multibody. To run with animation turned on set True, and use
+          the TKAgg matplotlib backend:
+
+          .. code-block:: console
+
+              $ MPLBACKEND=TKAgg python vivarium/processes/multibody_physics.py
 
     Notes:
-        * rotational diffusion in liquid medium with viscosity = 1 mPa.s: Dr = 3.5+/-0.3 rad^2/s
+        * rotational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dr = 3.5 \pm0.3 rad^{2}/s`
           (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
-        * translational diffusion in liquid medium with viscosity = 1 mPa.s: Dt=100 micrometers^2/s
+        * translational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dt = 100 um^{2}/s`
           (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
-
     """
 
     defaults = {
