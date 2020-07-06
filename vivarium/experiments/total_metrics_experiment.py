@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
+import pytest
+
 from vivarium.compartments.lattice import Lattice
 from vivarium.core.composition import (
     EXPERIMENT_OUT_DIR,
@@ -96,6 +98,7 @@ def run_experiment(agent_config=None):
     return simulate_experiment(experiment, settings), experiment_config
 
 
+@pytest.mark.slow
 def test_experiment():
     if not os.path.exists(OUT_DIR):
         os.makedirs(OUT_DIR)

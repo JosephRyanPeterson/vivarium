@@ -10,6 +10,7 @@ import os
 import random
 
 import numpy as np
+import pytest
 
 from vivarium.compartments.lattice import Lattice
 from vivarium.core.composition import (
@@ -181,6 +182,7 @@ def run_experiment(runtime=2400, n_agents=2, start_locations=None):
     return simulate_experiment(experiment, settings), experiment_config
 
 
+@pytest.mark.slow
 def test_experiment(seed=1):
     random.seed(seed)
     np.random.seed(seed)
