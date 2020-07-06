@@ -881,9 +881,11 @@ def assert_timeseries_close(
         timeseries1, timeseries2, keys, required_frac_checked)
     for key in keys:
         tolerance = tolerances.get(key, default_tolerance)
-        if not np.allclose(
-            arrays1[key], arrays2[key], atol=tolerance, equal_nan=True
-        ):
+        close_mask = np.isclose(arrays1[key], arrays2[key],
+            atol=tolerance, equal_nan=True)
+        if not np.all(close_mask):
+            print('Timeseries 1:', arrays1[key][~close_mask])
+            print('Timeseries 2:', arrays2[key][~close_mask])
             raise AssertionError(
                 'The data for {} differed by more than {}'.format(
                     key, tolerance)
