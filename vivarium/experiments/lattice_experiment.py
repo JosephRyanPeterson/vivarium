@@ -43,7 +43,7 @@ agents_library = {
         'type': GrowthDivisionMinimal,
         'config': {
             'agents_path': ('..', '..', 'agents'),
-            'growth_rate': 0.002,
+            'growth_rate': 0.000275, # 'growth_rate': 0.002,
             'division_volume': 2.6
         }
     },
@@ -77,7 +77,7 @@ def get_lattice_config():
     return environment_config
 
 def get_simulation_settings(
-        total_time=2000,
+        total_time=20000,
         emit_step=10,
         return_raw_data=True,
 ):
