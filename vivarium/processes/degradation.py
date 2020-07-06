@@ -34,10 +34,10 @@ TOY_CONFIG = {
         'oB': 'AGUUGA',
         'oBY': 'AGUUGACGG'
     },
-    'catalysis_rates': {
+    'catalytic_rates': {
         'endoRNAse': 0.1
     },
-    'degradation_rates': {
+    'michaelis_constants': {
         'transcripts': {
             'endoRNAse': {
                 'oA': DEFAULT_TRANSCRIPT_DEGRADATION_KM,
@@ -55,9 +55,9 @@ class RnaDegradation(Process):
     name = NAME
     defaults = {
         'sequences': {},
-        'catalysis_rates': {
+        'catalytic_rates': {
             'endoRNAse': 0.1},
-        'degradation_rates': {
+        'michaelis_constants': {
             'transcripts': {
                 'endoRNAse': {}
             }
@@ -72,11 +72,11 @@ class RnaDegradation(Process):
         super(RnaDegradation, self).__init__(initial_parameters)
 
         self.derive_defaults('sequences', 'transcript_order', keys_list)
-        self.derive_defaults('catalysis_rates', 'protein_order', keys_list)
+        self.derive_defaults('catalytic_rates', 'protein_order', keys_list)
 
         self.sequences = self.parameters['sequences']
-        self.catalysis_rates = self.parameters['catalysis_rates']
-        self.degradation_rates = self.parameters['degradation_rates']
+        self.catalytic_rates = self.parameters['catalytic_rates']
+        self.michaelis_constants = self.parameters['michaelis_constants']
         self.transcript_order = self.parameters['transcript_order']
         self.protein_order = self.parameters['protein_order']
         self.molecule_order = list(nucleotides.values())
@@ -141,8 +141,8 @@ class RnaDegradation(Process):
             transcript: 0
             for transcript in self.transcript_order}
 
-        for protein, kcat in self.catalysis_rates.items():
-            for transcript, km in self.degradation_rates['transcripts'][protein].items():
+        for protein, kcat in self.catalytic_rates.items():
+            for transcript, km in self.michaelis_constants['transcripts'][protein].items():
                 km *= units.mole / units.fL
                 delta_transcripts[transcript] += kinetics(
                     proteins[protein] / mmol_to_counts,

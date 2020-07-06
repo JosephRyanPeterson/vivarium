@@ -237,7 +237,7 @@ class DiffusionField(Process):
             '*': {
                 'boundary': {
                     'location': {
-                        '_default': [0.5, 0.5],
+                        '_default': [0.5 * bound for bound in self.bounds],
                         '_updater': 'set'},
                     'exchange': local_concentration_schema,
                     'external': local_concentration_schema}}}

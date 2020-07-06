@@ -381,8 +381,8 @@ def get_flagella_expression():
     volume = 1.2 * units.fL
     mmol_to_counts = (AVOGADRO * volume).to('L/mmol')
     counts = {
-        'flagella': 5,
-        'flag_RNA': 30}
+        'flagella': 0,
+        'flag_RNA': 0}
     concentrations = {}
     for state_id, count in counts.items():
         concentrations[state_id] = (count / mmol_to_counts).magnitude
@@ -416,8 +416,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.flagella:
-        timeline = [(100, {})]
-        timeseries = test_expression(get_flagella_expression(), timeline) # 2520 sec (42 min) is the expected doubling time in minimal media
+        timeline = [(2520, {})]
+        timeseries = test_expression(get_flagella_expression(), timeline)
         plot_simulation_output(timeseries, {}, out_dir, 'flagella_expression')
     else:
         total_time = 5000
@@ -428,5 +428,5 @@ if __name__ == '__main__':
             (shift_time1, {('external', 'glc__D_e'): 0}),
             (shift_time2, {('external', 'glc__D_e'): 10}),
             (total_time, {})]
-        timeseries = test_expression(get_lacy_config(), timeline) # 2520 sec (42 min) is the expected doubling time in minimal media
+        timeseries = test_expression(get_lacy_config(), timeline)
         plot_simulation_output(timeseries, {}, out_dir, 'lacY_expression')

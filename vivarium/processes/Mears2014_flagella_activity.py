@@ -166,8 +166,7 @@ class FlagellaActivity(Process):
             flagella_update['_delete'] = []
             remove = random.sample(list(flagella.keys()), abs(new_flagella))
             for flagella_id in remove:
-                flagella_update['_delete'].append({
-                    'path': (flagella_id,)})
+                flagella_update['_delete'].append((flagella_id,))
 
         elif new_flagella > 0:
             # add flagella

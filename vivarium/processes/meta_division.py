@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import uuid
+import logging as log
 
 from vivarium.core.process import Deriver
 
@@ -15,6 +16,10 @@ def daughter_phylogeny_id(mother_id):
     return [
         str(mother_id) + '0',
         str(mother_id) + '1']
+
+
+def divider_set_false(state):
+    return [False, False]
 
 
 class MetaDivision(Deriver):
@@ -46,7 +51,9 @@ class MetaDivision(Deriver):
             'global': {
                 'divide': {
                     '_default': False,
-                    '_updater': 'set'}},
+                    '_updater': 'set',
+                    '_divider': divider_set_false,
+                }},
             'cells': {
                 '*': {}}}
 
@@ -67,6 +74,9 @@ class MetaDivision(Deriver):
                     'topology': compartment['topology'],
                     'initial_state': {}})
 
+            log.info(
+                'DIVIDE! \n--> MOTHER: {} \n--> DAUGHTERS: {}'.format(
+                    self.agent_id, daughter_ids))
             # initial state will be provided by division in the tree
             return {
                 'cells': {

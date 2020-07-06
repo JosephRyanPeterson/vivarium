@@ -2,11 +2,6 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-# os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-# import pygame
-# from pygame.locals import *
-# from pygame.color import *
-
 # Python imports
 import random
 import math
@@ -16,7 +11,6 @@ import numpy as nppython
 import pymunkoptions
 pymunkoptions.options["debug"] = False
 import pymunk
-# import pymunk.pygame_util
 
 
 PI = math.pi
@@ -68,6 +62,12 @@ def random_body_position(body):
     return location
 
 
+class NullScreen(object):
+    def update_screen(self):
+        pass
+    def configure(self, config):
+        pass
+
 
 class MultiBody(object):
     """
@@ -75,6 +75,7 @@ class MultiBody(object):
     """
 
     defaults = {
+        'agent_shape': 'segment',
         # hardcoded parameters
         'elasticity': 0.9,
         'damping': 0.5,  # 1 is no damping, 0 is full damping
@@ -86,8 +87,9 @@ class MultiBody(object):
         'jitter_force': 1e-3,  # pN
         'bounds': [20, 20],
         'barriers': False,
-        # 'debug': False,
         'initial_agents': {},
+        # for debugging
+        'screen': None,
     }
 
     def __init__(self, config):
@@ -100,6 +102,7 @@ class MultiBody(object):
         self.force_scaling = self.defaults['force_scaling']
 
         # configured parameters
+        self.agent_shape = config.get('agent_shape', self.defaults['agent_shape'])
         self.jitter_force = config.get('jitter_force', self.defaults['jitter_force'])
         self.bounds = config.get('bounds', self.defaults['bounds'])
         barriers = config.get('barriers', self.defaults['barriers'])
@@ -107,16 +110,13 @@ class MultiBody(object):
         # initialize pymunk space
         self.space = pymunk.Space()
 
-        # # debug screen with pygame
-        # self.pygame_viz = config.get('debug', self.defaults['debug'])
-        # if self.pygame_viz:
-        #     pygame.init()
-        #     self._screen = pygame.display.set_mode((
-        #         int(self.bounds[0]),
-        #         int(self.bounds[1])),
-        #         RESIZABLE)
-        #     self._clock = pygame.time.Clock()
-        #     self._draw_options = pymunk.pygame_util.DrawOptions(self._screen)
+        # debug screen
+        self.screen = config.get('screen')
+        if self.screen is None:
+            self.screen = NullScreen()
+        self.screen.configure({
+            'space': self.space,
+            'bounds': self.bounds})
 
         # add static barriers
         self.add_barriers(self.bounds, barriers)
@@ -143,8 +143,7 @@ class MultiBody(object):
             # run for a physics timestep
             self.space.step(self.physics_dt)
 
-        # if self.pygame_viz:
-        #     self._update_screen()
+        self.screen.update_screen()
 
     def apply_motile_force(self, body):
         width, length = body.dimensions
@@ -241,25 +240,67 @@ class MultiBody(object):
             line.friction = 0.8
         self.space.add(static_lines)
 
+    def get_shape(self, boundary):
+        '''
+        shape documentation at: https://pymunk-tutorial.readthedocs.io/en/latest/shape/shape.html
+        '''
+
+        if self.agent_shape == 'segment':
+            width = boundary['width']
+            length = boundary['length']
+
+            half_width = width / 2
+            half_length = length / 2 - half_width
+            shape = pymunk.Segment(
+                None,
+                (-half_length, 0),
+                (half_length, 0),
+                radius=half_width)
+
+        elif self.agent_shape == 'circle':
+            length = boundary['length']
+            half_length = length / 2
+            shape = pymunk.Circle(None, radius=half_length, offset=(0, 0))
+
+        elif self.agent_shape == 'rectangle':
+            width = boundary['width']
+            length = boundary['length']
+            half_length = length / 2
+            half_width = width / 2
+            shape = pymunk.Poly(None,
+                ((-half_length, -half_width),
+                 (half_length, -half_width),
+                 (half_length, half_width),
+                 (-half_length, half_width)))
+
+        return shape
+
+    def get_inertia(self, shape, mass):
+        if self.agent_shape == 'rectangle':
+            inertia = pymunk.moment_for_poly(mass, shape.get_vertices())
+        elif self.agent_shape == 'circle':
+            radius = shape.radius
+            inertia = pymunk.moment_for_circle(mass, radius, radius)
+        elif self.agent_shape == 'segment':
+            a = shape.a
+            b = shape.b
+            radius = shape.radius
+            inertia = pymunk.moment_for_segment(mass, a, b, radius)
+
+        return inertia
+
     def add_body_from_center(self, body_id, specs):
         boundary = specs['boundary']
-        width = boundary['width']
-        length = boundary['length']
         mass = boundary['mass']
         center_position = boundary['location']
         angle = boundary['angle']
         angular_velocity = boundary.get('angular_velocity', 0.0)
+        width = boundary['width']
+        length = boundary['length']
 
-        half_length = length / 2
-        half_width = width / 2
-
-        shape = pymunk.Poly(None, (
-            (-half_length, -half_width),
-            (half_length, -half_width),
-            (half_length, half_width),
-            (-half_length, half_width)))
-
-        inertia = pymunk.moment_for_poly(mass, shape.get_vertices())
+        # get shape, inertia, make body, assign body to shape
+        shape = self.get_shape(boundary)
+        inertia = self.get_inertia(shape, mass)
         body = pymunk.Body(mass, inertia)
         shape.body = body
 
@@ -291,16 +332,9 @@ class MultiBody(object):
         position = body.position
         angle = body.angle
 
-        # make shape, moment of inertia, and add a body
-        half_length = length/2
-        half_width = width/2
-        new_shape = pymunk.Poly(None, (
-            (-half_length, -half_width),
-            (half_length, -half_width),
-            (half_length, half_width),
-            (-half_length, half_width)))
-
-        inertia = pymunk.moment_for_poly(mass, new_shape.get_vertices())
+        # get shape, inertia, make body, assign body to shape
+        new_shape = self.get_shape(boundary)
+        inertia = self.get_inertia(new_shape, mass)
         new_body = pymunk.Body(mass, inertia)
         new_shape.body = new_body
 
@@ -353,61 +387,47 @@ class MultiBody(object):
                 'boundary': self.get_body_position(body_id)}
             for body_id in self.bodies.keys()}
 
-    # ## pygame visualization (for debugging)
-    # def _process_events(self):
-    #     for event in pygame.event.get():
-    #         if event.type == QUIT:
-    #             self._running = False
-    #         elif event.type == KEYDOWN and event.key == K_ESCAPE:
-    #             self._running = False
-    #
-    # def _clear_screen(self):
-    #     self._screen.fill(THECOLORS["white"])
-    #
-    # def _draw_objects(self):
-    #     self.space.debug_draw(self._draw_options)
-    #
-    # def _update_screen(self):
-    #     self._process_events()
-    #     self._clear_screen()
-    #     self._draw_objects()
-    #     pygame.display.flip()
-    #     # Delay fixed time between frames
-    #     self._clock.tick(2)
 
 
 def test_multibody(
         total_time=2,
-        debug=False):
+        agent_shape='rectangle',
+        n_agents=1,
+        jitter_force=1e1,
+        screen=None):
+
     bounds = [500, 500]
     center_location = [0.5*loc for loc in bounds]
     agents = {
-        '1': {
+        str(agent_idx): {
             'boundary': {
                 'location': center_location,
-                'angle': PI/2,
+                'angle': random.uniform(0,2*PI),
                 'volume': 15,
                 'length': 30,
                 'width': 10,
                 'mass': 1,
                 'thrust': 1e3,
-                'torque': 0.0}}}
+                'torque': 0.0}}
+        for agent_idx in range(n_agents)
+    }
     config = {
-        'jitter_force': 1e1,
+        'agent_shape': agent_shape,
+        'jitter_force': jitter_force,
         'bounds': bounds,
         'barriers': False,
         'initial_agents': agents,
-        # 'debug': debug
+        'screen': screen
     }
     multibody = MultiBody(config)
 
     # run simulation
     time = 0
-    time_step = 0.1
+    time_step = 1
     while time < total_time:
         time += time_step
         multibody.run(time_step)
 
 
 if __name__ == '__main__':
-    test_multibody(10, True)
+    test_multibody(10)
