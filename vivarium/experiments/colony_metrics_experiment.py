@@ -9,6 +9,8 @@ from __future__ import absolute_import, division, print_function
 import os
 import random
 
+import numpy as np
+
 from vivarium.compartments.lattice import Lattice
 from vivarium.core.composition import (
     EXPERIMENT_OUT_DIR,
@@ -145,7 +147,7 @@ def get_lattice_with_metrics_config():
     return config
 
 
-def run_experiment(runtime=400, n_agents=2, start_locations=None):
+def run_experiment(runtime=2400, n_agents=2, start_locations=None):
     '''Run a Colony Metrics Experiment
 
     Arguments:
@@ -179,11 +181,13 @@ def run_experiment(runtime=400, n_agents=2, start_locations=None):
     return simulate_experiment(experiment, settings), experiment_config
 
 
-def test_experiment():
+def test_experiment(seed=1):
+    random.seed(seed)
+    np.random.seed(seed)
     if not os.path.exists(OUT_DIR):
         os.makedirs(OUT_DIR)
     data, _ = run_experiment(
-        start_locations=[[0, 0], [0.5, 0.5]],
+        start_locations=[[0.3, 0.3], [0.5, 0.5]],
     )
     path_ts = path_timeseries_from_data(data)
     filtered = {
@@ -212,8 +216,6 @@ def main():
         os.makedirs(OUT_DIR)
 
     data, experiment_config = run_experiment(
-        runtime=1600,
-        n_agents=3,
         start_locations=[[0.3, 0.3], [0.5, 0.5]],
     )
 
