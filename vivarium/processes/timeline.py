@@ -10,11 +10,15 @@ class TimelineProcess(Process):
 
     name = 'timeline'
 
+    defaults = {
+        'timeline': []}
+
     def __init__(self, initial_parameters=None):
         if initial_parameters is None:
             initial_parameters = {}
 
-        self.timeline = copy.deepcopy(initial_parameters['timeline'])
+        self.timeline = copy.deepcopy(
+            self.or_default(initial_parameters, 'timeline'))
 
         # get ports
         self.ports = {'global': ['time']}
@@ -57,3 +61,6 @@ class TimelineProcess(Process):
                         '_updater': 'set'}
                 self.timeline.pop(0)
         return update
+
+
+TimelineProcess()

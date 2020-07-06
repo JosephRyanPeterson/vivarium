@@ -117,7 +117,7 @@ class GlucosePhosphorylation(Process):
     def derivers(self):
         return {
             'my_deriver': {
-                'deriver': 'mass',
+                'deriver': 'mass_deriver',
                 'port_mapping': {
                     'global': 'global',
                 },

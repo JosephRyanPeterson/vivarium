@@ -261,7 +261,7 @@ class ODE_expression(Process):
     def derivers(self):
         return {
             self.counts_deriver_key: {
-                'deriver': 'mmol_to_counts',
+                'deriver': 'counts_deriver',
                 'port_mapping': {
                     'global': 'global',
                     'concentrations': 'internal',

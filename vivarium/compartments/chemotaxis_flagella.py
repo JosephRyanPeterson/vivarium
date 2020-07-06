@@ -213,7 +213,7 @@ class ChemotaxisODEExpressionFlagella(Generator):
         }
 
 
-class ChemotaxisExpressionFlagella(Compartment):
+class ChemotaxisExpressionFlagella(Generator):
 
     defaults = {
         'n_flagella': 5,

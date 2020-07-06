@@ -10,7 +10,7 @@ class DeriveCounts(Deriver):
     """
     Process for deriving counts from concentrations
     """
-    name = 'mmol_to_counts_deriver'
+    name = 'counts_deriver'
     defaults = {
         'concentration_keys': [],
         'initial_state': get_default_global_state(),

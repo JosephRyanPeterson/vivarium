@@ -400,11 +400,11 @@ class Translation(Process):
     def derivers(self):
         return {
             self.mass_deriver_key: {
-                'deriver': 'mass',
+                'deriver': 'mass_deriver',
                 'port_mapping': {
                     'global': 'global'}},
             self.concentrations_deriver_key: {
-                'deriver': 'counts_to_mmol',
+                'deriver': 'concentrations_deriver',
                 'port_mapping': {
                     'global': 'global',
                     'counts': 'proteins',

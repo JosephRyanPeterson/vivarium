@@ -119,6 +119,9 @@ class StaticField(Deriver):
         return concentrations
 
 
+StaticField()
+
+
 def get_exponential_config():
     molecule = 'glc'
     center = [0.1, 0.5]

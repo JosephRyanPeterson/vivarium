@@ -300,7 +300,7 @@ class Store(object):
         if '_updater' in update:
             updater = update['_updater']
             if isinstance(updater, str):
-                updater = updater_library[updater]
+                updater = updater_repository.access(updater)
         return updater
 
     def get_config(self, sources=False):
@@ -692,9 +692,7 @@ class Store(object):
                     initial=reduction['initial'])
 
             updater = self.updater
-            if (
-                isinstance(update, dict) and self.schema_keys & set(update.keys())
-            ):
+            if isinstance(update, dict) and self.schema_keys & set(update.keys()):
                 if '_updater' in update:
                     updater = self.get_updater(update)
                     update = update.get('_value', self.default)

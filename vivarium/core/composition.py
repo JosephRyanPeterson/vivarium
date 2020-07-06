@@ -28,6 +28,8 @@ from vivarium.library.dict_utils import (
 )
 from vivarium.library.units import units
 
+# import classes for registration
+
 # processes
 from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.nonspatial_environment import NonSpatialEnvironment
@@ -900,6 +902,8 @@ def assert_timeseries_close(
 # TESTS
 class ToyLinearGrowthDeathProcess(Process):
 
+    name = 'toy_linear_growth_death'
+
     GROWTH_RATE = 1.0
     THRESHOLD = 6.0
 
@@ -931,6 +935,7 @@ class ToyLinearGrowthDeathProcess(Process):
 
         return update
 
+
 class TestSimulateProcess:
 
     def test_process_deletion(self):
@@ -953,6 +958,8 @@ class TestSimulateProcess:
 
 # toy processes
 class ToyMetabolism(Process):
+    name = 'toy_metabolism'
+
     def __init__(self, initial_parameters={}):
         parameters = {'mass_conversion_rate': 1}
         parameters.update(initial_parameters)
@@ -981,6 +988,8 @@ class ToyMetabolism(Process):
         return update
 
 class ToyTransport(Process):
+    name = 'toy_transport'
+
     def __init__(self, initial_parameters={}):
         parameters = {'intake_rate': 2}
         parameters.update(initial_parameters)
@@ -1009,6 +1018,8 @@ class ToyTransport(Process):
         return update
 
 class ToyDeriveVolume(Deriver):
+    name = 'toy_derive_volume'
+
     def __init__(self, initial_parameters={}):
         parameters = {}
         super(ToyDeriveVolume, self).__init__(parameters)
@@ -1033,6 +1044,8 @@ class ToyDeriveVolume(Deriver):
         return update
 
 class ToyDeath(Process):
+    name = 'toy_death'
+
     def __init__(self, initial_parameters={}):
         self.targets = initial_parameters.get('targets', [])
         super(ToyDeath, self).__init__({})

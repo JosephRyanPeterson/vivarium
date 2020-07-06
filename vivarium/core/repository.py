@@ -95,11 +95,13 @@ class Repository(object):
 
     def register(self, key, item):
         if key in self.repository:
-            raise Exception('repository already contains {}'.format(key))
-        self.repository[key] = item
+            if item != self.repository[key]:
+                raise Exception('repository already contains an entry for {}: {}'.format(key, self.repository[key]))
+        else:
+            self.repository[key] = item
 
     def access(self, key):
-        return self.repository[key]
+        return self.repository.get(key)
 
 
 ## updater functions

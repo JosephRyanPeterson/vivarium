@@ -71,7 +71,7 @@ class MinimalExpression(Process):
     def derivers(self):
         return {
             self.concentrations_deriver_key: {
-                'deriver': 'counts_to_mmol',
+                'deriver': 'concentrations_deriver',
                 'port_mapping': {
                     'global': 'global',
                     'counts': 'internal',

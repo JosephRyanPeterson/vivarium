@@ -11,7 +11,7 @@ class DeriveConcentrations(Deriver):
     Process for deriving concentrations from counts
     """
 
-    name = 'counts_to_mmol_deriver'
+    name = 'concentrations_deriver'
     defaults = {
         'concentration_keys': [],
         'initial_state': get_default_global_state(),
