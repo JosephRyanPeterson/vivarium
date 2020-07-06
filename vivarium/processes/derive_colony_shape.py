@@ -329,7 +329,7 @@ class TestDeriveColonyShape():
         }
         assert metrics == expected_metrics
 
-    def test_two_cells(self):
+    def test_single_cell(self):
         #
         #  *
         #
@@ -346,7 +346,7 @@ class TestDeriveColonyShape():
         }
         assert metrics == expected_metrics
 
-    def test_single_cells(self):
+    def test_two_cells(self):
         #
         #  *   *
         #
