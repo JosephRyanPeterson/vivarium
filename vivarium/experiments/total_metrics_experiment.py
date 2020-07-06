@@ -125,7 +125,7 @@ def test_experiment(seed=0):
         os.path.join(REFERENCE_DATA_DIR, NAME + '.csv'))
     assert_timeseries_close(
         test_output, expected,
-        default_tolerance=(1 - 1e-5),
+        default_tolerance=(1 - 1e-2),
     )
 
 
