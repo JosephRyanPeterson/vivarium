@@ -212,6 +212,14 @@ divider_library = {
     'split_dict': divide_split_dict,
     'zero': divide_zero}
 
+def assert_no_divide(state):
+    '''Assert that the variable is never divided
+
+    Raises:
+        AssertionError: If the variable is divided
+    '''
+    raise AssertionError('Variable cannot be divided')
+
 def default_divide_condition(compartment):
     return False
 

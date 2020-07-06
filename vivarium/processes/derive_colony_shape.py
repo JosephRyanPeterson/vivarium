@@ -18,7 +18,7 @@ from shapely.geometry.polygon import Polygon
 from vivarium.core.experiment import get_in
 from vivarium.core.process import Deriver
 from vivarium.library.units import units
-from vivarium.processes.derive_total_metric import assert_no_divide
+from vivarium.core.repository import assert_no_divide
 
 
 class Variables():
