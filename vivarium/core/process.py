@@ -15,7 +15,7 @@ class Process(object):
         if parameters is None:
              parameters = {}
         self.parameters = copy.deepcopy(self.defaults)
-        deep_merge(self.parameters, parameters)
+        self.parameters.update(parameters)
 
     def ports(self):
         ports_schema = self.ports_schema()

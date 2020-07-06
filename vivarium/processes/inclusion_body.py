@@ -1,7 +1,9 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import random
 
+from vivarium.library.units import units
 from vivarium.core.process import Process
 from vivarium.core.composition import (
     simulate_process_in_experiment,
@@ -21,6 +23,7 @@ class InclusionBody(Process):
     # declare default parameters as class variables
     defaults = {
         'growth_rate': 1e-1,
+        'unit_mw': 2.09e4 * units.g / units.mol,
         'molecules_list': [],
     }
 
@@ -34,42 +37,54 @@ class InclusionBody(Process):
         self.molecules_list = self.parameters['molecules_list']
 
     def ports_schema(self):
+        front_back = [0.0, 1.0]
+        random.shuffle(front_back)
 
         return {
+
             'front': {
                 'inclusion_body': {
-                    '_default': 1.0,
+                    '_default': front_back[0],
                     '_updater': 'accumulate',
                     '_emit': True,
+                    '_properties': {
+                        'mw': self.parameters['unit_mw']},
                 },
-                'molecules': {
-                    mol_id: {
-                        '_default': 0.0,
-                        '_updater': 'accumulate',
-                    }
-                    for mol_id in self.molecules_list
-                }
             },
+
             'back': {
                 'inclusion_body': {
-                    '_default': 0.0,
+                    '_default': front_back[1],
                     '_updater': 'accumulate',
                     '_emit': True,
                 },
-                'molecules': {
-                    mol_id: {
-                        '_default': 0.0,
-                        '_updater': 'accumulate',
-                    }
-                    for mol_id in self.molecules_list
-                }
             },
+
+            'molecules': {
+                mol_id: {
+                    '_default': 0.0,
+                    '_updater': 'accumulate',
+                }
+                for mol_id in self.molecules_list
+            },
+
+            'global': {
+                'mass': {
+                    '_emit': True,
+                    '_default': 1339 * units.fg,
+                    '_updater': 'set',
+                    '_divider': 'split'
+                },
+            }
         }
 
     def next_update(self, timestep, states):
         # get the states
         front_body = states['front']['inclusion_body']
         back_body = states['back']['inclusion_body']
+
+
+        import ipdb; ipdb.set_trace()
 
         update = {}
         # where is inclusion body? does it move?

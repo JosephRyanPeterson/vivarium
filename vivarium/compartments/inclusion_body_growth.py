@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import copy
 
 from vivarium.library.units import units
 from vivarium.core.experiment import Compartment
@@ -13,6 +14,7 @@ from vivarium.core.composition import (
 # processes
 from vivarium.processes.inclusion_body import InclusionBody
 from vivarium.processes.growth_protein import GrowthProtein
+from vivarium.processes.growth import Growth
 from vivarium.processes.meta_division import MetaDivision
 
 from vivarium.library.dict_utils import deep_merge
@@ -52,8 +54,9 @@ class InclusionBodyGrowth(Compartment):
 
         return {
             'inclusion_body': InclusionBody(inclusion_config),
-            'front_growth': GrowthProtein(growth_config),
-            'back_growth': GrowthProtein(growth_config),
+            'growth': Growth(growth_config),
+            # 'front_growth': GrowthProtein(growth_config),
+            # 'back_growth': GrowthProtein(growth_config),
             'division': MetaDivision(division_config)}
 
     def generate_topology(self, config):
@@ -62,17 +65,35 @@ class InclusionBodyGrowth(Compartment):
         return {
             'inclusion_body': {
                 'front': ('front',),
-                'back': ('back',),},
-            'front_growth': {
-                'internal': ('front',),
-                'global': boundary_path},
-            'back_growth': {
-                'internal': ('back',),
-                'global': boundary_path},
+                'back': ('back',),
+                'molecules': ('internal',),
+                'global': boundary_path,
+            },
+
+            'growth': {
+                'global': boundary_path
+            },
+
+            # 'front_growth': {
+            #     'internal': ('front',),
+            #     'global': boundary_path},
+            # 'back_growth': {
+            #     'internal': ('back',),
+            #     'global': boundary_path},
+
             'division': {
                 'global': boundary_path,
-                'cells': agents_path},
-            }
+                'cells': agents_path
+            },
+        }
+
+
+DEFAULT_CONFIG = {
+    'inclusion_body': {
+        'molecules_list': ['glucose'],
+        'growth_rate': 1e-1,
+    }
+}
 
 
 if __name__ == '__main__':
@@ -81,7 +102,9 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     agent_id = '0'
-    compartment = InclusionBodyGrowth({'agent_id': agent_id})
+    parameters = copy.deepcopy(DEFAULT_CONFIG)
+    parameters['agent_id'] = agent_id
+    compartment = InclusionBodyGrowth(parameters)
 
     # settings for simulation and plot
     settings = {
