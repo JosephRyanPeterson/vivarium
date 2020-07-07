@@ -512,8 +512,7 @@ def make_dir(out_dir):
 
 if __name__ == '__main__':
     out_dir = os.path.join(COMPARTMENT_OUT_DIR, NAME)
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
+    make_dir(out_dir)
 
     parser = argparse.ArgumentParser(description='variable flagella')
     parser.add_argument('--variable', '-v', action='store_true', default=False)
