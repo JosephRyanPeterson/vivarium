@@ -1,3 +1,5 @@
+#: List of dictionaries, one for each amino acid. Each dictionary has
+#: keys ``name``, ``abbreviation``, and ``symbol``.
 amino_acid_records = [
     {'name': 'Alanine', 'abbreviation': 'Ala', 'symbol': 'A'},
     {'name': 'Arginine', 'abbreviation': 'Arg', 'symbol': 'R'},
@@ -20,6 +22,7 @@ amino_acid_records = [
     {'name': 'Tyrosine', 'abbreviation': 'Tyr', 'symbol': 'Y'},
     {'name': 'Valine', 'abbreviation': 'Val', 'symbol': 'V'}]
 
+#: Map from amino acid symbol to the amino acid name
 amino_acids = {
     record['symbol']: record['name']
     for record in amino_acid_records}

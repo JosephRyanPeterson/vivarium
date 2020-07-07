@@ -4,8 +4,6 @@ import os
 import math
 import random
 
-import numpy as np
-
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -13,7 +11,7 @@ import matplotlib.lines as mlines
 from matplotlib.colors import hsv_to_rgb
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
-
+import numpy as np
 
 
 DEFAULT_BOUNDS = [10, 10]
@@ -83,6 +81,7 @@ def plot_snapshots(data, plot_config):
 
     Arguments:
         data (dict): A dictionary with the following keys:
+
             * **agents** (:py:class:`dict`): A mapping from times to
               dictionaries of agent data at that timepoint. Agent data
               dictionaries should have the same form as the hierarchy
@@ -93,10 +92,13 @@ def plot_snapshots(data, plot_config):
               form as the hierarchy tree rooted at ``fields``.
             * **config** (:py:class:`dict`): The environmental
               configuration dictionary  with the following keys:
+
                 * **bounds** (:py:class:`tuple`): The dimensions of the
                   environment.
+
         plot_config (dict): Accepts the following configuration options.
             Any options with a default is optional.
+
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
             * **out_dir** (:py:class:`str`): Output directory, which is
@@ -173,7 +175,7 @@ def plot_snapshots(data, plot_config):
 
                 ax = init_axes(fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time)
 
-                # transpose field to align with agent
+                # transpose field to align with agents
                 field = np.transpose(np.array(fields[time][field_id])).tolist()
                 vmin, vmax = field_range[field_id]
                 im = plt.imshow(field,
@@ -187,7 +189,7 @@ def plot_snapshots(data, plot_config):
                     plot_agents(ax, agents_now, agent_colors)
 
                 # colorbar in new column after final snapshot
-                if col_idx == n_snapshots-1:
+                if col_idx == n_snapshots-1 and (vmin != vmax):
                     cbar_col = col_idx + 1
                     ax = fig.add_subplot(grid[row_idx, cbar_col])
                     divider = make_axes_locatable(ax)
@@ -230,25 +232,29 @@ def plot_tags(data, plot_config):
 
     Arguments:
         data (dict): A dictionary with the following keys:
+
             * **agents** (:py:class:`dict`): A mapping from times to
               dictionaries of agent data at that timepoint. Agent data
               dictionaries should have the same form as the hierarchy
               tree rooted at ``agents``.
             * **config** (:py:class:`dict`): The environmental
               configuration dictionary  with the following keys:
+
                 * **bounds** (:py:class:`tuple`): The dimensions of the
                   environment.
+
         plot_config (dict): Accepts the following configuration options.
             Any options with a default is optional.
+
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
             * **out_dir** (:py:class:`str`): Output directory, which is
               ``out`` by default.
             * **filename** (:py:class:`str`): Base name of output file.
               ``tags`` by default.
-            * **tagged_molecules** (:py:class:`Iterable`): The tagged
-              molecules whose concentrations will be indicated by agent
-              color. Each molecule should be specified as a
+            * **tagged_molecules** (:py:class:`typing.Iterable`): The
+              tagged molecules whose concentrations will be indicated by
+              agent color. Each molecule should be specified as a
               :py:class:`tuple` of the store in the agent's boundary
               where the molecule's count can be found and the name of
               the molecule's count variable.
@@ -282,10 +288,12 @@ def plot_tags(data, plot_config):
 
     for time, time_data in agents.items():
         for agent_id, agent_data in time_data.items():
-            volume = agent_data['boundary']['volume']
+            volume = agent_data.get('boundary', {}).get('volume', 0)
             for tag_id in tagged_molecules:
                 report_type, molecule = tag_id
-                count = agent_data['boundary'][report_type][molecule]
+                count = agent_data.get(
+                    'boundary', {}
+                ).get(report_type, {}).get(molecule, 0)
                 conc = count / volume if volume else 0
                 if tag_id in tag_ranges:
                     tag_ranges[tag_id] = [
@@ -327,8 +335,10 @@ def plot_tags(data, plot_config):
 
                 # get current tag concentration, and determine color
                 report_type, molecule = tag_id
-                counts = agent_data['boundary'][report_type][molecule]
-                volume = agent_data['boundary']['volume']
+                counts = agent_data.get(
+                    'boundary', {}
+                ).get(report_type, {}).get(molecule, 0)
+                volume = agent_data.get('boundary', {}).get('volume', 0)
                 level = counts / volume if volume else 0
                 min_tag, max_tag = tag_ranges[tag_id]
                 if min_tag != max_tag:

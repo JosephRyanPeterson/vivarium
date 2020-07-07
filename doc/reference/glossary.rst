@@ -56,6 +56,13 @@ Glossary
         :term:`schema`. For more details, see the documentation for
         :py:mod:`vivarium.core.repository`.
 
+    Embedded Timeseries
+        An embedded timeseries has nearly the same shape as a simulation
+        state dictionary, only each variable's value is a list of values
+        over time, and there is an additional ``time`` key. For details,
+        see the guide on :doc:`simulation data formats
+        </guides/simulation_data_formats>`.
+
     Emitter
     Emitters
         While a simulation is running, the current state is stored in
@@ -94,6 +101,14 @@ Glossary
         their environment at different temporal scales since these
         processes require different degrees of temporal precision.
 
+    Path Timeseries
+        A path timeseries is a flattened form of an :term:`embedded
+        timeseries` where keys are paths in the simulation state
+        dictionary and values are lists of the :term:`variable` value
+        over time. We describe simulation data formats in more detail in
+        our guide to :doc:`simulation data formats
+        </guides/simulation_data_formats>`.
+
     Port
     Ports
         When a :term:`process` needs access to part of the model state,
@@ -125,6 +140,12 @@ Glossary
         configured, to create :term:`processes`. Each process class must
         subclass either :py:class:`vivarium.core.process.Process`
         or another process class.
+
+    Raw Data
+        The primary format for simulation data is "raw data." See the
+        guide on
+        :doc:`simulation data formats
+        </guides/simulation_data_formats>`.
 
     Schema
     Schemas
@@ -229,6 +250,12 @@ Glossary
 
         .. todo:: How does this work with the returned timeseries data?
 
+    Timeseries
+        "Timeseries" can refer to the general way in whcih we store
+        simulation data or to an :term:`embedded timeseries`. See the
+        guide on :doc:`simulation data formats
+        </guides/simulation_data_formats>` for details.
+
     Timestep
     Timesteps
         The amount of time elapsed between two timepoints. This is the
@@ -249,11 +276,14 @@ Glossary
 
     Hierarchy
     Hierarchies
+    Tree
+    Trees
         We nest the :term:`stores` of a model to form a tree called a
         hierarchy. Each internal node is a store and each leaf node is a
         :term:`variable`. This tree can be traversed like a directory
         tree, and stores are identified by paths. For details see the
-        :doc:`hierarchy guide <../guides/hierarchy>`.
+        :doc:`hierarchy guide <../guides/hierarchy>`. Note that this
+        used to be called a *tree*.
 
     Update
     Updates

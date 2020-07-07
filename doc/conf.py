@@ -66,7 +66,11 @@ html_static_path = ['_static']
 # -- Options for extensions --------------------------------------------------
 
 # -- sphinx.ext.intersphinx options --
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'matplotlib': ('https://matplotlib.org/3.2.2/', None),
+    'shapely': ('https://shapely.readthedocs.io/en/latest/', None),
+}
 
 # -- sphinx.ext.autodic options --
 autodoc_inherit_docstrings = False

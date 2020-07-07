@@ -93,7 +93,7 @@ class AntibioticDetector(DetectorInterface):
         Arguments:
             antibiotic_threshold (float): The maximum internal
                 antibiotic concentration the cell can survive.
-            antibiotic_key (string): The name of the variable storing
+            antibiotic_key (str): The name of the variable storing
                 the cell's internal antibiotic concentration.
         '''
         super(AntibioticDetector, self).__init__()
@@ -142,7 +142,7 @@ class DeathFreezeState(Process):
           to include. Death will be triggered if any one of these
           triggers death. Names are specified in
           :py:const:`DETECTOR_CLASSES`.
-        * **``targets``: A list of the names of the processes
+        * **``targets``**: A list of the names of the processes
           that will be removed when the cell dies. The names are
           specified in the compartment's :term:`topology`.
 

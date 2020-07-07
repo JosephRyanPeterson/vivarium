@@ -46,11 +46,16 @@ class TreeMass(Deriver):
                 'initial_mass': {
                     '_default': self.initial_mass,
                     '_updater': 'set',
-                    '_divider': 'split'},
+                    '_divider': 'split',
+                },
                 'mass': {
                     '_default': self.initial_mass,
                     '_emit': True,
-                    '_updater': 'set'}}}
+                    '_updater': 'set',
+                    '_divider': 'split',
+                },
+            },
+        }
 
     def next_update(self, timestep, states):
         initial_mass = states['global']['initial_mass']

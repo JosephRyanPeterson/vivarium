@@ -218,12 +218,23 @@ def divide_split_dict(state):
     d2 = dict(list(state.items())[:len(state) // 2])
     return [d1, d2]
 
-#: Maps divider names to divider functions
+def assert_no_divide(state):
+    '''Assert that the variable is never divided
+
+    Raises:
+        AssertionError: If the variable is divided
+    '''
+    raise AssertionError('Variable cannot be divided')
+
+
+#: Map divider names to divider functions
 divider_repository = Repository()
 divider_repository.register('set', divide_set)
 divider_repository.register('split', divide_split)
 divider_repository.register('split_dict', divide_split_dict)
 divider_repository.register('zero', divide_zero)
+divider_repository.register('zero', divide_zero)
+divider_repository.register('no_divide', assert_no_divide)
 
 
 # Serializers
