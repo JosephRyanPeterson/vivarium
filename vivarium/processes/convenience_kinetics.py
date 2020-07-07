@@ -132,8 +132,6 @@ class ConvenienceKinetics(Process):
                    the initial state dictionary is not divided up by
                    reaction.
 
-               If no initial state is specified,
-               :py:const:`EMPTY_STATES` is used.
              * **ports** (:py:class:`dict`): Each item in the
                dictionary has a :term:`port` name as its key and a
                list of the :term:`variables` in that port as its
@@ -146,9 +144,6 @@ class ConvenienceKinetics(Process):
                  {
                      'internal': ['A', 'B', 'C', 'E'],
                  }
-
-               If no ports are specified, :py:const:`EMPTY_ROLES` is
-               used.
 
      The ports of the process are the ports configured by the
      user, with the following modifications:

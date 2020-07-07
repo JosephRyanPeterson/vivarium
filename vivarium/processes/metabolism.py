@@ -64,11 +64,8 @@ class Metabolism(Process):
     analysis (FBA). The FBA problem is defined using the provided
     configuration parameters.
 
-    For an example of how to configure this process using a `BiGG
-    <http://bigg.ucsd.edu/>`_ model, see
-    :py:mod:`vivarium.processes.BiGG_metabolism`. To see how to
-    configure the process manually, look at the source code for
-    :py:func:`test_toy_metabolism`.
+    To see how to configure the process manually, look at the source
+    code for :py:func:`test_toy_metabolism`.
 
     :term:`Ports`:
 

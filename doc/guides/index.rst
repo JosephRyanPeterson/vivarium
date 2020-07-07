@@ -14,5 +14,6 @@ through the :doc:`getting started guide <../getting_started>` first.
    compartments
    environments
    experiments
+   simulation_data_formats
    hierarchy
    docs

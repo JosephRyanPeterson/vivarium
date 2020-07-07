@@ -410,20 +410,25 @@ def set_axes(ax, show_xaxis=False):
 
 def plot_simulation_output(timeseries_raw, settings={}, out_dir='out', filename='simulation'):
     '''
-    plot simulation output, with rows organized into separate columns.
+    Plot simulation output, with rows organized into separate columns.
 
-    Requires:
-        - timeseries (dict). This can be obtained from simulation output with convert_to_timeseries()
-        - settings (dict) with:
-            {
-            'max_rows': (int) ports with more states than this number of states get wrapped into a new column
-            'remove_zeros': (bool) if True, timeseries with all zeros get removed
-            'remove_flat': (bool) if True, timeseries with all the same value get removed
-            'remove_first_timestep': (bool) if True, skips the first timestep
-            'skip_ports': (list) entire ports that won't be plotted
-            'show_state': (list) with [('port_id', 'state_id')]
-                for all states that will be highlighted, even if they are otherwise to be removed
-            }
+    Arguments::
+        timeseries (dict): This can be obtained from simulation output with convert_to_timeseries()
+        settings (dict): Accepts the following keys:
+
+            * **max_rows** (:py:class:`int`): ports with more states
+              than this number of states get wrapped into a new column
+            * **remove_zeros** (:py:class:`bool`): if True, timeseries
+              with all zeros get removed
+            * **remove_flat** (:py:class:`bool`): if True, timeseries
+              with all the same value get removed
+            * **remove_first_timestep** (:py:class:`bool`): if True,
+              skips the first timestep
+            * **skip_ports** (:py:class:`list`): entire ports that won't
+              be plotted
+            * **show_state** (:py:class:`list`): with
+              ``[('port_id', 'state_id')]`` for all states that will be
+              highlighted, even if they are otherwise to be removed
     '''
 
     plot_fontsize = 8

@@ -6,14 +6,7 @@ Submodules
 
 .. toctree::
 
-   vivarium.analysis.analysis
-   vivarium.analysis.analyze_compartment
-   vivarium.analysis.location_trace
-   vivarium.analysis.motor
-   vivarium.analysis.multigen_compartment
-   vivarium.analysis.run_analysis
-   vivarium.analysis.snapshots
-   vivarium.analysis.topology
+   vivarium.analysis.analyze
 
 Module contents
 ---------------

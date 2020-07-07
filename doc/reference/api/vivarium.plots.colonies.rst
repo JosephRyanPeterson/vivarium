@@ -1,7 +1,7 @@
-vivarium.analysis.motor module
+vivarium.plots.colonies module
 ==============================
 
-.. automodule:: vivarium.analysis.motor
+.. automodule:: vivarium.plots.colonies
    :members:
    :undoc-members:
    :show-inheritance:

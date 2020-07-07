@@ -1,7 +1,7 @@
-vivarium.analysis.analyze\_compartment module
+vivarium.processes.derive\_total\_mass module
 =============================================
 
-.. automodule:: vivarium.analysis.analyze_compartment
+.. automodule:: vivarium.processes.derive_total_mass
    :members:
    :undoc-members:
    :show-inheritance:

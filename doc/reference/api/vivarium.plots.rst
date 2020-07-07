@@ -7,6 +7,8 @@ Submodules
 .. toctree::
 
    vivarium.plots.Mears2014_flagella_activity
+   vivarium.plots.Vladimirov2008_motor
+   vivarium.plots.colonies
    vivarium.plots.metabolism
    vivarium.plots.multibody_physics
    vivarium.plots.transport_metabolism

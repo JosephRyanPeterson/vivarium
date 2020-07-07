@@ -54,13 +54,13 @@ def key_for_value(d, looking):
     return found
 
 
-def get_in(d, path):
+def get_in(d, path, default=None):
     if path:
         head = path[0]
         if head in d:
             return get_in(d[head], path[1:])
-    else:
-        return d
+        return default
+    return d
 
 
 def assoc_in(d, path, value):
