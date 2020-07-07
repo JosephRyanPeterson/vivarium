@@ -10,28 +10,22 @@ import numpy as np
 import networkx as nx
 
 from vivarium.core.emitter import (
-    make_path_dict,
     path_timeseries_from_embedded_timeseries,
     path_timeseries_from_data,
 )
 from vivarium.core.experiment import (
     Experiment,
     Compartment,
-    update_in,
     generate_derivers,
 )
 from vivarium.core.process import Process, Deriver
-from vivarium.core import emitter as emit
 from vivarium.library.dict_utils import (
     deep_merge,
-    deep_merge_check,
     flatten_timeseries,
     get_path_list_from_dict,
 )
-from vivarium.library.units import units
 
 # processes
-from vivarium.processes.derive_globals import AVOGADRO
 from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.nonspatial_environment import NonSpatialEnvironment
 
@@ -130,44 +124,6 @@ def process_in_compartment(process, paths={}):
                     port: self.paths.get(port, (port,)) for port in self.process.ports_schema().keys()}}
 
     return ProcessCompartment
-
-def make_experiment_from_configs(
-    agents_config={},
-    environment_config={},
-    initial_state={},
-    settings={},
-):
-    # experiment settings
-    emitter = settings.get('emitter', {'type': 'timeseries'})
-
-    # initialize the agents
-    agent_type = agents_config['agent_type']
-    agent_ids = agents_config['agent_ids']
-    agent = agent_type(agents_config['config'])
-    agents = make_agents(agent_ids, agent, agents_config['config'])
-
-    # initialize the environment
-    environment_type = environment_config['environment_type']
-    environment = environment_type(environment_config['config'])
-
-    return make_experiment_from_compartments(
-        environment.generate({}), agents, emitter, initial_state)
-
-
-def make_experiment_from_compartment_dicts(
-    environment_dict, agents_dict, emitter_dict, initial_state
-):
-    # environment_dict comes from environment.generate()
-    # agents_dict comes from make_agents
-    processes = environment_dict['processes']
-    topology = environment_dict['topology']
-    processes['agents'] = agents_dict['processes']
-    topology['agents'] = agents_dict['topology']
-    return Experiment({
-        'processes': processes,
-        'topology': topology,
-        'emitter': emitter_dict,
-        'initial_state': initial_state})
 
 
 def process_in_experiment(process, settings={}):
