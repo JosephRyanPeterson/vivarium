@@ -8,7 +8,7 @@ import argparse
 
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     plot_compartment_topology,
     simulate_compartment_in_experiment,
@@ -49,7 +49,7 @@ DEFAULT_LIGAND = 'MeAsp'
 DEFAULT_INITIAL_LIGAND = 1e-2
 
 
-class ChemotaxisVariableFlagella(Compartment):
+class ChemotaxisVariableFlagella(Generator):
 
     defaults = {
         'n_flagella': 5,
@@ -101,8 +101,7 @@ class ChemotaxisVariableFlagella(Compartment):
         }
 
 
-class ChemotaxisODEExpressionFlagella(Compartment):
-
+class ChemotaxisODEExpressionFlagella(Generator):
     defaults = {
         'n_flagella': 5,
         'ligand_id': 'MeAsp',
@@ -214,7 +213,7 @@ class ChemotaxisODEExpressionFlagella(Compartment):
         }
 
 
-class ChemotaxisExpressionFlagella(Compartment):
+class ChemotaxisExpressionFlagella(Generator):
 
     defaults = {
         'n_flagella': 5,
@@ -513,8 +512,7 @@ def make_dir(out_dir):
 
 if __name__ == '__main__':
     out_dir = os.path.join(COMPARTMENT_OUT_DIR, NAME)
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
+    make_dir(out_dir)
 
     parser = argparse.ArgumentParser(description='variable flagella')
     parser.add_argument('--variable', '-v', action='store_true', default=False)

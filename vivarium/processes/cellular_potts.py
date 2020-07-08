@@ -21,6 +21,7 @@ class CellularPotts(Process):
 
     """
 
+    name = 'cellular_potts'
     defaults = {
         'grid_size': (10, 10),
         'n_agents': 1,

@@ -103,6 +103,8 @@ class Metabolism(Process):
             * **reversible_reactions** (:py:class:`list`)
 
     """
+
+    name = NAME
     defaults = {
         'constrained_reaction_ids': [],
         'model_path': 'models/iAF1260b.json',
@@ -250,14 +252,14 @@ class Metabolism(Process):
     def derivers(self):
         return {
             self.global_deriver_key: {
-                'deriver': 'globals',
+                'deriver': 'globals_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {
                     'initial_mass': self.initial_mass
                 }},
             self.mass_deriver_key: {
-                'deriver': 'mass',
+                'deriver': 'mass_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {

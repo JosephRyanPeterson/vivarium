@@ -14,7 +14,7 @@ from vivarium.data.nucleotides import nucleotides
 from vivarium.library.units import units
 
 
-NAME = 'degradation'
+NAME = 'rna_degradation'
 
 def all_subkeys(d):
     subkeys = set([])
@@ -51,6 +51,8 @@ TOY_CONFIG = {
 
 
 class RnaDegradation(Process):
+
+    name = NAME
     defaults = {
         'sequences': {},
         'catalytic_rates': {
@@ -123,7 +125,7 @@ class RnaDegradation(Process):
     def derivers(self):
         return {
             self.global_deriver_key: {
-                'deriver': 'globals',
+                'deriver': 'globals_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {

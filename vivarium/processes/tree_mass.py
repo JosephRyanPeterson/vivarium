@@ -6,6 +6,7 @@ from vivarium.library.units import units
 from vivarium.processes.derive_globals import AVOGADRO
 
 
+
 def calculate_mass(value, path, node):
     if 'mw' in node.properties:
         count = node.value
@@ -24,6 +25,7 @@ class TreeMass(Deriver):
 
     """
 
+    name = 'mass_deriver'
     defaults = {
         'from_path': ('..', '..'),
         'initial_mass': 0.0 * units.fg,
@@ -64,3 +66,6 @@ class TreeMass(Deriver):
                         'reducer': calculate_mass,
                         'from': self.from_path,
                         'initial': initial_mass}}}}
+
+# register process by invoking upon import
+TreeMass()

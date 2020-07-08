@@ -15,6 +15,8 @@ from vivarium.core.composition import (
 NAME = 'toxin_antitoxin'
 
 class ToxinAntitoxin(Process):
+
+    name = NAME
     mazF = 4
     defaults = {
         'initial_state': {

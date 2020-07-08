@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import networkx as nx
 
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     COMPARTMENT_OUT_DIR,
     simulate_compartment_in_experiment,
@@ -29,7 +29,7 @@ from vivarium.states.chromosome import toy_chromosome_config
 
 NAME = 'gene_expression'
 
-class GeneExpression(Compartment):
+class GeneExpression(Generator):
 
     defaults = {
         'global_path': ('global',),

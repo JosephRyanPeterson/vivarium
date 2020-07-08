@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from vivarium.library.units import units
 from vivarium.core.composition import simulate_compartment_in_experiment
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 
 # processes for testing
 from vivarium.processes.convenience_kinetics import ConvenienceKinetics, get_glc_lct_config
@@ -249,7 +249,7 @@ def plot_scan_results(results, out_dir='out', filename='parameter_scan'):
 
 
 # testing
-class TestConvienceKinetics(Compartment):
+class TestConvienceKinetics(Generator):
     defaults = {
         'boundary_path': ('boundary',),
         'config':  {

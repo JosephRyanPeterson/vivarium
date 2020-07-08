@@ -98,6 +98,7 @@ class ColonyShapeDeriver(Deriver):
     '''Derives colony shape metrics from cell locations
     '''
 
+    name = 'colony_shape_deriver'
     defaults = {
         'alpha': 1.0,
     }
@@ -211,6 +212,7 @@ class ColonyShapeDeriver(Deriver):
             }
         }
 
+ColonyShapeDeriver()
 
 class TestDeriveColonyShape():
 

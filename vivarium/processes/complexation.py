@@ -38,6 +38,8 @@ def build_complexation_stoichiometry(
 
 
 class Complexation(Process):
+
+    name = 'complexation'
     defaults = {
         'monomer_ids': chromosome.complexation_monomer_ids,
         'complex_ids': chromosome.complexation_complex_ids,
@@ -95,7 +97,7 @@ class Complexation(Process):
     def derivers(self):
         return {
             self.mass_deriver_key: {
-                'deriver': 'mass',
+                'deriver': 'mass_deriver',
                 'port_mapping': {
                     'global': 'global'}}}
 

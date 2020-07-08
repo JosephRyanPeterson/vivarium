@@ -24,6 +24,7 @@ def divider_set_false(state):
 
 class MetaDivision(Deriver):
 
+    name = 'meta_division'
     defaults = {
         'initial_state': {},
         'daughter_path': ('cell',),

@@ -11,6 +11,7 @@ class DeriveConcentrations(Deriver):
     Process for deriving concentrations from counts
     """
 
+    name = 'concentrations_deriver'
     defaults = {
         'concentration_keys': [],
         'initial_state': get_default_global_state(),
@@ -63,3 +64,6 @@ class DeriveConcentrations(Deriver):
 
         return {
             'concentrations': concentrations}
+
+# register process by invoking upon import
+DeriveConcentrations()

@@ -194,6 +194,7 @@ class DiffusionField(Process):
       :math:`6 * 10^{-10} \\frac{m^2}{s}=600 \\frac{micrometers^2}{s}`.
     '''
 
+    name = NAME
     defaults = {
         'molecules': ['glc'],
         'initial_state': {},
