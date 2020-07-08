@@ -249,6 +249,17 @@ class NumpySerializer(Serializer):
     def deserialize(self, data):
         return np.array(data)
 
+class UnitsSerializer(Serializer):
+    def serialize(self, data):
+        return data.magnitude
+
+class ProcessSerializer(Serializer):
+    def serialize(self, data):
+        return dict(data.parameters, _name = data.name)
+
+
 serializer_library = {
     'numpy': NumpySerializer(),
+    'units': UnitsSerializer(),
+    'process': ProcessSerializer(),
 }
