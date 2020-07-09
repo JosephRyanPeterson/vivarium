@@ -454,6 +454,9 @@ class Store(object):
                     return self.value.pull_data()
                 else:
                     if self.units:
+
+                        if isinstance(self.value, dict):
+                            import ipdb; ipdb.set_trace()
                         return self.value.to(self.units).magnitude
                     else:
                         return self.value
