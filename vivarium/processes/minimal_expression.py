@@ -25,6 +25,7 @@ class MinimalExpression(Process):
         expression_rates (dict) with {'mol_id': probability_of_expression (1/sec)}
     '''
 
+    name = NAME
     defaults = {
         'step_size': 1,
         'regulation': {},
@@ -70,7 +71,7 @@ class MinimalExpression(Process):
     def derivers(self):
         return {
             self.concentrations_deriver_key: {
-                'deriver': 'counts_to_mmol',
+                'deriver': 'concentrations_deriver',
                 'port_mapping': {
                     'global': 'global',
                     'counts': 'internal',

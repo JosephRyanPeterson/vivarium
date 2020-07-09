@@ -63,6 +63,7 @@ class MembranePotential(Process):
     Need to add a boot method for this process to vivarium/environment/boot.py for it to run on its own
     '''
 
+    name = NAME
     defaults = {
         'initial_state': DEFAULT_STATE,
         'parameters': DEFAULT_PARAMETERS,

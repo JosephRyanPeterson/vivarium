@@ -44,8 +44,7 @@ from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     PROCESS_OUT_DIR,
 )
-from vivarium.core.experiment import Compartment
-from vivarium.core.process import Process
+from vivarium.core.process import Process, Generator
 
 TOY_ANTIBIOTIC_THRESHOLD = 5.0
 TOY_INJECTION_RATE = 2.0
@@ -126,6 +125,8 @@ DETECTOR_CLASSES = {
 
 
 class DeathFreezeState(Process):
+
+    name = 'death'
 
     def __init__(self, initial_parameters=None):
         '''Model Death by Removing Processes
@@ -231,7 +232,7 @@ class ToyAntibioticInjector(Process):
         return {'internal': {self.antibiotic_name: delta}}
 
 
-class ToyDeath(Compartment):
+class ToyDeath(Generator):
 
     def generate_processes(self, config):
         death_parameters = {

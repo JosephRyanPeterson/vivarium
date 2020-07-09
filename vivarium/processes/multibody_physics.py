@@ -121,6 +121,7 @@ class Multibody(Process):
           (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
     """
 
+    name = NAME
     defaults = {
         'agents': {},
         'jitter_force': 1e-3,  # pN

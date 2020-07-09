@@ -1,6 +1,6 @@
 '''
 ==========================================
-Experiment, Compartment, and Store Classes
+Experiment and Store Classes
 ==========================================
 '''
 
@@ -31,10 +31,9 @@ from vivarium.library.dict_utils import merge_dicts, deep_merge, deep_merge_chec
 from vivarium.core.emitter import get_emitter
 from vivarium.core.process import Process
 from vivarium.core.repository import (
-    divider_library,
-    updater_library,
-    deriver_library,
-    serializer_library,
+    divider_repository,
+    updater_repository,
+    serializer_repository,
 )
 
 
@@ -61,13 +60,6 @@ def get_in(d, path, default=None):
             return get_in(d[head], path[1:])
         return default
     return d
-
-
-def assoc_in(d, path, value):
-    if path:
-        return dict(d, **{path[0]: assoc_in(d.get(path[0], {}), path[1:], value)})
-    else:
-        return value
 
 
 def assoc_path(d, path, value):
@@ -251,9 +243,9 @@ class Store(object):
         if '_divider' in config:
             self.divider = config['_divider']
             if isinstance(self.divider, str):
-                self.divider = divider_library[self.divider]
+                self.divider = divider_repository.access(self.divider)
             if isinstance(self.divider, dict) and isinstance(self.divider['divider'], str):
-                self.divider['divider'] = divider_library[self.divider['divider']]
+                self.divider['divider'] = divider_repository.access(self.divider['divider'])
             config = without(config, '_divider')
 
         if self.schema_keys & set(config.keys()):
@@ -264,14 +256,14 @@ class Store(object):
             if '_serializer' in config:
                 self.serializer = config['_serializer']
                 if isinstance(self.serializer, str):
-                    self.serializer = serializer_library[self.serializer]
+                    self.serializer = serializer_repository.access(self.serializer)
 
             if '_default' in config:
                 self.default = self.check_default(config.get('_default'))
                 if isinstance(self.default, Quantity):
                     self.units = self.default.units
                 if isinstance(self.default, np.ndarray):
-                    self.serializer = self.serializer or serializer_library['numpy']
+                    self.serializer = self.serializer or serializer_repository.access('numpy')
 
             if '_value' in config:
                 self.value = self.check_value(config.get('_value'))
@@ -280,7 +272,7 @@ class Store(object):
 
             self.updater = config.get('_updater', self.updater or 'accumulate')
             if isinstance(self.updater, str):
-                self.updater = updater_library[self.updater]
+                self.updater = updater_repository.access(self.updater)
 
             self.properties = deep_merge(
                 self.properties,
@@ -308,7 +300,7 @@ class Store(object):
         if '_updater' in update:
             updater = update['_updater']
             if isinstance(updater, str):
-                updater = updater_library[updater]
+                updater = updater_repository.access(updater)
         return updater
 
     def get_config(self, sources=False):
@@ -700,9 +692,7 @@ class Store(object):
                     initial=reduction['initial'])
 
             updater = self.updater
-            if (
-                isinstance(update, dict) and self.schema_keys & set(update.keys())
-            ):
+            if isinstance(update, dict) and self.schema_keys & set(update.keys()):
                 if '_updater' in update:
                     updater = self.get_updater(update)
                     update = update.get('_value', self.default)
@@ -1064,125 +1054,6 @@ def inverse_topology(outer, update, topology):
                     assoc_path(inverse, inner, value)
 
     return inverse
-
-
-def generate_derivers(processes, topology):
-    deriver_processes = {}
-    deriver_topology = {}
-    for process_key, node in processes.items():
-        subtopology = topology[process_key]
-        if isinstance(node, Process):
-            for deriver_key, config in node.derivers().items():
-                if deriver_key not in deriver_processes:
-                    # generate deriver process
-                    deriver_config = config.get('config', {})
-                    generate = config['deriver']
-                    if isinstance(generate, str):
-                        generate = deriver_library[generate]
-
-                    deriver = generate(deriver_config)
-                    deriver_processes[deriver_key] = deriver
-
-                    # generate deriver topology
-                    deriver_topology[deriver_key] = {}
-                    for target, source in config.get('port_mapping', {}).items():
-                        path = subtopology[source]
-                        deriver_topology[deriver_key][target] = path
-        else:
-            subderivers = generate_derivers(node, subtopology)
-            deriver_processes[process_key] = subderivers['processes']
-            deriver_topology[process_key] = subderivers['topology']
-    return {
-        'processes': deriver_processes,
-        'topology': deriver_topology}
-
-
-class Compartment(object):
-    """Compartment parent class
-
-    All :term:`compartment` classes must inherit from this class.
-    """
-    def __init__(self, config):
-        self.config = config
-
-    def generate_processes(self, config):
-        """Generate processes dictionary
-
-        Every subclass must override this method.
-
-        Arguments:
-            config (dict): A dictionary of configuration options. All
-                subclass implementation must accept this parameter, but
-                some may ignore it.
-
-        Returns:
-            dict: Subclass implementations must return a dictionary
-            mapping process names to instantiated and configured process
-            objects.
-        """
-        return {}
-
-    def generate_topology(self, config):
-        """Generate topology dictionary
-
-        Every subclass must override this method.
-
-        Arguments:
-            config (dict): A dictionary of configuration options. All
-                subclass implementation must accept this parameter, but
-                some may ignore it.
-
-        Returns:
-            dict: Subclass implementations must return a :term:`topology`
-            dictionary.
-        """
-        return {}
-
-    def generate(self, config=None, path=tuple()):
-        '''Generate processes and topology dictionaries for the compartment
-
-        Arguments:
-            config (dict): Updates values in the configuration declared
-                in the constructor
-            path (tuple): Tuple with ('path', 'to', 'level') associates
-                the processes and topology at this level
-
-        Returns:
-            dict: Dictionary with two keys: ``processes``, which has a
-            value of a processes dictionary, and ``topology``, which has
-            a value of a topology dictionary. Both are suitable to be
-            passed to the constructor for
-            :py:class:`vivarium.core.experiment.Experiment`.
-        '''
-
-        # merge config with self.config
-        if config is None:
-            config = self.config
-        else:
-            default = copy.deepcopy(self.config)
-            config = deep_merge(default, config)
-
-        processes = self.generate_processes(config)
-        topology = self.generate_topology(config)
-
-        # add derivers
-        derivers = generate_derivers(processes, topology)
-        processes = deep_merge(derivers['processes'], processes)
-        topology = deep_merge(derivers['topology'], topology)
-
-        return {
-            'processes': assoc_in({}, path, processes),
-            'topology': assoc_in({}, path, topology)}
-
-    def or_default(self, parameters, key):
-        return parameters.get(key, self.defaults[key])
-
-    def get_parameters(self):
-        network = self.generate({})
-        processes = network['processes']
-        return {
-            process_id: process.parameters
-            for process_id, process in processes.items()}
 
 
 def generate_state(processes, topology, initial_state):

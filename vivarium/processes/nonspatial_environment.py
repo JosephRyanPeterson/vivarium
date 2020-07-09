@@ -12,6 +12,7 @@ from vivarium.processes.derive_globals import AVOGADRO
 class NonSpatialEnvironment(Deriver):
     '''A non-spatial environment with volume'''
 
+    name = 'nonspatial_environment'
     defaults = {
         'volume': 1e-12 * units.L}
 
