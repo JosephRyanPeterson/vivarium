@@ -68,7 +68,8 @@ def agent_environment_experiment(
         agents_config=None,
         environment_config=None,
         initial_state=None,
-        settings=None
+        settings=None,
+        invoke=None
 ):
     if settings is None:
         settings = {}
@@ -101,17 +102,21 @@ def agent_environment_experiment(
     environment_compartment = environment_type(environment_config['config'])
 
     # combine processes and topologies
-    network = environment_compartment.generate({})
+    network = environment_compartment.generate()
     processes = network['processes']
     topology = network['topology']
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
 
-    return Experiment({
+    experiment_config = {
         'processes': processes,
         'topology': topology,
         'emitter': emitter,
-        'initial_state': initial_state})
+        'initial_state': initial_state,
+    }
+    if invoke:
+        experiment_config['invoke'] = invoke
+    return Experiment(experiment_config)
 
 def process_in_compartment(process, paths={}):
     """ put a lone process in a compartment"""
