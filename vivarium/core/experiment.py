@@ -454,9 +454,6 @@ class Store(object):
                     return self.value.pull_data()
                 else:
                     if self.units:
-
-                        if isinstance(self.value, dict):
-                            import ipdb; ipdb.set_trace()
                         return self.value.to(self.units).magnitude
                     else:
                         return self.value
@@ -1257,9 +1254,7 @@ class Experiment(object):
             # timestep shouldn't influence derivers
             if not deriver.deleted:
                 update = self.process_update(path, deriver, 0)
-                updates.append(update)
-        for update in updates:
-            self.apply_update(update.get())
+                self.apply_update(update.get())
 
     def emit_data(self):
         data = self.state.emit_data()
