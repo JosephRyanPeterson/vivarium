@@ -104,6 +104,10 @@ class Repository(object):
         return self.repository.get(key)
 
 
+#: Maps process names to :term:`process classes`
+process_repository = Repository()
+
+
 ## updater functions
 
 def update_merge(current_value, new_value):
@@ -260,9 +264,18 @@ class ProcessSerializer(Serializer):
     def serialize(self, data):
         return dict(data.parameters, _name = data.name)
 
+class GeneratorSerializer(Serializer):
+    def serialize(self, data):
+        return dict(data.config, _name = str(type(data)))
+
+class FunctionSerializer(Serializer):
+    def serialize(self, data):
+        return str(data)
+
 # register serializers in the serializer_repository
 serializer_repository = Repository()
 serializer_repository.register('numpy', NumpySerializer())
 serializer_repository.register('units', UnitsSerializer())
 serializer_repository.register('process', ProcessSerializer())
-
+serializer_repository.register('compartment', GeneratorSerializer())
+serializer_repository.register('function', FunctionSerializer())

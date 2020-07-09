@@ -29,7 +29,10 @@ from multiprocessing import Pool
 from vivarium.library.units import Quantity
 from vivarium.library.dict_utils import merge_dicts, deep_merge, deep_merge_check
 from vivarium.core.emitter import get_emitter
-from vivarium.core.process import Process
+from vivarium.core.process import (
+    Process,
+    serialize_dictionary,
+)
 from vivarium.core.repository import (
     divider_repository,
     updater_repository,
@@ -959,7 +962,8 @@ class Store(object):
             if isinstance(subprocess, Process):
                 process_state = Store({
                     '_value': subprocess,
-                    '_updater': 'set'}, outer=self)
+                    '_updater': 'set',
+                    '_serializer': 'process'}, outer=self)
                 self.inner[key] = process_state
 
                 subprocess.schema = subprocess.ports_schema()
@@ -1204,9 +1208,8 @@ class Experiment(object):
             'time_created': timestamp(),
             'experiment_id': self.experiment_id,
             'description': self.description,
-            # TODO -- serialize processes, topology, state
-            # 'processes': self.processes,
-            # 'topology': self.topology,
+            'processes': serialize_dictionary(self.processes),
+            'topology': self.topology,
             # 'state': self.state.get_config()
         }
         emit_config = {
