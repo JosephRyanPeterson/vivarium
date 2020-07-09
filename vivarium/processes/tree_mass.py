@@ -59,9 +59,6 @@ class TreeMass(Deriver):
 
     def next_update(self, timestep, states):
         initial_mass = states['global']['initial_mass']
-
-
-        import ipdb; ipdb.set_trace()
         
         return {
             'global': {
