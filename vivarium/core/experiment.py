@@ -1624,7 +1624,7 @@ def test_topology_ports():
 def test_timescales():
     class Slow(Process):
         def __init__(self):
-            self.timestep = 3.0
+            self.parameters ={'timestep': 3.0}
             self.ports = {
                 'state': ['base']}
 
@@ -1635,7 +1635,7 @@ def test_timescales():
                         '_default': 1.0}}}
 
         def local_timestep(self):
-            return self.timestep
+            return self.parameters['timestep']
 
         def next_update(self, timestep, states):
             base = states['state']['base']
@@ -1646,7 +1646,7 @@ def test_timescales():
 
     class Fast(Process):
         def __init__(self):
-            self.timestep = 0.1
+            self.parameters ={'timestep': 3.0}
             self.ports = {
                 'state': ['base', 'motion']}
 
@@ -1659,7 +1659,7 @@ def test_timescales():
                         '_default': 0.0}}}
 
         def local_timestep(self):
-            return self.timestep
+            return self.parameters['timestep']
 
         def next_update(self, timestep, states):
             base = states['state']['base']
