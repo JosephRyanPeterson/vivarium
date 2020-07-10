@@ -164,6 +164,7 @@ def run_experiment(runtime=2400, n_agents=2, start_locations=None):
     '''
     agent_config = agents_library['growth_division_minimal']
     agent_config['config']['growth_rate_noise'] = 0
+    agent_config['config']['growth_rate'] = 0.000275
 
     experiment_config = get_lattice_with_metrics_config()
     experiment_config.update({
