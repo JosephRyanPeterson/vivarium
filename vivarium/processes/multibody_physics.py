@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # vivarium imports
-from vivarium.library.pymunk_multibody import MultiBody
+from vivarium.library.pymunk_multibody import PymunkMultibody
 from vivarium.library.units import units, remove_units
 from vivarium.core.emitter import timeseries_from_data
 from vivarium.core.process import Process
@@ -139,6 +139,8 @@ class Multibody(Process):
         # multibody parameters
         jitter_force = self.or_default(
             initial_parameters, 'jitter_force')
+        self.agent_shape = self.or_default(
+            initial_parameters, 'agent_shape')
         self.bounds = self.or_default(
             initial_parameters, 'bounds')
         self.mother_machine = self.or_default(
@@ -148,12 +150,13 @@ class Multibody(Process):
         self.time_step = self.or_default(
             initial_parameters, 'time_step')
         multibody_config = {
+            'agent_shape': self.agent_shape,
             'jitter_force': jitter_force,
             'bounds': self.bounds,
             'barriers': self.mother_machine,
             'physics_dt': self.time_step / 10,
         }
-        self.physics = MultiBody(multibody_config)
+        self.physics = PymunkMultibody(multibody_config)
 
         # interactive plot for visualization
         self.animate = initial_parameters.get('animate', self.defaults['animate'])
@@ -270,9 +273,15 @@ class Multibody(Process):
             x = x_center - dx
             y = y_center - dy
 
-            # Create a rectangle
-            rect = patches.Rectangle((x, y), width, length, angle=angle, linewidth=1, edgecolor='b')
-            self.ax.add_patch(rect)
+            if self.agent_shape is 'rectangle' or self.agent_shape is 'segment':
+                # Create a rectangle
+                rect = patches.Rectangle((x, y), width, length, angle=angle, linewidth=1, edgecolor='b')
+                self.ax.add_patch(rect)
+
+            elif self.agent_shape is 'circle':
+                # Create a circle
+                circle = patches.Circle((x, y), width, linewidth=1, edgecolor='b')
+                self.ax.add_patch(circle)
 
         plt.xlim([0, self.bounds[0]])
         plt.ylim([0, self.bounds[1]])
@@ -422,7 +431,8 @@ def simulate_growth_division(config, settings):
                     '_divide': {
                         'mother': agent_id,
                         'daughters': daughter_updates}}
-                experiment.send_updates([{'agents': update}])
+                invoked_update = InvokeUpdate({'agents': update})
+                experiment.send_updates([invoked_update])
             else:
                 agent_updates[agent_id] = {
                     'boundary': {
@@ -431,9 +441,17 @@ def simulate_growth_division(config, settings):
                         'mass': new_mass * units.fg}}
 
         # update experiment
-        experiment.send_updates([{'agents': agent_updates}])
+        invoked_update = InvokeUpdate({'agents': agent_updates})
+        experiment.send_updates([invoked_update])
 
     return experiment.emitter.get_data()
+
+
+class InvokeUpdate(object):
+    def __init__(self, update):
+        self.update = update
+    def get(self, timeout=0):
+        return self.update
 
 def simulate_motility(config, settings):
     # time of motor behavior without chemotaxis
@@ -445,6 +463,7 @@ def simulate_motility(config, settings):
     initial_agents_state = config['agents']
 
     # make the process
+    config['time_step'] = timestep
     multibody = Multibody(config)
     experiment = process_in_experiment(multibody)
     experiment.state.update_subschema(
@@ -482,7 +501,9 @@ def simulate_motility(config, settings):
                 'torque': torque},
             'cell': {
                 'motor_state': 1}}
-    experiment.send_updates([{'agents': motile_forces}])
+
+    invoked_update = InvokeUpdate({'agents': motile_forces})
+    experiment.send_updates([invoked_update])
 
     ## run simulation
     # test run/tumble
@@ -530,7 +551,8 @@ def simulate_motility(config, settings):
                     'thrust': thrust,
                     'torque': torque}
 
-        experiment.send_updates([{'agents': motile_forces}])
+        invoked_update = InvokeUpdate({'agents': motile_forces})
+        experiment.send_updates([invoked_update])
 
     return experiment.emitter.get_data()
 
@@ -586,7 +608,7 @@ def run_motility(config={}, out_dir='out', filename='motility'):
     plot_motility(motility_timeseries, out_dir, filename + '_analysis')
     plot_temporal_trajectory(motility_timeseries, motility_config, out_dir, filename + '_trajectory')
 
-def run_growth_division():
+def run_growth_division(config={}):
     n_agents = 1
     agent_ids = [str(agent_id) for agent_id in range(n_agents)]
 
@@ -598,6 +620,7 @@ def run_growth_division():
         'total_time': 140}
 
     gd_config = {
+        'agent_shape': config.get('agent_shape', 'segment'),
         'animate': True,
         'jitter_force': 1e-3,
         'bounds': bounds}
@@ -626,6 +649,7 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     parser = argparse.ArgumentParser(description='multibody')
+    parser.add_argument('--circles', '-c', action='store_true', default=False)
     parser.add_argument('--motility', '-m', action='store_true', default=False)
     parser.add_argument('--growth', '-g', action='store_true', default=False)
     parser.add_argument('--scales', '-s', action='store_true', default=False)
@@ -637,6 +661,8 @@ if __name__ == '__main__':
         run_motility({'animate': True}, out_dir)
     if args.growth or no_args:
         run_growth_division()
+    if args.circles:
+        run_growth_division({'agent_shape': 'circle'})
     if args.jitter:
         run_jitter({}, out_dir, 'jitter')
     if args.scales:

@@ -69,7 +69,7 @@ class NullScreen(object):
         pass
 
 
-class MultiBody(object):
+class PymunkMultibody(object):
     """
     Multibody object for interfacing with pymunk
     """
@@ -419,7 +419,7 @@ def test_multibody(
         'initial_agents': agents,
         'screen': screen
     }
-    multibody = MultiBody(config)
+    multibody = PymunkMultibody(config)
 
     # run simulation
     time = 0
