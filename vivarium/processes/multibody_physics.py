@@ -422,7 +422,8 @@ def simulate_growth_division(config, settings):
                     '_divide': {
                         'mother': agent_id,
                         'daughters': daughter_updates}}
-                experiment.send_updates([{'agents': update}])
+                invoked_update = InvokeUpdate({'agents': update})
+                experiment.send_updates([invoked_update])
             else:
                 agent_updates[agent_id] = {
                     'boundary': {
@@ -431,9 +432,17 @@ def simulate_growth_division(config, settings):
                         'mass': new_mass * units.fg}}
 
         # update experiment
-        experiment.send_updates([{'agents': agent_updates}])
+        invoked_update = InvokeUpdate({'agents': agent_updates})
+        experiment.send_updates([invoked_update])
 
     return experiment.emitter.get_data()
+
+
+class InvokeUpdate(object):
+    def __init__(self, update):
+        self.update = update
+    def get(self, timeout=0):
+        return self.update
 
 def simulate_motility(config, settings):
     # time of motor behavior without chemotaxis
@@ -445,6 +454,7 @@ def simulate_motility(config, settings):
     initial_agents_state = config['agents']
 
     # make the process
+    config['time_step'] = timestep
     multibody = Multibody(config)
     experiment = process_in_experiment(multibody)
     experiment.state.update_subschema(
@@ -482,7 +492,9 @@ def simulate_motility(config, settings):
                 'torque': torque},
             'cell': {
                 'motor_state': 1}}
-    experiment.send_updates([{'agents': motile_forces}])
+
+    invoked_update = InvokeUpdate({'agents': motile_forces})
+    experiment.send_updates([invoked_update])
 
     ## run simulation
     # test run/tumble
@@ -530,7 +542,8 @@ def simulate_motility(config, settings):
                     'thrust': thrust,
                     'torque': torque}
 
-        experiment.send_updates([{'agents': motile_forces}])
+        invoked_update = InvokeUpdate({'agents': motile_forces})
+        experiment.send_updates([invoked_update])
 
     return experiment.emitter.get_data()
 
