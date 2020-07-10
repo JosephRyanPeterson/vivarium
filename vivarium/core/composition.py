@@ -16,11 +16,9 @@ from vivarium.core.emitter import (
 )
 from vivarium.core.experiment import (
     Experiment,
-    Compartment,
     update_in,
-    generate_derivers,
 )
-from vivarium.core.process import Process, Deriver
+from vivarium.core.process import Process, Deriver, Generator, generate_derivers
 from vivarium.core import emitter as emit
 from vivarium.library.dict_utils import (
     deep_merge,
@@ -30,10 +28,19 @@ from vivarium.library.dict_utils import (
 )
 from vivarium.library.units import units
 
+# import classes for registration
+
 # processes
-from vivarium.processes.derive_globals import AVOGADRO
 from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.nonspatial_environment import NonSpatialEnvironment
+
+# derivers
+import vivarium.processes.derive_globals
+import vivarium.processes.derive_counts
+import vivarium.processes.derive_concentrations
+import vivarium.processes.tree_mass
+from vivarium.processes.derive_globals import AVOGADRO
+
 
 REFERENCE_DATA_DIR = os.path.join('vivarium', 'reference_data')
 TEST_OUT_DIR = os.path.join('out', 'tests')
@@ -113,12 +120,12 @@ def agent_environment_experiment(
         'emitter': emitter,
         'initial_state': initial_state})
 
-def process_in_compartment(process, paths={}):
+def process_in_compartment(process, topology={}):
     """ put a lone process in a compartment"""
-    class ProcessCompartment(Compartment):
+    class ProcessCompartment(Generator):
         def __init__(self, config):
             self.config = config
-            self.paths = paths
+            self.topology = topology
             self.process = process(config)
 
         def generate_processes(self, config):
@@ -127,7 +134,7 @@ def process_in_compartment(process, paths={}):
         def generate_topology(self, config):
             return {
                 'process': {
-                    port: self.paths.get(port, (port,)) for port in self.process.ports_schema().keys()}}
+                    port: self.topology.get(port, (port,)) for port in self.process.ports_schema().keys()}}
 
     return ProcessCompartment
 
@@ -410,20 +417,25 @@ def set_axes(ax, show_xaxis=False):
 
 def plot_simulation_output(timeseries_raw, settings={}, out_dir='out', filename='simulation'):
     '''
-    plot simulation output, with rows organized into separate columns.
+    Plot simulation output, with rows organized into separate columns.
 
-    Requires:
-        - timeseries (dict). This can be obtained from simulation output with convert_to_timeseries()
-        - settings (dict) with:
-            {
-            'max_rows': (int) ports with more states than this number of states get wrapped into a new column
-            'remove_zeros': (bool) if True, timeseries with all zeros get removed
-            'remove_flat': (bool) if True, timeseries with all the same value get removed
-            'remove_first_timestep': (bool) if True, skips the first timestep
-            'skip_ports': (list) entire ports that won't be plotted
-            'show_state': (list) with [('port_id', 'state_id')]
-                for all states that will be highlighted, even if they are otherwise to be removed
-            }
+    Arguments::
+        timeseries (dict): This can be obtained from simulation output with convert_to_timeseries()
+        settings (dict): Accepts the following keys:
+
+            * **max_rows** (:py:class:`int`): ports with more states
+              than this number of states get wrapped into a new column
+            * **remove_zeros** (:py:class:`bool`): if True, timeseries
+              with all zeros get removed
+            * **remove_flat** (:py:class:`bool`): if True, timeseries
+              with all the same value get removed
+            * **remove_first_timestep** (:py:class:`bool`): if True,
+              skips the first timestep
+            * **skip_ports** (:py:class:`list`): entire ports that won't
+              be plotted
+            * **show_state** (:py:class:`list`): with
+              ``[('port_id', 'state_id')]`` for all states that will be
+              highlighted, even if they are otherwise to be removed
     '''
 
     plot_fontsize = 8
@@ -622,7 +634,7 @@ def plot_agents_multigen(data, settings={}, out_dir='out', filename='agents'):
             ax.set_xlim([time_vec[0], time_vec[-1]])
 
             # if last state in this port, add time ticks
-            if row_idx > max_rows or path_idx > len(ordered_paths[port_id]):
+            if row_idx >= max_rows or path_idx >= len(ordered_paths[port_id]):
                 set_axes(ax, True)
                 ax.set_xlabel('time (s)')
             else:
@@ -694,15 +706,24 @@ def load_timeseries(path_to_csv):
         timeseries = {}
         for row in reader:
             for header, elem in row.items():
-                timeseries.setdefault(header, []).append(float(elem))
+                if elem == '':
+                    elem = None
+                if elem is not None:
+                    elem = float(elem)
+                timeseries.setdefault(header, []).append(elem)
     return timeseries
 
-def timeseries_to_ndarray(timeseries, keys=None):
+def timeseries_to_ndarrays(timeseries, keys=None):
+    '''After filtering by keys, convert timeseries to dict of ndarrays
+
+    Returns:
+        dict: Mapping from timeseries variables to an ndarray of the
+            variable values.
+    '''
     if keys is None:
         keys = timeseries.keys()
-    filtered = {key: timeseries[key] for key in keys}
-    array = np.array(list(filtered.values()))
-    return array
+    return {
+        key: np.array(timeseries[key], dtype=np.float) for key in keys}
 
 def _prepare_timeseries_for_comparison(
     timeseries1, timeseries2, keys=None,
@@ -755,13 +776,19 @@ def _prepare_timeseries_for_comparison(
             '{} < {}'.format(
                 frac_timepoints_checked, required_frac_checked)
         )
-    array1 = timeseries_to_ndarray(timeseries1, keys)
-    array2 = timeseries_to_ndarray(timeseries2, keys)
-    shared_times_mask1 = np.isin(array1[time_index], list(shared_times))
-    shared_times_mask2 = np.isin(array2[time_index], list(shared_times))
+    masked = []
+    for ts in (timeseries1, timeseries2):
+        arrays_dict = timeseries_to_ndarrays(ts, keys)
+        arrays_dict_shared_times = {}
+        for key, array in arrays_dict.items():
+            # Filters out times after data ends
+            times_for_array = arrays_dict['time'][:len(array)]
+            arrays_dict_shared_times[key] = array[
+                np.isin(times_for_array, list(shared_times))]
+        masked.append(arrays_dict_shared_times)
     return (
-        array1[:, shared_times_mask1],
-        array2[:, shared_times_mask2],
+        masked[0],
+        masked[1],
         keys,
     )
 
@@ -791,19 +818,34 @@ def assert_timeseries_correlated(
         required_frac_checked: The required fraction of timepoints in a
             timeseries that must be checked. If this requirement is not
             satisfied, which might occur if the two timeseries share few
-            timepoints, the test wll fail.
+            timepoints, the test wll fail. This is also the fraction of
+            timepoints for each variable that must be non-nan in both
+            timeseries. Note that the denominator of this fraction is
+            the number of shared timepoints that are non-nan in either
+            of the timeseries.
 
     Raises:
         AssertionError: If a correlation is strictly below the
             threshold or if too few timepoints are common to both
             timeseries.
     '''
-    array1, array2, keys = _prepare_timeseries_for_comparison(
+    arrays1, arrays2, keys = _prepare_timeseries_for_comparison(
         timeseries1, timeseries2, keys, required_frac_checked)
-    for index, key in enumerate(keys):
+    for key in keys:
+        both_nan = np.isnan(arrays1[key]) & np.isnan(arrays2[key])
+        valid_indices = ~(
+            np.isnan(arrays1[key]) | np.isnan(arrays2[key]))
+        frac_checked = valid_indices.sum() / (~both_nan).sum()
+        if frac_checked < required_frac_checked:
+            raise AssertionError(
+                'Timeseries share too few non-nan values for variable '
+                '{}: {} < {}'.format(
+                    key, frac_checked, required_frac_checked
+                )
+            )
         corrcoef = np.corrcoef(
-            array1[index],
-            array2[index],
+            arrays1[key][valid_indices],
+            arrays2[key][valid_indices],
         )[0][1]
         threshold = thresholds.get(key, default_threshold)
         if corrcoef < threshold:
@@ -847,13 +889,15 @@ def assert_timeseries_close(
             strictly above the tolerance threshold or if too few
             timepoints are common to both timeseries.
     '''
-    array1, array2, keys = _prepare_timeseries_for_comparison(
+    arrays1, arrays2, keys = _prepare_timeseries_for_comparison(
         timeseries1, timeseries2, keys, required_frac_checked)
-    for index, key in enumerate(keys):
+    for key in keys:
         tolerance = tolerances.get(key, default_tolerance)
-        if not np.allclose(
-            array1[index], array2[index], atol=tolerance
-        ):
+        close_mask = np.isclose(arrays1[key], arrays2[key],
+            atol=tolerance, equal_nan=True)
+        if not np.all(close_mask):
+            print('Timeseries 1:', arrays1[key][~close_mask])
+            print('Timeseries 2:', arrays2[key][~close_mask])
             raise AssertionError(
                 'The data for {} differed by more than {}'.format(
                     key, tolerance)
@@ -862,6 +906,8 @@ def assert_timeseries_close(
 
 # TESTS
 class ToyLinearGrowthDeathProcess(Process):
+
+    name = 'toy_linear_growth_death'
 
     GROWTH_RATE = 1.0
     THRESHOLD = 6.0
@@ -894,6 +940,7 @@ class ToyLinearGrowthDeathProcess(Process):
 
         return update
 
+
 class TestSimulateProcess:
 
     def test_process_deletion(self):
@@ -916,6 +963,8 @@ class TestSimulateProcess:
 
 # toy processes
 class ToyMetabolism(Process):
+    name = 'toy_metabolism'
+
     def __init__(self, initial_parameters={}):
         parameters = {'mass_conversion_rate': 1}
         parameters.update(initial_parameters)
@@ -944,6 +993,8 @@ class ToyMetabolism(Process):
         return update
 
 class ToyTransport(Process):
+    name = 'toy_transport'
+
     def __init__(self, initial_parameters={}):
         parameters = {'intake_rate': 2}
         parameters.update(initial_parameters)
@@ -972,6 +1023,8 @@ class ToyTransport(Process):
         return update
 
 class ToyDeriveVolume(Deriver):
+    name = 'toy_derive_volume'
+
     def __init__(self, initial_parameters={}):
         parameters = {}
         super(ToyDeriveVolume, self).__init__(parameters)
@@ -996,6 +1049,8 @@ class ToyDeriveVolume(Deriver):
         return update
 
 class ToyDeath(Process):
+    name = 'toy_death'
+
     def __init__(self, initial_parameters={}):
         self.targets = initial_parameters.get('targets', [])
         super(ToyDeath, self).__init__({})
@@ -1025,7 +1080,7 @@ class ToyDeath(Process):
 
         return update
 
-class ToyCompartment(Compartment):
+class ToyCompartment(Generator):
     '''
     a toy compartment for testing
 

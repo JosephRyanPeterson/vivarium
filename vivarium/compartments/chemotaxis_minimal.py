@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import random
 
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     plot_simulation_output,
@@ -21,7 +21,7 @@ from vivarium.processes.Vladimirov2008_motor import MotorActivity
 
 NAME = 'chemotaxis_minimal'
 
-class ChemotaxisMinimal(Compartment):
+class ChemotaxisMinimal(Generator):
 
     defaults = {
         'ligand_id': 'MeAsp',

@@ -1,6 +1,6 @@
 """
 ==============================================
-Repository of Updaters, Dividers, and Derivers
+Registry of Updaters, Dividers, and Serializers
 ==============================================
 
 You should interpret words and phrases that appear fully capitalized in
@@ -21,8 +21,8 @@ Updaters
 
 Each :term:`updater` is defined as a function whose name begins with
 ``update_``. Vivarium uses these functions to apply :term:`updates` to
-:term:`variables`. Updater names are defined in
-:py:data:`updater_library`, which maps these names to updater functions.
+:term:`variables`. Updater names are registered in
+:py:data:`updater_registry`, which maps these names to updater functions.
 
 Updater API
 ===========
@@ -40,8 +40,8 @@ Dividers
 
 Each :term:`divider` is defined by a function that follows the API we
 describe below. Vivarium uses these dividers to generate daughter cell
-states from the mother cell's state. Divider names are defined in
-:py:data:`divider_library`, which maps these names to divider functions.
+states from the mother cell's state. Divider names are registered in
+:py:data:`divider_registry`, which maps these names to divider functions.
 
 Divider API
 ===========
@@ -61,7 +61,7 @@ Derivers
 --------
 
 Each :term:`deriver` is defined as a separate :term:`process`, but here
-deriver names are mapped to processes by :py:data:`deriver_library`. The
+deriver names are mapped to processes by :py:data:`deriver_registry`. The
 available derivers are:
 
 * **mmol_to_counts**: :py:class:`vivarium.processes.derive_counts.DeriveCounts`
@@ -86,11 +86,26 @@ import numpy as np
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import Quantity
 
-# deriver processes
-from vivarium.processes.derive_concentrations import DeriveConcentrations
-from vivarium.processes.derive_counts import DeriveCounts
-from vivarium.processes.derive_globals import DeriveGlobals
-from vivarium.processes.tree_mass import TreeMass
+
+
+
+class Registry(object):
+    def __init__(self):
+        self.registry = {}
+
+    def register(self, key, item):
+        if key in self.registry:
+            if item != self.registry[key]:
+                raise Exception('registry already contains an entry for {}: {}'.format(key, self.registry[key]))
+        else:
+            self.registry[key] = item
+
+    def access(self, key):
+        return self.registry.get(key)
+
+
+#: Maps process names to :term:`process classes`
+process_registry = Registry()
 
 
 ## updater functions
@@ -132,10 +147,12 @@ def update_accumulate(current_value, new_value):
     return current_value + new_value
 
 #: Maps updater names to updater functions
-updater_library = {
-    'accumulate': update_accumulate,
-    'set': update_set,
-    'merge': update_merge}
+updater_registry = Registry()
+updater_registry.register('accumulate', update_accumulate)
+updater_registry.register('set', update_set)
+updater_registry.register('merge', update_merge)
+
+
 
 ## divider functions
 def divide_set(state):
@@ -205,25 +222,23 @@ def divide_split_dict(state):
     d2 = dict(list(state.items())[:len(state) // 2])
     return [d1, d2]
 
-#: Maps divider names to divider functions
-divider_library = {
-    'set': divide_set,
-    'split': divide_split,
-    'split_dict': divide_split_dict,
-    'zero': divide_zero}
+def assert_no_divide(state):
+    '''Assert that the variable is never divided
 
-def default_divide_condition(compartment):
-    return False
+    Raises:
+        AssertionError: If the variable is divided
+    '''
+    raise AssertionError('Variable cannot be divided')
 
-# Derivers
 
-#: Maps deriver names to :term:`process classes`
-deriver_library = {
-    'mmol_to_counts': DeriveCounts,
-    'counts_to_mmol': DeriveConcentrations,
-    'mass': TreeMass,
-    'globals': DeriveGlobals,
-}
+#: Map divider names to divider functions
+divider_registry = Registry()
+divider_registry.register('set', divide_set)
+divider_registry.register('split', divide_split)
+divider_registry.register('split_dict', divide_split_dict)
+divider_registry.register('zero', divide_zero)
+divider_registry.register('zero', divide_zero)
+divider_registry.register('no_divide', assert_no_divide)
 
 
 # Serializers
@@ -241,6 +256,26 @@ class NumpySerializer(Serializer):
     def deserialize(self, data):
         return np.array(data)
 
-serializer_library = {
-    'numpy': NumpySerializer(),
-}
+class UnitsSerializer(Serializer):
+    def serialize(self, data):
+        return data.magnitude
+
+class ProcessSerializer(Serializer):
+    def serialize(self, data):
+        return dict(data.parameters, _name = data.name)
+
+class GeneratorSerializer(Serializer):
+    def serialize(self, data):
+        return dict(data.config, _name = str(type(data)))
+
+class FunctionSerializer(Serializer):
+    def serialize(self, data):
+        return str(data)
+
+# register serializers in the serializer_registry
+serializer_registry = Registry()
+serializer_registry.register('numpy', NumpySerializer())
+serializer_registry.register('units', UnitsSerializer())
+serializer_registry.register('process', ProcessSerializer())
+serializer_registry.register('compartment', GeneratorSerializer())
+serializer_registry.register('function', FunctionSerializer())

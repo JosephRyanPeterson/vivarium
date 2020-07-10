@@ -53,6 +53,9 @@ FLUX_UNITS = COUNTS_UNITS / VOLUME_UNITS / TIME_UNITS
 
 
 class TransportLookup(Process):
+
+    name = 'transport_lookup'
+
     def __init__(self, initial_parameters=None):
         if initial_parameters is None:
             initial_parameters = {}

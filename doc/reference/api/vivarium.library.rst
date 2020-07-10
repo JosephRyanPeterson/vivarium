@@ -21,6 +21,7 @@ Submodules
    vivarium.library.pymunk_multibody
    vivarium.library.rate_law_utilities
    vivarium.library.regulation_logic
+   vivarium.library.timeseries
    vivarium.library.units
 
 Module contents

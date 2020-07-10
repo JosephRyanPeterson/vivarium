@@ -44,8 +44,7 @@ from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     PROCESS_OUT_DIR,
 )
-from vivarium.core.experiment import Compartment
-from vivarium.core.process import Process
+from vivarium.core.process import Process, Generator
 
 TOY_ANTIBIOTIC_THRESHOLD = 5.0
 TOY_INJECTION_RATE = 2.0
@@ -94,7 +93,7 @@ class AntibioticDetector(DetectorInterface):
         Arguments:
             antibiotic_threshold (float): The maximum internal
                 antibiotic concentration the cell can survive.
-            antibiotic_key (string): The name of the variable storing
+            antibiotic_key (str): The name of the variable storing
                 the cell's internal antibiotic concentration.
         '''
         super(AntibioticDetector, self).__init__()
@@ -127,6 +126,8 @@ DETECTOR_CLASSES = {
 
 class DeathFreezeState(Process):
 
+    name = 'death'
+
     def __init__(self, initial_parameters=None):
         '''Model Death by Removing Processes
 
@@ -141,7 +142,7 @@ class DeathFreezeState(Process):
           to include. Death will be triggered if any one of these
           triggers death. Names are specified in
           :py:const:`DETECTOR_CLASSES`.
-        * **``targets``: A list of the names of the processes
+        * **``targets``**: A list of the names of the processes
           that will be removed when the cell dies. The names are
           specified in the compartment's :term:`topology`.
 
@@ -231,7 +232,7 @@ class ToyAntibioticInjector(Process):
         return {'internal': {self.antibiotic_name: delta}}
 
 
-class ToyDeath(Compartment):
+class ToyDeath(Generator):
 
     def generate_processes(self, config):
         death_parameters = {

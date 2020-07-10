@@ -90,6 +90,7 @@ MOLECULAR_WEIGHTS = {
 
 class Transport(Process):
 
+    name = NAME
     defaults = {
         'target_fluxes': ['glc__D_e', 'GLCpts', 'PPS', 'PYK'],
         'parameters': DEFAULT_PARAMETERS

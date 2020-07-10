@@ -31,6 +31,8 @@ monomer_ids = list(nucleotides.values())
 
 #: The default configuration parameters for :py:class:`Transcription`
 class Transcription(Process):
+
+    name = 'transcription'
     defaults = {
         'promoter_affinities': {},
         'transcription_factors': [],
@@ -350,7 +352,7 @@ class Transcription(Process):
     def derivers(self):
         return {
             self.concentrations_deriver_key: {
-                'deriver': 'counts_to_mmol',
+                'deriver': 'concentrations_deriver',
                 'port_mapping': {
                     'global': 'global',
                     'counts': 'proteins',

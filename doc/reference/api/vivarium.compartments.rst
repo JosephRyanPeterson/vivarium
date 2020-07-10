@@ -7,6 +7,7 @@ Submodules
 .. toctree::
 
    vivarium.compartments.antibiotics
+   vivarium.compartments.chemotaxis_flagella
    vivarium.compartments.chemotaxis_master
    vivarium.compartments.chemotaxis_minimal
    vivarium.compartments.flagella_expression
@@ -17,6 +18,7 @@ Submodules
    vivarium.compartments.injected_glc_phosphorylation
    vivarium.compartments.lattice
    vivarium.compartments.master
+   vivarium.compartments.static_lattice
    vivarium.compartments.transport_metabolism
 
 Module contents

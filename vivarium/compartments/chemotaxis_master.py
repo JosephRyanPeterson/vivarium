@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     plot_simulation_output,
@@ -42,7 +42,7 @@ def metabolism_timestep_config(time_step=1):
     config.update({'time_step': time_step})
     return config
 
-class ChemotaxisMaster(Compartment):
+class ChemotaxisMaster(Generator):
 
     defaults = {
         'boundary_path': ('boundary',),

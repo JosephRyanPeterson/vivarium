@@ -15,6 +15,7 @@
 #   pyenv rehash
 
 Arpeggio
+alphashape
 cffi
 cobra
 confluent-kafka

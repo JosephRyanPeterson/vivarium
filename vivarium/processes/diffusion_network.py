@@ -76,6 +76,7 @@ def make_location_network(n_bins):
 class DiffusionNetwork(Process):
     ''''''
 
+    name = NAME
     defaults = {
         'molecules': ['glc'],
         'diffusion': 1e-2,

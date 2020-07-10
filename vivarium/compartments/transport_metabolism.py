@@ -6,7 +6,7 @@ import argparse
 
 from vivarium.library.dict_utils import get_value_from_path
 from vivarium.library.units import units
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     plot_simulation_output,
@@ -61,7 +61,7 @@ def default_expression_config():
     return config
 
 
-class TransportMetabolism(Compartment):
+class TransportMetabolism(Generator):
     """
     Transport/Metabolism Compartment, with ODE expression
     """

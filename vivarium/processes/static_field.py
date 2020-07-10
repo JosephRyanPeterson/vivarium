@@ -24,6 +24,7 @@ NAME = 'static_field'
 
 class StaticField(Deriver):
 
+    name = NAME
     defaults = {
         'molecules': ['glc'],
         'n_bins': [10, 10],
@@ -116,6 +117,9 @@ class StaticField(Deriver):
                 distance = np.sqrt(dx ** 2 + dy ** 2)
                 concentrations[molecule_id] = scale * base ** (distance/1000)
         return concentrations
+
+
+StaticField()
 
 
 def get_exponential_config():

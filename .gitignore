@@ -24,6 +24,7 @@ out/
 ################
 user/*
 !user/user.txt
+*.cprof
 
 # Compiled source #
 ###################

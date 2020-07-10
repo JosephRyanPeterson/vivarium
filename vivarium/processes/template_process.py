@@ -10,6 +10,7 @@ from vivarium.core.composition import (
 )
 
 
+# a global NAME is used for the output directory and for the process name
 NAME = 'template'
 
 
@@ -17,6 +18,9 @@ class Template(Process):
     '''
     This mock process provides a basic template that can be used for a new process
     '''
+
+    # give the process a name, so that it can register in the process_repository
+    name = NAME
 
     # declare default parameters as class variables
     defaults = {

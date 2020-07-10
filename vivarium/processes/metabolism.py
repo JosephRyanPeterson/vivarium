@@ -64,11 +64,8 @@ class Metabolism(Process):
     analysis (FBA). The FBA problem is defined using the provided
     configuration parameters.
 
-    For an example of how to configure this process using a `BiGG
-    <http://bigg.ucsd.edu/>`_ model, see
-    :py:mod:`vivarium.processes.BiGG_metabolism`. To see how to
-    configure the process manually, look at the source code for
-    :py:func:`test_toy_metabolism`.
+    To see how to configure the process manually, look at the source
+    code for :py:func:`test_toy_metabolism`.
 
     :term:`Ports`:
 
@@ -106,6 +103,8 @@ class Metabolism(Process):
             * **reversible_reactions** (:py:class:`list`)
 
     """
+
+    name = NAME
     defaults = {
         'constrained_reaction_ids': [],
         'model_path': 'models/iAF1260b.json',
@@ -253,14 +252,14 @@ class Metabolism(Process):
     def derivers(self):
         return {
             self.global_deriver_key: {
-                'deriver': 'globals',
+                'deriver': 'globals_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {
                     'initial_mass': self.initial_mass
                 }},
             self.mass_deriver_key: {
-                'deriver': 'mass',
+                'deriver': 'mass_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {

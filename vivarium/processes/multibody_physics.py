@@ -1,3 +1,9 @@
+"""
+==========================
+Multibody physics process
+==========================
+"""
+
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -14,7 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 # vivarium imports
-from vivarium.library.pymunk_multibody import MultiBody
+from vivarium.library.pymunk_multibody import PymunkMultibody
 from vivarium.library.units import units, remove_units
 from vivarium.core.emitter import timeseries_from_data
 from vivarium.core.process import Process
@@ -83,23 +89,43 @@ def daughter_locations(parent_location, parent_values):
 
 
 class Multibody(Process):
-    """
-    A multi-body physics process using pymunk
+    """Simulates collisions and forces between agent bodies with a multi-body physics engine.
 
-    To run with animation on set animate: True, and use the TKAgg matplotlib backend:
-    > MPLBACKEND=TKAgg python vivarium/processes/multibody_physics.py
+    :term:`Ports`:
+    * ``agents``: The store containing all agent sub-compartments. Each agent in
+      this store has values for location, angle, length, width, mass, thrust, and torque.
+
+    Arguments:
+        initial_parameters(dict): Accepts the following configuration keys:
+
+        * **jitter_force**: force applied to random positions along agent
+          bodies to mimic thermal fluctuations. Produces Brownian motion.
+        * **agent_shape** (:py:class:`str`): agents can take the shapes
+          ``rectangle``, ``segment``, or ``circle``.
+        * **bounds** (:py:class:`list`): size of the environment in
+          micrometers, with ``[x, y]``.
+        * **mother_machine** (:py:class:`bool`): if set to ``True``, mother
+          machine barriers are introduced.
+        * ***animate*** (:py:class:`bool`): interactive matplotlib option to
+          animate multibody. To run with animation turned on set True, and use
+          the TKAgg matplotlib backend:
+
+          .. code-block:: console
+
+              $ MPLBACKEND=TKAgg python vivarium/processes/multibody_physics.py
 
     Notes:
-    - rotational diffusion in liquid medium with viscosity = 1 mPa.s: Dr = 3.5+/-0.3 rad^2/s
-        (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
-    - translational diffusion in liquid medium with viscosity = 1 mPa.s: Dt=100 micrometers^2/s
-        (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
-
+        * rotational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dr = 3.5 \pm0.3 rad^{2}/s`
+          (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
+        * translational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dt = 100 um^{2}/s`
+          (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
     """
 
+    name = NAME
     defaults = {
         'agents': {},
         'jitter_force': 1e-3,  # pN
+        'agent_shape': 'segment',
         'bounds': DEFAULT_BOUNDS,
         'mother_machine': False,
         'animate': False,
@@ -113,18 +139,24 @@ class Multibody(Process):
         # multibody parameters
         jitter_force = self.or_default(
             initial_parameters, 'jitter_force')
+        self.agent_shape = self.or_default(
+            initial_parameters, 'agent_shape')
         self.bounds = self.or_default(
             initial_parameters, 'bounds')
         self.mother_machine = self.or_default(
             initial_parameters, 'mother_machine')
 
         # make the multibody object
+        self.time_step = self.or_default(
+            initial_parameters, 'time_step')
         multibody_config = {
+            'agent_shape': self.agent_shape,
             'jitter_force': jitter_force,
             'bounds': self.bounds,
             'barriers': self.mother_machine,
+            'physics_dt': self.time_step / 10,
         }
-        self.physics = MultiBody(multibody_config)
+        self.physics = PymunkMultibody(multibody_config)
 
         # interactive plot for visualization
         self.animate = initial_parameters.get('animate', self.defaults['animate'])
@@ -241,14 +273,20 @@ class Multibody(Process):
             x = x_center - dx
             y = y_center - dy
 
-            # Create a rectangle
-            rect = patches.Rectangle((x, y), width, length, angle=angle, linewidth=1, edgecolor='b')
-            self.ax.add_patch(rect)
+            if self.agent_shape is 'rectangle' or self.agent_shape is 'segment':
+                # Create a rectangle
+                rect = patches.Rectangle((x, y), width, length, angle=angle, linewidth=1, edgecolor='b')
+                self.ax.add_patch(rect)
+
+            elif self.agent_shape is 'circle':
+                # Create a circle
+                circle = patches.Circle((x, y), width, linewidth=1, edgecolor='b')
+                self.ax.add_patch(circle)
 
         plt.xlim([0, self.bounds[0]])
         plt.ylim([0, self.bounds[1]])
         plt.draw()
-        plt.pause(0.005)
+        plt.pause(0.01)
 
 
 # configs
@@ -350,7 +388,6 @@ def simulate_growth_division(config, settings):
     growth_rate = settings.get('growth_rate', 0.0006)
     growth_rate_noise = settings.get('growth_rate_noise', 0.0)
     division_volume = settings.get('division_volume', 0.4)
-    channel_height = settings.get('channel_height')
     total_time = settings.get('total_time', 10)
     timestep = 1
 
@@ -377,11 +414,7 @@ def simulate_growth_division(config, settings):
             new_length = length + length * growth_rate2
             new_volume = volume_from_length(new_length, width)
 
-            if channel_height and location[1] > channel_height:
-                update = {'_delete': [(agent_id,)]}
-                experiment.send_updates([{'agents': update}])
-
-            elif new_volume > division_volume:
+            if new_volume > division_volume:
                 daughter_ids = [str(agent_id) + '0', str(agent_id) + '1']
 
                 daughter_updates = []
@@ -398,7 +431,8 @@ def simulate_growth_division(config, settings):
                     '_divide': {
                         'mother': agent_id,
                         'daughters': daughter_updates}}
-                experiment.send_updates([{'agents': update}])
+                invoked_update = InvokeUpdate({'agents': update})
+                experiment.send_updates([invoked_update])
             else:
                 agent_updates[agent_id] = {
                     'boundary': {
@@ -407,9 +441,17 @@ def simulate_growth_division(config, settings):
                         'mass': new_mass * units.fg}}
 
         # update experiment
-        experiment.send_updates([{'agents': agent_updates}])
+        invoked_update = InvokeUpdate({'agents': agent_updates})
+        experiment.send_updates([invoked_update])
 
     return experiment.emitter.get_data()
+
+
+class InvokeUpdate(object):
+    def __init__(self, update):
+        self.update = update
+    def get(self, timeout=0):
+        return self.update
 
 def simulate_motility(config, settings):
     # time of motor behavior without chemotaxis
@@ -421,6 +463,7 @@ def simulate_motility(config, settings):
     initial_agents_state = config['agents']
 
     # make the process
+    config['time_step'] = timestep
     multibody = Multibody(config)
     experiment = process_in_experiment(multibody)
     experiment.state.update_subschema(
@@ -458,7 +501,9 @@ def simulate_motility(config, settings):
                 'torque': torque},
             'cell': {
                 'motor_state': 1}}
-    experiment.send_updates([{'agents': motile_forces}])
+
+    invoked_update = InvokeUpdate({'agents': motile_forces})
+    experiment.send_updates([invoked_update])
 
     ## run simulation
     # test run/tumble
@@ -506,7 +551,8 @@ def simulate_motility(config, settings):
                     'thrust': thrust,
                     'torque': torque}
 
-        experiment.send_updates([{'agents': motile_forces}])
+        invoked_update = InvokeUpdate({'agents': motile_forces})
+        experiment.send_updates([invoked_update])
 
     return experiment.emitter.get_data()
 
@@ -562,7 +608,7 @@ def run_motility(config={}, out_dir='out', filename='motility'):
     plot_motility(motility_timeseries, out_dir, filename + '_analysis')
     plot_temporal_trajectory(motility_timeseries, motility_config, out_dir, filename + '_trajectory')
 
-def run_growth_division():
+def run_growth_division(config={}):
     n_agents = 1
     agent_ids = [str(agent_id) for agent_id in range(n_agents)]
 
@@ -574,6 +620,7 @@ def run_growth_division():
         'total_time': 140}
 
     gd_config = {
+        'agent_shape': config.get('agent_shape', 'segment'),
         'animate': True,
         'jitter_force': 1e-3,
         'bounds': bounds}
@@ -584,7 +631,10 @@ def run_growth_division():
     gd_data = simulate_growth_division(gd_config, settings)
 
     # snapshots plot
-    agents = {time: time_data['agents'] for time, time_data in gd_data.items()}
+    agents = {
+        time: time_data['agents']
+        for time, time_data in gd_data.items()
+        if bool(time_data)}
     data = {
         'agents': agents,
         'config': gd_config}
@@ -599,6 +649,7 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     parser = argparse.ArgumentParser(description='multibody')
+    parser.add_argument('--circles', '-c', action='store_true', default=False)
     parser.add_argument('--motility', '-m', action='store_true', default=False)
     parser.add_argument('--growth', '-g', action='store_true', default=False)
     parser.add_argument('--scales', '-s', action='store_true', default=False)
@@ -610,6 +661,8 @@ if __name__ == '__main__':
         run_motility({'animate': True}, out_dir)
     if args.growth or no_args:
         run_growth_division()
+    if args.circles:
+        run_growth_division({'agent_shape': 'circle'})
     if args.jitter:
         run_jitter({}, out_dir, 'jitter')
     if args.scales:

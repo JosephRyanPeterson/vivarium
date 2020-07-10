@@ -56,6 +56,7 @@ class Growth(Process):
 
     """
 
+    name = NAME
     defaults = {
         'growth_rate': 0.0006,
         'global_deriver_key': 'global_deriver',
@@ -91,7 +92,7 @@ class Growth(Process):
     def derivers(self):
         return {
             self.global_deriver_key: {
-                'deriver': 'globals',
+                'deriver': 'globals_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {
