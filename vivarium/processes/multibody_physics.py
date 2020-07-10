@@ -145,10 +145,13 @@ class Multibody(Process):
             initial_parameters, 'mother_machine')
 
         # make the multibody object
+        self.time_step = self.or_default(
+            initial_parameters, 'time_step')
         multibody_config = {
             'jitter_force': jitter_force,
             'bounds': self.bounds,
             'barriers': self.mother_machine,
+            'physics_dt': self.time_step / 10,
         }
         self.physics = MultiBody(multibody_config)
 

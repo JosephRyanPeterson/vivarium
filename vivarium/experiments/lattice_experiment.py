@@ -57,7 +57,7 @@ agents_library = {
 def get_lattice_config(
     bounds=[20, 20],
     n_bins=[10, 10],
-    jitter_force=1e-3,
+    jitter_force=1e-4,
     depth=3000.0,
     diffusion=1e-2,
     molecules=['glc__D_e', 'lcts_e'],
@@ -79,7 +79,7 @@ def get_lattice_config(
     return environment_config
 
 def get_simulation_settings(
-        total_time=2000,
+        total_time=10000,
         emit_step=10,
         return_raw_data=True,
 ):

@@ -79,8 +79,8 @@ class GrowthDivision(Generator):
             'transport': transport,
             'growth': growth,
             'expression': expression,
-            'division': division,
             'mass': mass,
+            'division': division,
         }
 
     def generate_topology(self, config):

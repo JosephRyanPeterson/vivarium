@@ -59,6 +59,7 @@ class TreeMass(Deriver):
 
     def next_update(self, timestep, states):
         initial_mass = states['global']['initial_mass']
+        
         return {
             'global': {
                 'mass': {

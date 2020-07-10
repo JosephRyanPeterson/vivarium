@@ -29,11 +29,14 @@ from multiprocessing import Pool
 from vivarium.library.units import Quantity
 from vivarium.library.dict_utils import merge_dicts, deep_merge, deep_merge_check
 from vivarium.core.emitter import get_emitter
-from vivarium.core.process import Process
-from vivarium.core.repository import (
-    divider_repository,
-    updater_repository,
-    serializer_repository,
+from vivarium.core.process import (
+    Process,
+    serialize_dictionary,
+)
+from vivarium.core.registry import (
+    divider_registry,
+    updater_registry,
+    serializer_registry,
 )
 
 
@@ -243,9 +246,9 @@ class Store(object):
         if '_divider' in config:
             self.divider = config['_divider']
             if isinstance(self.divider, str):
-                self.divider = divider_repository.access(self.divider)
+                self.divider = divider_registry.access(self.divider)
             if isinstance(self.divider, dict) and isinstance(self.divider['divider'], str):
-                self.divider['divider'] = divider_repository.access(self.divider['divider'])
+                self.divider['divider'] = divider_registry.access(self.divider['divider'])
             config = without(config, '_divider')
 
         if self.schema_keys & set(config.keys()):
@@ -256,14 +259,14 @@ class Store(object):
             if '_serializer' in config:
                 self.serializer = config['_serializer']
                 if isinstance(self.serializer, str):
-                    self.serializer = serializer_repository.access(self.serializer)
+                    self.serializer = serializer_registry.access(self.serializer)
 
             if '_default' in config:
                 self.default = self.check_default(config.get('_default'))
                 if isinstance(self.default, Quantity):
                     self.units = self.default.units
                 if isinstance(self.default, np.ndarray):
-                    self.serializer = self.serializer or serializer_repository.access('numpy')
+                    self.serializer = self.serializer or serializer_registry.access('numpy')
 
             if '_value' in config:
                 self.value = self.check_value(config.get('_value'))
@@ -272,7 +275,7 @@ class Store(object):
 
             self.updater = config.get('_updater', self.updater or 'accumulate')
             if isinstance(self.updater, str):
-                self.updater = updater_repository.access(self.updater)
+                self.updater = updater_registry.access(self.updater)
 
             self.properties = deep_merge(
                 self.properties,
@@ -300,7 +303,7 @@ class Store(object):
         if '_updater' in update:
             updater = update['_updater']
             if isinstance(updater, str):
-                updater = updater_repository.access(updater)
+                updater = updater_registry.access(updater)
         return updater
 
     def get_config(self, sources=False):
@@ -959,7 +962,8 @@ class Store(object):
             if isinstance(subprocess, Process):
                 process_state = Store({
                     '_value': subprocess,
-                    '_updater': 'set'}, outer=self)
+                    '_updater': 'set',
+                    '_serializer': 'process'}, outer=self)
                 self.inner[key] = process_state
 
                 subprocess.schema = subprocess.ports_schema()
@@ -1204,9 +1208,8 @@ class Experiment(object):
             'time_created': timestamp(),
             'experiment_id': self.experiment_id,
             'description': self.description,
-            # TODO -- serialize processes, topology, state
-            # 'processes': self.processes,
-            # 'topology': self.topology,
+            'processes': serialize_dictionary(self.processes),
+            'topology': self.topology,
             # 'state': self.state.get_config()
         }
         emit_config = {
@@ -1251,9 +1254,7 @@ class Experiment(object):
             # timestep shouldn't influence derivers
             if not deriver.deleted:
                 update = self.process_update(path, deriver, 0)
-                updates.append(update)
-        for update in updates:
-            self.apply_update(update.get())
+                self.apply_update(update.get())
 
     def emit_data(self):
         data = self.state.emit_data()
@@ -1623,7 +1624,7 @@ def test_topology_ports():
 def test_timescales():
     class Slow(Process):
         def __init__(self):
-            self.timestep = 3.0
+            self.parameters ={'timestep': 3.0}
             self.ports = {
                 'state': ['base']}
 
@@ -1634,7 +1635,7 @@ def test_timescales():
                         '_default': 1.0}}}
 
         def local_timestep(self):
-            return self.timestep
+            return self.parameters['timestep']
 
         def next_update(self, timestep, states):
             base = states['state']['base']
@@ -1645,7 +1646,7 @@ def test_timescales():
 
     class Fast(Process):
         def __init__(self):
-            self.timestep = 0.1
+            self.parameters ={'timestep': 3.0}
             self.ports = {
                 'state': ['base', 'motion']}
 
@@ -1658,7 +1659,7 @@ def test_timescales():
                         '_default': 0.0}}}
 
         def local_timestep(self):
-            return self.timestep
+            return self.parameters['timestep']
 
         def next_update(self, timestep, states):
             base = states['state']['base']

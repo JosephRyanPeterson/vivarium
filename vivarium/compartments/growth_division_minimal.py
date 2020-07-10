@@ -22,7 +22,7 @@ NAME = 'growth_division_minimal'
 class GrowthDivisionMinimal(Generator):
 
     defaults = {
-        'growth_rate': 0.006,  # very fast growth
+        # 'growth_rate': 0.006,  # very fast growth
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple()}
@@ -44,8 +44,8 @@ class GrowthDivisionMinimal(Generator):
             compartment=self)
 
         growth_config = config.get('growth', {})
-        growth_rate = config['growth_rate']
-        growth_config['growth_rate'] = growth_rate
+        if 'growth_rate' in config:
+            growth_config['growth_rate'] = config['growth_rate']
 
         return {
             'growth': GrowthProtein(growth_config),
