@@ -87,6 +87,17 @@ def path_timeseries_from_embedded_timeseries(embedded_timeseries):
     path_timeseries['time'] = times_vector
     return path_timeseries
 
+def time_indexed_timeseries_from_data(data):
+    times_vector = list(data.keys())
+    embedded_timeseries = {}
+    for time_index, (time, value) in enumerate(data.items()):
+        if isinstance(value, dict):
+            embedded_timeseries = value_in_embedded_dict(value, embedded_timeseries, time_index)
+        else:
+            pass
+    embedded_timeseries['time'] = times_vector
+    return embedded_timeseries
+
 def timeseries_from_data(data):
     times_vector = list(data.keys())
     embedded_timeseries = {}
@@ -149,10 +160,13 @@ class KafkaEmitter(Emitter):
     '''
     Emit data to kafka
 
-    example:
-    config = {
-        'host': 'localhost:9092',
-        'topic': 'EMIT'}
+    Example:
+
+    >>> config = {
+    ...     'host': 'localhost:9092',
+    ...     'topic': 'EMIT',
+    ... }
+    >>> emitter = KafkaEmitter(config)
     '''
     def __init__(self, config):
         self.config = config
@@ -174,10 +188,14 @@ class DatabaseEmitter(Emitter):
     '''
     Emit data to a mongoDB database
 
-    example:
-    config = {
-        'host': 'localhost:27017',
-        'database': 'DB_NAME'}
+    Example:
+
+    >>> config = {
+    ...     'host': 'localhost:27017',
+    ...     'database': 'DB_NAME',
+    ... }
+    >>> # The line below works only if you have to have 27017 open locally
+    >>> # emitter = DatabaseEmitter(config)
     '''
     client = None
     default_host = 'localhost:27017'

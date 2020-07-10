@@ -3,17 +3,22 @@ from __future__ import absolute_import, division, print_function
 import copy
 
 from vivarium.library.dict_utils import deep_merge_combine_lists
-from vivarium.core.experiment import Compartment
-from vivarium.core.process import Process
+from vivarium.core.process import Process, Generator
 
 
 class TimelineProcess(Process):
+
+    name = 'timeline'
+
+    defaults = {
+        'timeline': []}
 
     def __init__(self, initial_parameters=None):
         if initial_parameters is None:
             initial_parameters = {}
 
-        self.timeline = copy.deepcopy(initial_parameters['timeline'])
+        self.timeline = copy.deepcopy(
+            self.or_default(initial_parameters, 'timeline'))
 
         # get ports
         self.ports = {'global': ['time']}
@@ -56,3 +61,6 @@ class TimelineProcess(Process):
                         '_updater': 'set'}
                 self.timeline.pop(0)
         return update
+
+
+TimelineProcess()

@@ -1,3 +1,9 @@
+"""
+==========================
+Multibody physics process
+==========================
+"""
+
 from __future__ import absolute_import, division, print_function
 
 import os
@@ -83,37 +89,39 @@ def daughter_locations(parent_location, parent_values):
 
 
 class Multibody(Process):
-    """
-    A multi-body physics process using pymunk
+    """Simulates collisions and forces between agent bodies with a multi-body physics engine.
 
-    To run with animation on set animate: True, and use the TKAgg matplotlib backend:
-    > MPLBACKEND=TKAgg python vivarium/processes/multibody_physics.py
-
-    Ports:
-
-        * ``agents``: The store containing all agent sub-compartments. Each agent in
-          this store has values for location, angle, length, width, mass, thrust, and torque.
+    :term:`Ports`:
+    * ``agents``: The store containing all agent sub-compartments. Each agent in
+      this store has values for location, angle, length, width, mass, thrust, and torque.
 
     Arguments:
         initial_parameters(dict): Accepts the following configuration keys:
 
-            * **jitter_force**: force applied to random positions along agent
-              bodies to mimic thermal fluctuations. Produces Brownian motion.
-            * **agent_shape** (:py:class:`str`): agents can take the shapes
-              ``rectangle``, `segment```, or ``circle``.
-            * **bounds** (:py:class:`list`): size of the environment in
-              micrometers, with [x, y].
-            * **mother_machine** (:py:class:`bool`): if True, mother machine
-              barriers are introduced.
+        * **jitter_force**: force applied to random positions along agent
+          bodies to mimic thermal fluctuations. Produces Brownian motion.
+        * **agent_shape** (:py:class:`str`): agents can take the shapes
+          ``rectangle``, ``segment``, or ``circle``.
+        * **bounds** (:py:class:`list`): size of the environment in
+          micrometers, with ``[x, y]``.
+        * **mother_machine** (:py:class:`bool`): if set to ``True``, mother
+          machine barriers are introduced.
+        * ***animate*** (:py:class:`bool`): interactive matplotlib option to
+          animate multibody. To run with animation turned on set True, and use
+          the TKAgg matplotlib backend:
+
+          .. code-block:: console
+
+              $ MPLBACKEND=TKAgg python vivarium/processes/multibody_physics.py
 
     Notes:
-        * rotational diffusion in liquid medium with viscosity = 1 mPa.s: Dr = 3.5+/-0.3 rad^2/s
+        * rotational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dr = 3.5 \pm0.3 rad^{2}/s`
           (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
-        * translational diffusion in liquid medium with viscosity = 1 mPa.s: Dt=100 micrometers^2/s
+        * translational diffusion in liquid medium with viscosity = 1 mPa.s: :math:`Dt = 100 um^{2}/s`
           (Saragosti, et al. 2012. Modeling E. coli tumbles by rotational diffusion.)
-
     """
 
+    name = NAME
     defaults = {
         'agents': {},
         'jitter_force': 1e-3,  # pN
@@ -137,10 +145,13 @@ class Multibody(Process):
             initial_parameters, 'mother_machine')
 
         # make the multibody object
+        self.time_step = self.or_default(
+            initial_parameters, 'time_step')
         multibody_config = {
             'jitter_force': jitter_force,
             'bounds': self.bounds,
             'barriers': self.mother_machine,
+            'physics_dt': self.time_step / 10,
         }
         self.physics = PymunkMultibody(multibody_config)
 
@@ -162,7 +173,7 @@ class Multibody(Process):
                 'boundary': {
                     'location': {
                         '_emit': True,
-                        '_default': [0.5, 0.5],
+                        '_default': [0.5 * bound for bound in self.bounds],
                         '_updater': 'set',
                         '_divider': {
                             'divider': daughter_locations,
@@ -213,8 +224,29 @@ class Multibody(Process):
 
         # get new agent positions
         agent_positions = self.physics.get_body_positions()
+        update = {'agents': agent_positions}
 
-        return {'agents': agent_positions}
+        # for mother machine configurations, remove cells above the channel height
+        if self.mother_machine:
+            channel_height = self.mother_machine['channel_height']
+            delete_agents = []
+            for agent_id, position in agent_positions.items():
+                location = position['boundary']['location']
+                y_loc = location[1]
+                if y_loc > channel_height:
+                    # cell has moved past the channels
+                    delete_agents.append(agent_id)
+            if delete_agents:
+                update['agents'] = {
+                    agent_id: position
+                    for agent_id, position in agent_positions.items()
+                    if agent_id not in delete_agents}
+
+                update['agents']['_delete'] = [
+                    (agent_id,)
+                    for agent_id in delete_agents]
+
+        return update
 
     ## matplotlib interactive plot
     def animate_frame(self, agents):
@@ -245,7 +277,7 @@ class Multibody(Process):
         plt.xlim([0, self.bounds[0]])
         plt.ylim([0, self.bounds[1]])
         plt.draw()
-        plt.pause(0.005)
+        plt.pause(0.01)
 
 
 # configs
@@ -347,7 +379,6 @@ def simulate_growth_division(config, settings):
     growth_rate = settings.get('growth_rate', 0.0006)
     growth_rate_noise = settings.get('growth_rate_noise', 0.0)
     division_volume = settings.get('division_volume', 0.4)
-    channel_height = settings.get('channel_height')
     total_time = settings.get('total_time', 10)
     timestep = 1
 
@@ -374,11 +405,7 @@ def simulate_growth_division(config, settings):
             new_length = length + length * growth_rate2
             new_volume = volume_from_length(new_length, width)
 
-            if channel_height and location[1] > channel_height:
-                update = {'_delete': [(agent_id,)]}
-                experiment.send_updates([{'agents': update}])
-
-            elif new_volume > division_volume:
+            if new_volume > division_volume:
                 daughter_ids = [str(agent_id) + '0', str(agent_id) + '1']
 
                 daughter_updates = []
@@ -581,7 +608,10 @@ def run_growth_division():
     gd_data = simulate_growth_division(gd_config, settings)
 
     # snapshots plot
-    agents = {time: time_data['agents'] for time, time_data in gd_data.items()}
+    agents = {
+        time: time_data['agents']
+        for time, time_data in gd_data.items()
+        if bool(time_data)}
     data = {
         'agents': agents,
         'config': gd_config}

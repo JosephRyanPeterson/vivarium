@@ -5,10 +5,12 @@ from vivarium.core.process import Deriver
 from vivarium.library.units import units
 
 
+
 class DeriveCounts(Deriver):
     """
     Process for deriving counts from concentrations
     """
+    name = 'counts_deriver'
     defaults = {
         'concentration_keys': [],
         'initial_state': get_default_global_state(),
@@ -55,3 +57,6 @@ class DeriveCounts(Deriver):
 
         return {
             'counts': counts}
+
+# register process by invoking upon import
+DeriveCounts()

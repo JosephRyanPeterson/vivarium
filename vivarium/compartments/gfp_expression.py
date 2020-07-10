@@ -80,9 +80,9 @@ def generate_gfp_compartment(config):
         'degradation': {
             
             'sequences': sequences,
-            'catalysis_rates': { # TODO: provide kcat for each RNA variety
+            'catalytic_rates': { # TODO: provide kcat for each RNA variety
                 'endoRNAse': 0},
-            'degradation_rates': {
+            'michaelis_constants': {
                 'transcripts': {
                     'endoRNAse': {
                         'GFP_RNA': 1e-23}}}},

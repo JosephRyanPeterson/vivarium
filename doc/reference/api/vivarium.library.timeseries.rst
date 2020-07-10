@@ -1,7 +1,7 @@
-vivarium.analysis.snapshots module
+vivarium.library.timeseries module
 ==================================
 
-.. automodule:: vivarium.analysis.snapshots
+.. automodule:: vivarium.library.timeseries
    :members:
    :undoc-members:
    :show-inheritance:

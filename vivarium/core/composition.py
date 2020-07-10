@@ -16,11 +16,9 @@ from vivarium.core.emitter import (
 )
 from vivarium.core.experiment import (
     Experiment,
-    Compartment,
     update_in,
-    generate_derivers,
 )
-from vivarium.core.process import Process, Deriver
+from vivarium.core.process import Process, Deriver, Generator, generate_derivers
 from vivarium.core import emitter as emit
 from vivarium.library.dict_utils import (
     deep_merge,
@@ -30,10 +28,19 @@ from vivarium.library.dict_utils import (
 )
 from vivarium.library.units import units
 
+# import classes for registration
+
 # processes
-from vivarium.processes.derive_globals import AVOGADRO
 from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.nonspatial_environment import NonSpatialEnvironment
+
+# derivers
+import vivarium.processes.derive_globals
+import vivarium.processes.derive_counts
+import vivarium.processes.derive_concentrations
+import vivarium.processes.tree_mass
+from vivarium.processes.derive_globals import AVOGADRO
+
 
 REFERENCE_DATA_DIR = os.path.join('vivarium', 'reference_data')
 TEST_OUT_DIR = os.path.join('out', 'tests')
@@ -65,10 +72,14 @@ def make_agents(agent_ids, compartment, config=None):
 
 
 def agent_environment_experiment(
-        agents_config={},
-        environment_config={},
-        initial_state={},
-        settings={}):
+        agents_config=None,
+        environment_config=None,
+        initial_state=None,
+        settings=None
+):
+    if settings is None:
+        settings = {}
+
     # experiment settings
     emitter = settings.get('emitter', {'type': 'timeseries'})
 
@@ -102,18 +113,19 @@ def agent_environment_experiment(
     topology = network['topology']
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
+
     return Experiment({
         'processes': processes,
         'topology': topology,
         'emitter': emitter,
         'initial_state': initial_state})
 
-def process_in_compartment(process, paths={}):
+def process_in_compartment(process, topology={}):
     """ put a lone process in a compartment"""
-    class ProcessCompartment(Compartment):
+    class ProcessCompartment(Generator):
         def __init__(self, config):
             self.config = config
-            self.paths = paths
+            self.topology = topology
             self.process = process(config)
 
         def generate_processes(self, config):
@@ -122,7 +134,7 @@ def process_in_compartment(process, paths={}):
         def generate_topology(self, config):
             return {
                 'process': {
-                    port: self.paths.get(port, (port,)) for port in self.process.ports_schema().keys()}}
+                    port: self.topology.get(port, (port,)) for port in self.process.ports_schema().keys()}}
 
     return ProcessCompartment
 
@@ -302,13 +314,14 @@ def plot_compartment_topology(compartment, settings, out_dir='out', filename='to
     """
     Make a plot of the topology
      - compartment: a compartment
-     - settings (dict): 'network_layout' can be 'bipartite' or 'process_layers'
     """
     store_rgb = [x/255 for x in [239,131,148]]
     process_rgb = [x / 255 for x in [249, 204, 86]]
-    node_size = 2500
-    node_distance = 1
-    layer_distance = 10
+    node_size = 4500
+    font_size = 8
+    node_distance = 1.5
+    buffer = 0.2
+    label_pos = 0.75
 
     network = compartment.generate({})
     topology = network['topology']
@@ -333,8 +346,7 @@ def plot_compartment_topology(compartment, settings, out_dir='out', filename='to
                 G.add_node(store_id)
 
             edge = (process_id, store_id)
-            edges[edge]= port
-
+            edges[edge] = port
             G.add_edge(process_id, store_id)
 
     # are there overlapping names?
@@ -342,17 +354,15 @@ def plot_compartment_topology(compartment, settings, out_dir='out', filename='to
     if overlap:
         print('{} shared by processes and stores'.format(overlap))
 
-
     # get positions
     pos = {}
     n_rows = max(len(process_nodes), len(store_nodes))
-    plt.figure(3, figsize=(12, 1.2 * n_rows))
+    plt.figure(1, figsize=(10, n_rows * node_distance))
 
     for idx, node_id in enumerate(process_nodes, 1):
-        pos[node_id] = np.array([-1, -idx*node_distance])
+        pos[node_id] = np.array([-1, -idx])
     for idx, node_id in enumerate(store_nodes, 1):
-        pos[node_id] = np.array([1, -idx*node_distance])
-
+        pos[node_id] = np.array([1, -idx])
 
     # plot
     nx.draw_networkx_nodes(G, pos,
@@ -367,29 +377,29 @@ def plot_compartment_topology(compartment, settings, out_dir='out', filename='to
                            node_color=store_rgb,
                            node_size=node_size,
                            node_shape='o')
-
     # edges
     colors = list(range(1,len(edges)+1))
     nx.draw_networkx_edges(G, pos,
                            edge_color=colors,
                            width=1.5)
-
     # labels
     nx.draw_networkx_labels(G, pos,
-                            font_size=8,
-                            )
+                            font_size=font_size)
     if show_ports:
         nx.draw_networkx_edge_labels(G, pos,
                                  edge_labels=edges,
-                                 font_size=6,
-                                 label_pos=0.85)
+                                 font_size=font_size,
+                                 label_pos=label_pos)
+
+    # add buffer
+    xmin, xmax, ymin, ymax = plt.axis()
+    plt.xlim(xmin - buffer, xmax + buffer)
+    plt.ylim(ymin - buffer, ymax + buffer)
 
     # save figure
     fig_path = os.path.join(out_dir, filename)
-    plt.figure(3, figsize=(12, 12))
     plt.axis('off')
     plt.savefig(fig_path, bbox_inches='tight')
-
     plt.close()
 
 def set_axes(ax, show_xaxis=False):
@@ -407,20 +417,25 @@ def set_axes(ax, show_xaxis=False):
 
 def plot_simulation_output(timeseries_raw, settings={}, out_dir='out', filename='simulation'):
     '''
-    plot simulation output, with rows organized into separate columns.
+    Plot simulation output, with rows organized into separate columns.
 
-    Requires:
-        - timeseries (dict). This can be obtained from simulation output with convert_to_timeseries()
-        - settings (dict) with:
-            {
-            'max_rows': (int) ports with more states than this number of states get wrapped into a new column
-            'remove_zeros': (bool) if True, timeseries with all zeros get removed
-            'remove_flat': (bool) if True, timeseries with all the same value get removed
-            'remove_first_timestep': (bool) if True, skips the first timestep
-            'skip_ports': (list) entire ports that won't be plotted
-            'show_state': (list) with [('port_id', 'state_id')]
-                for all states that will be highlighted, even if they are otherwise to be removed
-            }
+    Arguments::
+        timeseries (dict): This can be obtained from simulation output with convert_to_timeseries()
+        settings (dict): Accepts the following keys:
+
+            * **max_rows** (:py:class:`int`): ports with more states
+              than this number of states get wrapped into a new column
+            * **remove_zeros** (:py:class:`bool`): if True, timeseries
+              with all zeros get removed
+            * **remove_flat** (:py:class:`bool`): if True, timeseries
+              with all the same value get removed
+            * **remove_first_timestep** (:py:class:`bool`): if True,
+              skips the first timestep
+            * **skip_ports** (:py:class:`list`): entire ports that won't
+              be plotted
+            * **show_state** (:py:class:`list`): with
+              ``[('port_id', 'state_id')]`` for all states that will be
+              highlighted, even if they are otherwise to be removed
     '''
 
     plot_fontsize = 8
@@ -619,7 +634,7 @@ def plot_agents_multigen(data, settings={}, out_dir='out', filename='agents'):
             ax.set_xlim([time_vec[0], time_vec[-1]])
 
             # if last state in this port, add time ticks
-            if row_idx > max_rows or path_idx > len(ordered_paths[port_id]):
+            if row_idx >= max_rows or path_idx >= len(ordered_paths[port_id]):
                 set_axes(ax, True)
                 ax.set_xlabel('time (s)')
             else:
@@ -878,9 +893,11 @@ def assert_timeseries_close(
         timeseries1, timeseries2, keys, required_frac_checked)
     for key in keys:
         tolerance = tolerances.get(key, default_tolerance)
-        if not np.allclose(
-            arrays1[key], arrays2[key], atol=tolerance, equal_nan=True
-        ):
+        close_mask = np.isclose(arrays1[key], arrays2[key],
+            atol=tolerance, equal_nan=True)
+        if not np.all(close_mask):
+            print('Timeseries 1:', arrays1[key][~close_mask])
+            print('Timeseries 2:', arrays2[key][~close_mask])
             raise AssertionError(
                 'The data for {} differed by more than {}'.format(
                     key, tolerance)
@@ -889,6 +906,8 @@ def assert_timeseries_close(
 
 # TESTS
 class ToyLinearGrowthDeathProcess(Process):
+
+    name = 'toy_linear_growth_death'
 
     GROWTH_RATE = 1.0
     THRESHOLD = 6.0
@@ -921,6 +940,7 @@ class ToyLinearGrowthDeathProcess(Process):
 
         return update
 
+
 class TestSimulateProcess:
 
     def test_process_deletion(self):
@@ -943,6 +963,8 @@ class TestSimulateProcess:
 
 # toy processes
 class ToyMetabolism(Process):
+    name = 'toy_metabolism'
+
     def __init__(self, initial_parameters={}):
         parameters = {'mass_conversion_rate': 1}
         parameters.update(initial_parameters)
@@ -971,6 +993,8 @@ class ToyMetabolism(Process):
         return update
 
 class ToyTransport(Process):
+    name = 'toy_transport'
+
     def __init__(self, initial_parameters={}):
         parameters = {'intake_rate': 2}
         parameters.update(initial_parameters)
@@ -999,6 +1023,8 @@ class ToyTransport(Process):
         return update
 
 class ToyDeriveVolume(Deriver):
+    name = 'toy_derive_volume'
+
     def __init__(self, initial_parameters={}):
         parameters = {}
         super(ToyDeriveVolume, self).__init__(parameters)
@@ -1023,6 +1049,8 @@ class ToyDeriveVolume(Deriver):
         return update
 
 class ToyDeath(Process):
+    name = 'toy_death'
+
     def __init__(self, initial_parameters={}):
         self.targets = initial_parameters.get('targets', [])
         super(ToyDeath, self).__init__({})
@@ -1052,7 +1080,7 @@ class ToyDeath(Process):
 
         return update
 
-class ToyCompartment(Compartment):
+class ToyCompartment(Generator):
     '''
     a toy compartment for testing
 

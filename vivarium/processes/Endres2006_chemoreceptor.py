@@ -67,6 +67,7 @@ def run_to_steady_state(receptor, state, timestep):
 
 class ReceptorCluster(Process):
 
+    name = NAME
     defaults = {
         'ligand_id': 'MeAsp',
         'initial_ligand': 5.0,

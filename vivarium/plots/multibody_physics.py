@@ -4,8 +4,6 @@ import os
 import math
 import random
 
-import numpy as np
-
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -13,7 +11,7 @@ import matplotlib.lines as mlines
 from matplotlib.colors import hsv_to_rgb
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
-
+import numpy as np
 
 
 DEFAULT_BOUNDS = [10, 10]
@@ -83,6 +81,7 @@ def plot_snapshots(data, plot_config):
 
     Arguments:
         data (dict): A dictionary with the following keys:
+
             * **agents** (:py:class:`dict`): A mapping from times to
               dictionaries of agent data at that timepoint. Agent data
               dictionaries should have the same form as the hierarchy
@@ -93,10 +92,13 @@ def plot_snapshots(data, plot_config):
               form as the hierarchy tree rooted at ``fields``.
             * **config** (:py:class:`dict`): The environmental
               configuration dictionary  with the following keys:
+
                 * **bounds** (:py:class:`tuple`): The dimensions of the
                   environment.
+
         plot_config (dict): Accepts the following configuration options.
             Any options with a default is optional.
+
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
             * **out_dir** (:py:class:`str`): Output directory, which is
@@ -173,7 +175,7 @@ def plot_snapshots(data, plot_config):
 
                 ax = init_axes(fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time)
 
-                # transpose field to align with agent
+                # transpose field to align with agents
                 field = np.transpose(np.array(fields[time][field_id])).tolist()
                 vmin, vmax = field_range[field_id]
                 im = plt.imshow(field,
@@ -187,7 +189,7 @@ def plot_snapshots(data, plot_config):
                     plot_agents(ax, agents_now, agent_colors)
 
                 # colorbar in new column after final snapshot
-                if col_idx == n_snapshots-1:
+                if col_idx == n_snapshots-1 and (vmin != vmax):
                     cbar_col = col_idx + 1
                     ax = fig.add_subplot(grid[row_idx, cbar_col])
                     divider = make_axes_locatable(ax)
@@ -230,25 +232,29 @@ def plot_tags(data, plot_config):
 
     Arguments:
         data (dict): A dictionary with the following keys:
+
             * **agents** (:py:class:`dict`): A mapping from times to
               dictionaries of agent data at that timepoint. Agent data
               dictionaries should have the same form as the hierarchy
               tree rooted at ``agents``.
             * **config** (:py:class:`dict`): The environmental
               configuration dictionary  with the following keys:
+
                 * **bounds** (:py:class:`tuple`): The dimensions of the
                   environment.
+
         plot_config (dict): Accepts the following configuration options.
             Any options with a default is optional.
+
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
             * **out_dir** (:py:class:`str`): Output directory, which is
               ``out`` by default.
             * **filename** (:py:class:`str`): Base name of output file.
               ``tags`` by default.
-            * **tagged_molecules** (:py:class:`Iterable`): The tagged
-              molecules whose concentrations will be indicated by agent
-              color. Each molecule should be specified as a
+            * **tagged_molecules** (:py:class:`typing.Iterable`): The
+              tagged molecules whose concentrations will be indicated by
+              agent color. Each molecule should be specified as a
               :py:class:`tuple` of the store in the agent's boundary
               where the molecule's count can be found and the name of
               the molecule's count variable.
@@ -282,10 +288,12 @@ def plot_tags(data, plot_config):
 
     for time, time_data in agents.items():
         for agent_id, agent_data in time_data.items():
-            volume = agent_data['boundary']['volume']
+            volume = agent_data.get('boundary', {}).get('volume', 0)
             for tag_id in tagged_molecules:
                 report_type, molecule = tag_id
-                count = agent_data['boundary'][report_type][molecule]
+                count = agent_data.get(
+                    'boundary', {}
+                ).get(report_type, {}).get(molecule, 0)
                 conc = count / volume if volume else 0
                 if tag_id in tag_ranges:
                     tag_ranges[tag_id] = [
@@ -327,8 +335,10 @@ def plot_tags(data, plot_config):
 
                 # get current tag concentration, and determine color
                 report_type, molecule = tag_id
-                counts = agent_data['boundary'][report_type][molecule]
-                volume = agent_data['boundary']['volume']
+                counts = agent_data.get(
+                    'boundary', {}
+                ).get(report_type, {}).get(molecule, 0)
+                volume = agent_data.get('boundary', {}).get('volume', 0)
                 level = counts / volume if volume else 0
                 min_tag, max_tag = tag_ranges[tag_id]
                 if min_tag != max_tag:
@@ -376,6 +386,22 @@ def initialize_spatial_figure(bounds, fontsize=18):
 
     return fig
 
+def get_agent_trajectories(agents, times):
+    trajectories = {}
+    for agent_id, series in agents.items():
+        time_indices = series['boundary']['location']['time_index']
+        series_times = [times[time_index] for time_index in time_indices]
+
+        positions = series['boundary']['location']['value']
+        angles = series['boundary']['angle']['value']
+        series_values = [[x, y, theta] for ((x, y), theta) in zip(positions, angles)]
+
+        trajectories[agent_id] = {
+            'time': series_times,
+            'value': series_values,
+        }
+    return trajectories
+
 def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='trajectory'):
     check_plt_backend()
 
@@ -398,14 +424,7 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
         bounds = rotate_bounds_90(bounds)
 
     # get each agent's trajectory
-    trajectories = {}
-    for agent_id, data in agents.items():
-        trajectories[agent_id] = []
-        for time_idx, time in enumerate(times):
-            x, y = data['boundary']['location'][time_idx]
-            theta = data['boundary']['angle'][time_idx]
-            pos = [x, y, theta]
-            trajectories[agent_id].append(pos)
+    trajectories = get_agent_trajectories(agents, times)
 
     # initialize a spatial figure
     fig = initialize_spatial_figure(bounds, legend_fontsize)
@@ -421,7 +440,9 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
                         cmap='Greys'
                         )
 
-    for agent_id, agent_trajectory in trajectories.items():
+    for agent_id, trajectory_data in trajectories.items():
+        agent_trajectory = trajectory_data['value']
+
         # convert trajectory to 2D array
         locations_array = np.array(agent_trajectory)
         x_coord = locations_array[:, 0]
@@ -460,10 +481,16 @@ def rotate_field_90(field):
     return np.rot90(field, 3)  # rotate 3 times for 270
 
 def rotate_agent_series_90(series, bounds):
-    location_series = series['boundary']['location']  #[time_idx]
-    angle_series = series['boundary']['angle']  #[time_idx]
-    series['boundary']['location'] = [[y, bounds[0] - x] for [x, y] in location_series]
-    series['boundary']['angle'] = [theta + PI / 2 for theta in angle_series]
+    location_series = series['boundary']['location']
+    angle_series = series['boundary']['angle']
+
+    if isinstance(location_series, dict):
+        # this ran with time_indexed_timeseries_from_data
+        series['boundary']['location']['value'] = [[y, bounds[0] - x] for [x, y] in location_series['value']]
+        series['boundary']['angle']['value'] = [theta + PI / 2 for theta in angle_series['value']]
+    else:
+        series['boundary']['location'] = [[y, bounds[0] - x] for [x, y] in location_series]
+        series['boundary']['angle'] = [theta + PI / 2 for theta in angle_series]
     return series
 
 def plot_temporal_trajectory(agent_timeseries, config, out_dir='out', filename='temporal'):
@@ -484,14 +511,7 @@ def plot_temporal_trajectory(agent_timeseries, config, out_dir='out', filename='
         bounds = rotate_bounds_90(bounds)
 
     # get each agent's trajectory
-    trajectories = {}
-    for agent_id, series in agents.items():
-        trajectories[agent_id] = []
-        for time_idx, time in enumerate(times):
-            x, y = series['boundary']['location'][time_idx]
-            theta = series['boundary']['angle'][time_idx]
-            pos = [x, y, theta]
-            trajectories[agent_id].append(pos)
+    trajectories = get_agent_trajectories(agents, times)
 
     # initialize a spatial figure
     fig = initialize_spatial_figure(bounds)
@@ -505,7 +525,9 @@ def plot_temporal_trajectory(agent_timeseries, config, out_dir='out', filename='
                         cmap='Greys'
                         )
 
-    for agent_id, agent_trajectory in trajectories.items():
+    for agent_id, trajectory_data in trajectories.items():
+        agent_trajectory = trajectory_data['value']
+
         # convert trajectory to 2D array
         locations_array = np.array(agent_trajectory)
         x_coord = locations_array[:, 0]

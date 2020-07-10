@@ -1,12 +1,14 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
 import os
 
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     compartment_in_experiment,
     COMPARTMENT_OUT_DIR,
 )
+from vivarium.library.dict_utils import deep_merge
 
 # processes
 from vivarium.processes.multibody_physics import (
@@ -18,18 +20,21 @@ from vivarium.processes.diffusion_field import (
     DiffusionField,
     get_gaussian_config,
 )
+from vivarium.processes.derive_colony_shape import ColonyShapeDeriver
 
 
 NAME = 'lattice'
 
 
-class Lattice(Compartment):
+class Lattice(Generator):
     """
     Lattice:  A two-dimensional lattice environmental model with multibody physics and diffusing molecular fields.
     """
 
     defaults = {
         'config': {
+            # To exclude a process, from the compartment, set its
+            # configuration dictionary to None, e.g. colony_mass_deriver
             'multibody': {
                 'bounds': [10, 10],
                 'size': [10, 10],
@@ -41,30 +46,52 @@ class Lattice(Compartment):
                 'size': [10, 10],
                 'depth': 3000.0,
                 'diffusion': 1e-2,
-            }
+            },
+            'colony_shape_deriver': None,
         }
     }
 
     def __init__(self, config=None):
         if config is None or not bool(config):
             config = self.defaults['config']
-        self.config = config
+        self.config = copy.deepcopy(self.defaults['config'])
+        deep_merge(self.config, config)
 
     def generate_processes(self, config):
-        return {
+        processes = {
             'multibody': Multibody(config['multibody']),
-            'diffusion': DiffusionField(config['diffusion'])}
+            'diffusion': DiffusionField(config['diffusion'])
+        }
+        colony_shape_config = config['colony_shape_deriver']
+        if colony_shape_config is not None:
+            processes['colony_shape_deriver'] = ColonyShapeDeriver(
+                colony_shape_config)
+        return processes
 
     def generate_topology(self, config):
-        return {
+        topology = {
             'multibody': {
-                'agents': ('agents',)},
+                'agents': ('agents',),
+            },
             'diffusion': {
                 'agents': ('agents',),
-                'fields': ('fields',)}}
+                'fields': ('fields',),
+            },
+            'colony_shape_deriver': {
+                'colony_global': ('colony_global',),
+                'agents': ('agents',),
+            }
+        }
+        return {
+            process: process_topology
+            for process, process_topology in topology.items()
+            if config[process] is not None
+        }
 
 
-def get_lattice_config(config={}):
+def get_lattice_config(config=None):
+    if config is None:
+        config = {}
     bounds = config.get('bounds', [25, 25])
     molecules = config.get('molecules', ['glc'])
     n_bins = config.get('n_bins', tuple(bounds))
@@ -96,10 +123,13 @@ def get_lattice_config(config={}):
     return {
         'bounds': bounds,
         'multibody': mbp_config,
-        'diffusion': dff_config}
+        'diffusion': dff_config,
+    }
 
-def test_lattice(config=get_lattice_config(), end_time=10):
 
+def test_lattice(config=None, end_time=10):
+    if config is None:
+        config = get_lattice_config()
     # configure the compartment
     compartment = Lattice(config)
 
@@ -116,11 +146,11 @@ def test_lattice(config=get_lattice_config(), end_time=10):
     while time < end_time:
         experiment.update(timestep)
         time += timestep
-    return experiment.emitter.get_data()
+    data = experiment.emitter.get_data()
+    return data
 
 
-
-if __name__ == '__main__':
+def main():
     out_dir = os.path.join(COMPARTMENT_OUT_DIR, NAME)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -139,3 +169,7 @@ if __name__ == '__main__':
         'out_dir': out_dir,
         'filename': 'snapshots'}
     plot_snapshots(data, plot_config)
+
+
+if __name__ == '__main__':
+    main()

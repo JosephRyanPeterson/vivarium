@@ -1,7 +1,7 @@
 '''
-====================
+==========================
 Vladimirov Motor Processes
-====================
+==========================
 '''
 
 from __future__ import absolute_import, division, print_function
@@ -46,6 +46,7 @@ class MotorActivity(Process):
     TODO -- add CheB phosphorylation
     '''
 
+    name = NAME
     defaults = {
         'parameters': {
             # 'k_A': 5.0,  #

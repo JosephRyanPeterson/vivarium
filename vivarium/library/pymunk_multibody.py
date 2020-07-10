@@ -98,7 +98,7 @@ class PymunkMultibody(object):
         self.friction = self.defaults['friction']
         self.damping = self.defaults['damping']
         self.angular_damping = self.defaults['angular_damping']
-        self.physics_dt = self.defaults['physics_dt']
+        self.physics_dt = config.get('physics_dt', self.defaults['physics_dt'])
         self.force_scaling = self.defaults['force_scaling']
 
         # configured parameters
@@ -249,8 +249,8 @@ class PymunkMultibody(object):
             width = boundary['width']
             length = boundary['length']
 
-            half_length = length / 2
             half_width = width / 2
+            half_length = length / 2 - half_width
             shape = pymunk.Segment(
                 None,
                 (-half_length, 0),

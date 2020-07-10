@@ -1,3 +1,9 @@
+'''
+===============
+Diffusion Field
+===============
+'''
+
 from __future__ import absolute_import, division, print_function
 
 import sys
@@ -28,17 +34,17 @@ def gaussian(deviation, distance):
     return np.exp(-np.power(distance, 2.) / (2 * np.power(deviation, 2.)))
 
 def make_gradient(gradient, n_bins, size):
-    bins_x = n_bins[0]
-    bins_y = n_bins[1]
-    length_x = size[0]
-    length_y = size[1]
-    fields = {}
+    '''Create a gradient from a configuration
 
-    if gradient.get('type') == 'gaussian':
-        """
-        gaussian gradient multiplies the base concentration of the given molecule
-        by a gaussian function of distance from center and deviation. Distance is
-        scaled by 1/1000 from microns to millimeters.
+    **Gaussian**
+
+    A gaussian gradient multiplies the base concentration of the given
+    molecule by a gaussian function of distance from center and
+    deviation. Distance is scaled by 1/1000 from microns to millimeters.
+
+    Example configuration:
+
+    .. code-block:: python
 
         'gradient': {
             'type': 'gaussian',
@@ -50,8 +56,78 @@ def make_gradient(gradient, n_bins, size):
                     'center': [0.75, 0.5],
                     'deviation': 30}
             }},
-        """
 
+    **Linear**
+
+    A linear gradient sets a site's concentration (c) of the given
+    molecule as a function of distance (d) from center and slope (b),
+    and base concentration (a). Distance is scaled by 1/1000 from
+    microns to millimeters.
+
+    .. math::
+        c = a + b * d
+
+    Example configuration:
+
+    .. code-block:: python
+
+        'gradient': {
+            'type': 'linear',
+            'molecules': {
+                'mol_id1':{
+                    'center': [0.0, 0.0],
+                    'base': 0.1,
+                    'slope': -10},
+                'mol_id2': {
+                    'center': [1.0, 1.0],
+                    'base': 0.1,
+                    'slope': -5}
+            }},
+
+    **Exponential**
+
+    An exponential gradient sets a site's concentration (c) of the given
+    molecule as a function of distance (d) from center, with parameters
+    base (b) and scale (a). Distance is scaled by 1/1000 from microns to
+    millimeters. Note: base > 1 makes concentrations increase from the
+    center.
+
+    .. math::
+
+        c=a*b^d.
+
+    Example configuration:
+
+    .. code-block:: python
+
+        'gradient': {
+            'type': 'exponential',
+            'molecules': {
+                'mol_id1':{
+                    'center': [0.0, 0.0],
+                    'base': 1+2e-4,
+                    'scale': 1.0},
+                'mol_id2': {
+                    'center': [1.0, 1.0],
+                    'base': 1+2e-4,
+                    'scale' : 0.1}
+            }},
+
+    Parameters:
+        gradient: Configuration dictionary that includes the ``type``
+            key to specify the type of gradient to make.
+        n_bins: A list of two elements that specify the number of bins
+            to have along each axis.
+        size: A list of two elements that specifies the size of the
+            environment.
+    '''
+    bins_x = n_bins[0]
+    bins_y = n_bins[1]
+    length_x = size[0]
+    length_y = size[1]
+    fields = {}
+
+    if gradient.get('type') == 'gaussian':
         for molecule_id, specs in gradient['molecules'].items():
             field = np.ones((bins_x, bins_y), dtype=np.float64)
             center = [specs['center'][0] * length_x,
@@ -70,28 +146,6 @@ def make_gradient(gradient, n_bins, size):
             fields[molecule_id] = field
 
     elif gradient.get('type') == 'linear':
-        """
-        linear gradient sets a site's concentration (c) of the given molecule
-        as a function of distance (d) from center and slope (b), and base
-        concentration (a). Distance is scaled by 1/1000 from microns to
-        millimeters.
-
-        c = a + b * d
-
-        'gradient': {
-            'type': 'linear',
-            'molecules': {
-                'mol_id1':{
-                    'center': [0.0, 0.0],
-                    'base': 0.1,
-                    'slope': -10},
-                'mol_id2': {
-                    'center': [1.0, 1.0],
-                    'base': 0.1,
-                    'slope': -5}
-            }},
-        """
-
         for molecule_id, specs in gradient['molecules'].items():
             field = np.zeros((bins_x, bins_y), dtype=np.float64)
             center = [specs['center'][0] * length_x,
@@ -108,28 +162,6 @@ def make_gradient(gradient, n_bins, size):
             fields[molecule_id] = field
 
     elif gradient.get('type') == 'exponential':
-        """
-        exponential gradient sets a site's concentration (c) of the given
-        molecule as a function of distance (d) from center, with parameters
-        base (b) and scale (a). Distance is scaled by 1/1000 from microns to
-        millimeters. Note: base > 1 makes concentrations increase from the center.
-
-        c=a*b^d.
-
-        'gradient': {
-            'type': 'exponential',
-            'molecules': {
-                'mol_id1':{
-                    'center': [0.0, 0.0],
-                    'base': 1+2e-4,
-                    'scale': 1.0},
-                'mol_id2': {
-                    'center': [1.0, 1.0],
-                    'base': 1+2e-4,
-                    'scale' : 0.1}
-            }},
-        """
-
         for molecule_id, specs in gradient['molecules'].items():
             field = np.zeros((bins_x, bins_y), dtype=np.float64)
             center = [specs['center'][0] * length_x,
@@ -149,15 +181,20 @@ def make_gradient(gradient, n_bins, size):
 
 class DiffusionField(Process):
     '''
-    Diffusion in 2-dimensional fields of molecules, with agent locations for uptake and secretion.
+    Diffusion in 2-dimensional fields of molecules with agent exchange
+
+    Agent uptake and secretion occurs at agent locations.
 
     Notes:
-    - Diffusion constant of glucose in 0.5 and 1.5 percent agarose gel = ~6 * 10^-10 m^2/s
-        (Weng et al. 2005. Transport of glucose and poly(ethylene glycol)s in agarose gels).
-    - Conversion to micrometers: 6 * 10^-10 m^2/s = 600 micrometers^2/s.
 
+    * Diffusion constant of glucose in 0.5 and 1.5 percent agarose gel
+      is around :math:`6 * 10^{-10} \\frac{m^2}{s}` (Weng et al. 2005.
+      Transport of glucose and poly(ethylene glycol)s in agarose gels).
+    * Conversion to micrometers:
+      :math:`6 * 10^{-10} \\frac{m^2}{s}=600 \\frac{micrometers^2}{s}`.
     '''
 
+    name = NAME
     defaults = {
         'molecules': ['glc'],
         'initial_state': {},
@@ -236,7 +273,7 @@ class DiffusionField(Process):
             '*': {
                 'boundary': {
                     'location': {
-                        '_default': [0.5, 0.5],
+                        '_default': [0.5 * bound for bound in self.bounds],
                         '_updater': 'set'},
                     'exchange': local_concentration_schema,
                     'external': local_concentration_schema}}}

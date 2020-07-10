@@ -1,11 +1,12 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import copy
 import argparse
 
 from vivarium.library.dict_utils import get_value_from_path
 from vivarium.library.units import units
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     plot_simulation_output,
@@ -60,7 +61,7 @@ def default_expression_config():
     return config
 
 
-class TransportMetabolism(Compartment):
+class TransportMetabolism(Generator):
     """
     Transport/Metabolism Compartment, with ODE expression
     """
@@ -69,48 +70,40 @@ class TransportMetabolism(Compartment):
         'boundary_path': ('boundary',),
         'agents_path': ('agents',),
         'daughter_path': tuple(),
-        'division': {}}
-
-    default_config = {
+        'division': {},
         'transport': get_glc_lct_config(),
         'metabolism': default_metabolism_config(),
         'expression': default_expression_config()}
 
     def __init__(self, config=None):
-        if not config:
-            config = self.default_config
-        self.config = config
-
-        self.boundary_path = config.get('boundary_path', self.defaults['boundary_path'])
-        self.agents_path = config.get('agents_path', self.defaults['agents_path'])
-        self.daughter_path = config.get('daughter_path', self.defaults['daughter_path'])
+        self.config = copy.deepcopy(config)
+        for key, value in self.defaults.items():
+            if key not in self.config:
+                self.config[key] = value
 
     def generate_processes(self, config):
-        agent_id = config.get('agent_id', '0')  # TODO -- configure the agent_id
+        daughter_path = config['daughter_path']
+        agent_id = config['agent_id']
 
         # Transport
-        # load the kinetic parameters
-        transport = ConvenienceKinetics(config.get('transport', {}))
+        transport = ConvenienceKinetics(config['transport'])
 
         # Metabolism
         # get target fluxes from transport, and update constrained_reaction_ids
-        metabolism_config = config.get('metabolism', {})
+        metabolism_config = config['metabolism']
         target_fluxes = transport.kinetic_rate_laws.reaction_ids
         metabolism_config.update({'constrained_reaction_ids': target_fluxes})
         metabolism = Metabolism(metabolism_config)
 
         # Gene expression
-        expression = ODE_expression(config.get('expression', {}))
+        expression = ODE_expression(config['expression'])
 
         # Division
         division_config = dict(
             config.get('division', {}),
-            daughter_path=self.daughter_path,
+            daughter_path=daughter_path,
             agent_id=agent_id,
             compartment=self)
-        # initial_mass = metabolism.initial_mass
-        # division_config.update({'constrained_reaction_ids': target_fluxes})
-        # TODO -- configure metadivision
         division = MetaDivision(division_config)
 
         return {
@@ -121,15 +114,17 @@ class TransportMetabolism(Compartment):
         }
 
     def generate_topology(self, config):
-        exchange_path = self.boundary_path + ('exchange',)
-        external_path = self.boundary_path + ('external',)
+        boundary_path = config['boundary_path']
+        agents_path = config['agents_path']
+        exchange_path = boundary_path + ('exchange',)
+        external_path = boundary_path + ('external',)
         return {
             'transport': {
                 'internal': ('cytoplasm',),
                 'external': external_path,
                 'exchange': ('null',),  # metabolism's exchange is used
                 'fluxes': ('flux_bounds',),
-                'global': self.boundary_path,
+                'global': boundary_path,
             },
             'metabolism': {
                 'internal': ('cytoplasm',),
@@ -137,17 +132,17 @@ class TransportMetabolism(Compartment):
                 'reactions': ('reactions',),
                 'exchange': exchange_path,
                 'flux_bounds': ('flux_bounds',),
-                'global': self.boundary_path,
+                'global': boundary_path,
             },
             'expression': {
                 'counts': ('cytoplasm_counts',),
                 'internal': ('cytoplasm',),
                 'external': external_path,
-                'global': self.boundary_path,
+                'global': boundary_path,
             },
             'division': {
-                'global': self.boundary_path,
-                'cells': self.agents_path,
+                'global': boundary_path,
+                'cells': agents_path,
             }
         }
 
@@ -164,7 +159,8 @@ def test_txp_mtb_ge():
         'timestep': 1,
         'total_time': 10}
 
-    compartment = TransportMetabolism({})
+    agent_id = '0'
+    compartment = TransportMetabolism({'agent_id': agent_id})
     return simulate_compartment_in_experiment(compartment, default_test_setting)
 
 def simulate_txp_mtb_ge(config={}, out_dir='out'):
@@ -196,7 +192,8 @@ def simulate_txp_mtb_ge(config={}, out_dir='out'):
     }
 
     # run simulation
-    compartment = TransportMetabolism({})
+    agent_id = '0'
+    compartment = TransportMetabolism({'agent_id': agent_id})
     timeseries = simulate_compartment_in_experiment(compartment, sim_settings)
 
     # calculate growth
