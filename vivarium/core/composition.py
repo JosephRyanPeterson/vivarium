@@ -33,6 +33,7 @@ from vivarium.library.units import units
 # processes
 from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.nonspatial_environment import NonSpatialEnvironment
+from vivarium.processes.agent_names import AgentNames
 
 # derivers
 import vivarium.processes.derive_globals
@@ -113,6 +114,15 @@ def agent_environment_experiment(
     topology = network['topology']
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
+
+    # add agent names
+    # TODO -- make this optional
+    agent_names = AgentNames({})
+    processes['agent_names'] = agent_names
+    topology['agent_names'] = {
+        'agents': ('agents',),
+        'names': ('names',)
+    }
 
     return Experiment({
         'processes': processes,
