@@ -13,7 +13,7 @@ from vivarium.core.composition import (
     plot_simulation_output,
     PROCESS_OUT_DIR,
 )
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.processes.meta_division import MetaDivision
 
 
@@ -21,8 +21,7 @@ NAME = 'T_cell'
 
 
 class TCellProcess(Process):
-    """
-    T-cell process with 2 states
+    """T-cell process with 2 states
 
     States:
         - PD1p (PD1+)
@@ -38,6 +37,7 @@ class TCellProcess(Process):
         - make this work!
     """
 
+    name = 't_cell'
     defaults = {
         'diameter': 10 * units.um,
         'initial_PD1n': 0.8,
@@ -202,7 +202,7 @@ class TCellProcess(Process):
 
 
 
-class TCellCompartment(Compartment):
+class TCellCompartment(Generator):
 
     defaults = {
         'boundary_path': ('boundary',),
@@ -249,9 +249,9 @@ class TCellCompartment(Compartment):
 
 
 
-def run_single_t_cell(out_dir='out'):
+def test_single_t_cell(total_time=20, out_dir='out'):
     t_cell_process = TCellProcess({})
-    settings = {'total_time': 1000}
+    settings = {'total_time': total_time}
     timeseries = simulate_process_in_experiment(t_cell_process, settings)
 
     # plot
@@ -274,7 +274,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
     no_args = (len(sys.argv) == 1)
 
+    total_time = 1000
     if args.single or no_args:
-        run_single_t_cell(out_dir)
+        test_single_t_cell(
+            total_time,
+            out_dir)
+
     if args.batch:
-        run_batch_t_cells(out_dir)
+        run_batch_t_cells(
+            out_dir,
+            total_time)

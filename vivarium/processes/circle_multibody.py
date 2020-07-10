@@ -50,6 +50,7 @@ class CircleMultibody(Process):
     A multi-body physics process with circular agents
     """
 
+    name = NAME
     defaults = {
         'agents': {},
         'bounds': DEFAULT_BOUNDS,
