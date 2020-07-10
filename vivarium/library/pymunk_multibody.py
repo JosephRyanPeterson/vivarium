@@ -69,7 +69,7 @@ class NullScreen(object):
         pass
 
 
-class MultiBody(object):
+class PymunkMultibody(object):
     """
     Multibody object for interfacing with pymunk
     """
