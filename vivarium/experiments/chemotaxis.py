@@ -371,7 +371,6 @@ def parse_agents_string(agents_string):
         agents_config.append(make_agent_config(agent_specs))
     return agents_config
 
-
 def make_dir(out_dir):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)

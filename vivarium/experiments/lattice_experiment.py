@@ -4,9 +4,8 @@ import os
 import sys
 import argparse
 
-from vivarium.core.experiment import (
-    Experiment
-)
+from vivarium.core.experiment import Experiment
+from vivarium.core.control import ExperimentControl
 from vivarium.core.composition import (
     agent_environment_experiment,
     simulate_experiment,
@@ -224,37 +223,19 @@ def test_growth_division_experiment():
     final_agents = len(data[time[-1]]['agents'])
     assert final_agents > initial_agents
 
+def main():
+    control = ExperimentControl()
+    data = control.execute()
+
+    import ipdb; ipdb.set_trace()
+
+
+
 
 def make_dir(out_dir):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
+
 if __name__ == '__main__':
-    out_dir = os.path.join(EXPERIMENT_OUT_DIR, NAME)
-    make_dir(out_dir)
-
-    parser = argparse.ArgumentParser(description='lattice_experiment')
-    parser.add_argument('--growth_division', '-g', action='store_true', default=False)
-    parser.add_argument('--growth_division_minimal', '-m', action='store_true', default=False)
-    parser.add_argument('--transport_metabolism', '-t', action='store_true', default=False)
-    args = parser.parse_args()
-    no_args = (len(sys.argv) == 1)
-
-    if args.growth_division_minimal or no_args:
-        minimal_out_dir = os.path.join(out_dir, 'minimal')
-        make_dir(minimal_out_dir)
-        run_growth_division(
-            agent_type='growth_division_minimal',
-            out_dir=minimal_out_dir)
-    elif args.growth_division:
-        gd_out_dir = os.path.join(out_dir, 'growth_division')
-        make_dir(gd_out_dir)
-        run_growth_division(
-            agent_type='growth_division',
-            out_dir=gd_out_dir)
-    elif args.transport_metabolism:
-        txp_mtb_out_dir = os.path.join(out_dir, 'transport_metabolism')
-        make_dir(txp_mtb_out_dir)
-        run_growth_division(
-            agent_type='transport_metabolism',
-            out_dir=txp_mtb_out_dir)
+    main()
