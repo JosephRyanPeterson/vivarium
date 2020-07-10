@@ -11,7 +11,7 @@ import copy
 import numpy as np
 
 from vivarium.library.units import Quantity
-from vivarium.core.repository import process_repository, serializer_repository
+from vivarium.core.registry import process_registry, serializer_registry
 from vivarium.library.dict_utils import deep_merge
 
 DEFAULT_TIME_STEP = 1.0
@@ -27,15 +27,15 @@ def serialize_dictionary(d):
         if isinstance(value, dict):
             serialized[key] = serialize_dictionary(value)
         elif isinstance(value, np.ndarray):
-            serialized[key] = serializer_repository.access('numpy').serialize(value)
+            serialized[key] = serializer_registry.access('numpy').serialize(value)
         elif isinstance(value, Quantity):
-            serialized[key] = serializer_repository.access('units').serialize(value)
+            serialized[key] = serializer_registry.access('units').serialize(value)
         elif callable(value):
-            serialized[key] = serializer_repository.access('function').serialize(value)
+            serialized[key] = serializer_registry.access('function').serialize(value)
         elif isinstance(value, Process):
-            serialized[key] = serialize_dictionary(serializer_repository.access('process').serialize(value))
+            serialized[key] = serialize_dictionary(serializer_registry.access('process').serialize(value))
         elif isinstance(value, Generator):
-            serialized[key] = serialize_dictionary(serializer_repository.access('compartment').serialize(value))
+            serialized[key] = serialize_dictionary(serializer_registry.access('compartment').serialize(value))
         else:
             serialized[key] = value
     return serialized
@@ -60,7 +60,7 @@ def generate_derivers(processes, topology):
                     deriver_config = config.get('config', {})
                     generate = config['deriver']
                     if isinstance(generate, str):
-                        generate = process_repository.access(generate)
+                        generate = process_registry.access(generate)
 
                     deriver = generate(deriver_config)
                     deriver_processes[deriver_key] = deriver
@@ -179,7 +179,7 @@ class Process(Generator):
         deep_merge(self.parameters, parameters)
 
         # register process repository
-        process_repository.register(self.name, type(self))
+        process_registry.register(self.name, type(self))
 
     def generate_processes(self, config):
         return {'process': self}
