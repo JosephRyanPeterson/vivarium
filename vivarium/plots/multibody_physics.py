@@ -24,7 +24,7 @@ HUES = [hue/360 for hue in np.linspace(0,360,30)]
 DEFAULT_HUE = HUES[0]
 DEFAULT_SV = [100.0/100.0, 70.0/100.0]
 BASELINE_TAG_COLOR = [220/360, 1.0, 0.2]  # HSV
-FLOURESCENT_SV = [0.5, 1.0]  # SV for fluorescent colors
+FLOURESCENT_SV = [0.75, 1.0]  # SV for fluorescent colors
 
 def check_plt_backend():
     # reset matplotlib backend for non-interactive plotting
@@ -56,7 +56,9 @@ def plot_agent(ax, data, color):
 
     # Create a rectangle
     rect = patches.Rectangle(
-        (x, y), width, length, angle=theta, linewidth=2, edgecolor='w', facecolor=rgb)
+        (x, y), width, length, angle=theta, linewidth=1,
+        edgecolor='gray', facecolor=rgb
+    )
 
     ax.add_patch(rect)
 
