@@ -41,7 +41,7 @@ agents_library = {
         'type': GrowthDivisionMinimal,
         'config': {
             'agents_path': ('..', '..', 'agents'),
-            # 'growth_rate': 0.001,
+            'growth_rate': 0.001,
             'division_volume': 2.6
         }
     },
