@@ -79,7 +79,7 @@ def get_lattice_config(
     return environment_config
 
 def get_simulation_settings(
-        total_time=2000,
+        total_time=10000,
         emit_step=10,
         return_raw_data=True,
 ):

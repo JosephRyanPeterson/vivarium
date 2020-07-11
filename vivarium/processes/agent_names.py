@@ -22,7 +22,8 @@ class AgentNames(Deriver):
             },
             'names': {
                 '_default': [],
-                '_emit': True
+                '_updater': 'set',
+                '_emit': True,
             },
         }
 
