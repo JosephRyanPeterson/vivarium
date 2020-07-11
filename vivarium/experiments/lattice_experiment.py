@@ -20,6 +20,7 @@ from vivarium.compartments.lattice import Lattice
 from vivarium.compartments.growth_division import GrowthDivision
 from vivarium.compartments.growth_division_minimal import GrowthDivisionMinimal
 from vivarium.compartments.transport_metabolism import TransportMetabolism
+from vivarium.compartments.flagella_expression import FlagellaExpressionMetabolism
 
 
 
@@ -43,6 +44,13 @@ agents_library = {
             'agents_path': ('..', '..', 'agents'),
             'growth_rate': 0.001,
             'division_volume': 2.6
+        }
+    },
+    'flagella_metabolism': {
+        'name': 'flagella_metabolism',
+        'type': FlagellaExpressionMetabolism,
+        'config': {
+            'agents_path': ('..', '..', 'agents'),
         }
     },
     'transport_metabolism': {
@@ -136,7 +144,7 @@ def run_lattice_experiment(
     )
 
 
-def run_growth_division(
+def run(
         agent_type='growth_division_minimal',
         out_dir='out',
         simulation_settings=get_simulation_settings()
@@ -205,18 +213,17 @@ def test_growth_division_experiment():
     # get environment config
     environment_config = {
         'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_lattice_config(),
-    }
+        'config': get_lattice_config()}
 
     # simulate
     simulation_settings = get_simulation_settings(
         total_time=total_time,
         return_raw_data=True)
+
     data = run_lattice_experiment(
         agents_config=agents_config,
         environment_config=environment_config,
-        simulation_settings=simulation_settings,
-    )
+        simulation_settings=simulation_settings)
 
     # assert division
     time = list(data.keys())
@@ -236,6 +243,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='lattice_experiment')
     parser.add_argument('--growth_division', '-g', action='store_true', default=False)
     parser.add_argument('--growth_division_minimal', '-m', action='store_true', default=False)
+    parser.add_argument('--flagella_metabolism', '-f', action='store_true', default=False)
     parser.add_argument('--transport_metabolism', '-t', action='store_true', default=False)
     args = parser.parse_args()
     no_args = (len(sys.argv) == 1)
@@ -243,18 +251,24 @@ if __name__ == '__main__':
     if args.growth_division_minimal or no_args:
         minimal_out_dir = os.path.join(out_dir, 'minimal')
         make_dir(minimal_out_dir)
-        run_growth_division(
+        run(
             agent_type='growth_division_minimal',
             out_dir=minimal_out_dir)
     elif args.growth_division:
         gd_out_dir = os.path.join(out_dir, 'growth_division')
         make_dir(gd_out_dir)
-        run_growth_division(
+        run(
             agent_type='growth_division',
             out_dir=gd_out_dir)
+    elif args.flagella_metabolism:
+        txp_mtb_out_dir = os.path.join(out_dir, 'flagella_metabolism')
+        make_dir(txp_mtb_out_dir)
+        run(
+            agent_type='flagella_metabolism',
+            out_dir=txp_mtb_out_dir)
     elif args.transport_metabolism:
         txp_mtb_out_dir = os.path.join(out_dir, 'transport_metabolism')
         make_dir(txp_mtb_out_dir)
-        run_growth_division(
+        run(
             agent_type='transport_metabolism',
             out_dir=txp_mtb_out_dir)

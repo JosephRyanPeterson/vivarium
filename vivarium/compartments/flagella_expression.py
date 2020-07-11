@@ -17,20 +17,24 @@ from vivarium.data.amino_acids import amino_acids
 from vivarium.data.chromosomes.flagella_chromosome import FlagellaChromosome
 from vivarium.plots.gene_expression import plot_timeseries_heatmaps
 from vivarium.states.chromosome import Chromosome, rna_bases, sequence_monomers
-
-from vivarium.processes.transcription import UNBOUND_RNAP_KEY
-from vivarium.processes.translation import UNBOUND_RIBOSOME_KEY
-from vivarium.processes.metabolism import Metabolism
-
-from vivarium.compartments.gene_expression import (
-    GeneExpression,
-    plot_gene_expression_output,
-    gene_network_plot,
-)
 from vivarium.parameters.parameters import (
     parameter_scan,
     get_parameters_logspace,
     plot_scan_results,
+)
+from vivarium.library.dict_utils import deep_merge
+
+# processes
+from vivarium.processes.transcription import UNBOUND_RNAP_KEY
+from vivarium.processes.translation import UNBOUND_RIBOSOME_KEY
+from vivarium.processes.metabolism import Metabolism, get_iAF1260b_config
+from vivarium.processes.division_volume import DivisionVolume
+
+# compartments
+from vivarium.compartments.gene_expression import (
+    GeneExpression,
+    plot_gene_expression_output,
+    gene_network_plot,
 )
 
 
@@ -39,25 +43,61 @@ NAME = 'flagella_gene_expression'
 
 
 class FlagellaExpressionMetabolism(Generator):
-    def __init__(self, config):
-        self.config = config
+    defaults = {
+        'global_path': ('global',),
+        'external_path': ('external',),
+        'config': {
+            'metabolism': get_iAF1260b_config()
+        }
+    }
 
-        flagella_expression_config = get_flagella_expression_config(config)
-        gene_expression = GeneExpression(flagella_expression_config)
-        network = gene_expression.generate()
-        processes = network['processes']
-        topology = network['topology']
-
-        metabolism = Metabolism({})
-        import ipdb; ipdb.set_trace()
+    def __init__(self, config=None):
+        if not config:
+            config = {}
+        self.config = deep_merge(self.defaults['config'], config)
+        self.global_path = self.or_default(
+            config, 'global_path')
+        self.external_path = self.or_default(
+            config, 'external_path')
 
         # TODO -- how can these processes/topologies be combined?
         # Upon division, Ribosomes and RNAP need to be 'set'! don't let them dilute
 
     def generate_processes(self, config):
 
+        # flagella gene expression compartment
+        flagella_expression_config = get_flagella_expression_config(config)
+        gene_expression = GeneExpression(flagella_expression_config)
+        gene_expression_network = gene_expression.generate()
+
+        # metabolism process
+        metabolism = Metabolism(config['metabolism'])
+
+        # Division
+        # get initial volume from metabolism
+        division_config = config.get('division', {})
+        division_config.update({'initial_state': metabolism.initial_state})
+        division = DivisionVolume(division_config)
+
+        # combine processes
+        processes = gene_expression_network['processes']
+        processes['metabolism'] = metabolism
+        processes['division'] = division
+
+        # save the topology for generate_topology
+        self.topology = gene_expression_network['topology']
+        self.topology['metabolism'] = {
+                'internal': ('molecules',),
+                'external': self.external_path,
+                'reactions': ('reactions',),
+                'exchange': ('exchange',),
+                'flux_bounds': ('flux_bounds',),
+                'global': self.global_path}
+
+        return processes
 
     def generate_topology(self, config):
+        return self.topology
 
 
 
@@ -146,13 +186,10 @@ def get_flagella_initial_state(ports={}):
     }
 
 
-def make_compartment_topology(out_dir='out'):
-    # load the compartment
-    flagella_compartment = flagella_expression_compartment({})
-
+def make_compartment_topology(compartment, out_dir='out'):
     settings = {'show_ports': True}
     plot_compartment_topology(
-        flagella_compartment,
+        compartment,
         settings,
         out_dir)
 
@@ -317,10 +354,15 @@ if __name__ == '__main__':
     elif args.network:
         make_flagella_network(out_dir)
     elif args.topology:
-        make_compartment_topology(out_dir)
+        compartment = flagella_expression_compartment({})
+        make_compartment_topology(compartment, out_dir)
     elif args.metabolism:
+        mtb_out_dir = os.path.join(out_dir, 'metabolism')
+        if not os.path.exists(mtb_out_dir):
+            os.makedirs(mtb_out_dir)
         compartment = FlagellaExpressionMetabolism({})
-        run_flagella_compartment(compartment, out_dir)
+        make_compartment_topology(compartment, mtb_out_dir)
+        run_flagella_compartment(compartment, mtb_out_dir)
     else:
         compartment = flagella_expression_compartment({})
         run_flagella_compartment(compartment, out_dir)
