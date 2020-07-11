@@ -18,6 +18,9 @@ from vivarium.plots.multibody_physics import (
     plot_tags
 )
 
+# processes
+from vivarium.processes.metabolism import Metabolism, get_iAF1260b_config
+
 # compartments
 from vivarium.compartments.lattice import Lattice
 from vivarium.compartments.growth_division import GrowthDivision
@@ -73,7 +76,9 @@ def get_lattice_config(
     depth=3000.0,
     diffusion=1e-2,
     molecules=['glc__D_e', 'lcts_e'],
+    gradient={},
 ):
+
     environment_config = {
         'multibody': {
             'bounds': bounds,
@@ -86,9 +91,24 @@ def get_lattice_config(
             'bounds': bounds,
             'depth': depth,
             'diffusion': diffusion,
+            'gradient': gradient,
         }
     }
     return environment_config
+
+def get_iAF1260b_environment():
+    # get external state from iAF1260b metabolism
+    config = get_iAF1260b_config()
+    metabolism = Metabolism(config)
+    molecules = metabolism.initial_state['external']
+    gradient = {
+        'type': 'uniform',
+        'molecules': molecules}
+    return get_lattice_config(
+        molecules=list(molecules.keys()),
+        gradient=gradient,
+    )
+
 
 environments_library = {
     'glc_lcts': {
@@ -97,13 +117,13 @@ environments_library = {
     },
     'iAF1260b': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_lattice_config(),
+        'config': get_iAF1260b_environment(),
     },
 }
 
 # simulation settings
 def get_simulation_settings(
-        total_time=10000,
+        total_time=4000,
         emit_step=10,
         return_raw_data=True,
 ):
@@ -252,7 +272,7 @@ def make_dir(out_dir):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-if __name__ == '__main__':
+def main():
     out_dir = os.path.join(EXPERIMENT_OUT_DIR, NAME)
     make_dir(out_dir)
 
@@ -281,6 +301,7 @@ if __name__ == '__main__':
         make_dir(txp_mtb_out_dir)
         run(
             agent_type='flagella_metabolism',
+            environment_type='iAF1260b',
             out_dir=txp_mtb_out_dir)
     elif args.transport_metabolism:
         txp_mtb_out_dir = os.path.join(out_dir, 'transport_metabolism')
@@ -288,3 +309,7 @@ if __name__ == '__main__':
         run(
             agent_type='transport_metabolism',
             out_dir=txp_mtb_out_dir)
+
+
+if __name__ == '__main__':
+    main()
