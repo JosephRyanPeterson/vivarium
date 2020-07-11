@@ -362,6 +362,17 @@ def main():
         run_workflow(
             agent_type='flagella_metabolism',
             environment_type='iAF1260b',
+            simulation_settings=get_simulation_settings(
+                total_time=1000
+            ),
+            plot_settings=get_plot_settings(
+                fields=[
+                    'glc__D_e',
+                ],
+                tags=[
+                    ('proteins', 'flagella'),
+                ]
+            ),
             out_dir=txp_mtb_out_dir)
 
     elif args.transport_metabolism:
