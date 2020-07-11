@@ -341,7 +341,7 @@ def main():
         run_workflow(
             agent_type='growth_division',
             simulation_settings=get_simulation_settings(
-                total_time=5000
+                total_time=8000
             ),
             plot_settings=get_plot_settings(
                 fields=[

@@ -13,6 +13,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
 import numpy as np
 
+from vivarium.library.dict_utils import get_value_from_path
+
 
 DEFAULT_BOUNDS = [10, 10]
 
@@ -255,9 +257,9 @@ def plot_tags(data, plot_config):
             * **tagged_molecules** (:py:class:`typing.Iterable`): The
               tagged molecules whose concentrations will be indicated by
               agent color. Each molecule should be specified as a
-              :py:class:`tuple` of the store in the agent's boundary
-              where the molecule's count can be found and the name of
-              the molecule's count variable.
+              :py:class:`tuple` of the path in the agent compartment
+              to where the molecule's count can be found, with the last
+              value being the molecule's count variable.
     '''
     check_plt_backend()
 
@@ -290,10 +292,7 @@ def plot_tags(data, plot_config):
         for agent_id, agent_data in time_data.items():
             volume = agent_data.get('boundary', {}).get('volume', 0)
             for tag_id in tagged_molecules:
-                report_type, molecule = tag_id
-                count = agent_data.get(
-                    'boundary', {}
-                ).get(report_type, {}).get(molecule, 0)
+                count = get_value_from_path(agent_data, tag_id)
                 conc = count / volume if volume else 0
                 if tag_id in tag_ranges:
                     tag_ranges[tag_id] = [
@@ -334,12 +333,9 @@ def plot_tags(data, plot_config):
                 agent_color = BASELINE_TAG_COLOR
 
                 # get current tag concentration, and determine color
-                report_type, molecule = tag_id
-                counts = agent_data.get(
-                    'boundary', {}
-                ).get(report_type, {}).get(molecule, 0)
+                count = get_value_from_path(agent_data, tag_id)
                 volume = agent_data.get('boundary', {}).get('volume', 0)
-                level = counts / volume if volume else 0
+                level = count / volume if volume else 0
                 min_tag, max_tag = tag_ranges[tag_id]
                 if min_tag != max_tag:
                     intensity = max((level - min_tag), 0)
