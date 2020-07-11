@@ -68,6 +68,7 @@ agents_library = {
     },
 }
 
+
 # environment config
 def get_lattice_config(
     bounds=[20, 20],
@@ -109,7 +110,6 @@ def get_iAF1260b_environment():
         gradient=gradient,
     )
 
-
 environments_library = {
     'glc_lcts': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
@@ -134,6 +134,73 @@ def get_simulation_settings(
     }
 
 
+# plot settings
+def get_plot_settings(
+        fields=[],
+        tags=[]
+):
+    return {
+        'plot_types': {
+            'agents': {},
+            'snapshots': {
+                'fields': fields
+            },
+            'tags': {
+                'tag_ids': tags
+            }
+        }
+    }
+
+def plot_experiment_output(
+        data,
+        plot_settings={},
+        out_dir='out',
+):
+    environment_config = plot_settings['environment_config']
+    agent_type = plot_settings.get('agent_type', 'agent')
+    plot_types = plot_settings['plot_types']
+
+    # extract data
+    multibody_config = environment_config['config']['multibody']
+    agents = {time: time_data['agents'] for time, time_data in data.items()}
+    fields = {time: time_data['fields'] for time, time_data in data.items()}
+
+    # pass to plots
+    if 'agents' in plot_types:
+        plot_settings = {
+            'agents_key': 'agents'}
+        plot_agents_multigen(data, plot_settings, out_dir, agent_type)
+
+    if 'snapshots' in plot_types:
+        field_ids = plot_types['snapshots']['fields']
+        plot_fields = {
+            time: {
+                field_id: field_instance[field_id]
+                for field_id in field_ids}
+            for time, field_instance in fields.items()}
+        data = {
+            'agents': agents,
+            'fields': plot_fields,
+            'config': multibody_config}
+        plot_config = {
+            'out_dir': out_dir,
+            'filename': agent_type + '_snapshots'}
+        plot_snapshots(data, plot_config)
+
+    if 'tags' in plot_types:
+        tags_ids = plot_types['tags']['tag_ids']
+        data = {
+            'agents': agents,
+            'config': multibody_config}
+        plot_config = {
+            'out_dir': out_dir,
+            'filename': agent_type + '_tags',
+            'tagged_molecules': tags_ids,
+        }
+        plot_tags(data, plot_config)
+
+
+# Experiment run function
 def run_lattice_experiment(
         agents_config=None,
         environment_config=None,
@@ -180,13 +247,13 @@ def run_lattice_experiment(
     )
 
 
-
-def run(
+def run_pipeline(
         agent_type='growth_division_minimal',
         n_agents=1,
         environment_type='glc_lcts',
         out_dir='out',
-        simulation_settings=get_simulation_settings()
+        simulation_settings=get_simulation_settings(),
+        plot_settings=get_plot_settings()
 ):
     # agent configuration
     agent_config = agents_library[agent_type]
@@ -204,41 +271,18 @@ def run(
         environment_config=environment_config,
         simulation_settings=simulation_settings,
     )
-    plot_growth_division_output(
+
+    plot_settings['environment_config'] = environment_config
+    plot_settings['agent_type'] = agent_type
+    plot_experiment_output(
         data,
-        environment_config,
-        agent_type,
-        out_dir
+        plot_settings,
+        out_dir,
     )
-
-def plot_growth_division_output(
-        data,
-        environment_config,
-        agent_type='agent',
-        out_dir='out'
-):
-    # extract data
-    multibody_config = environment_config['config']['multibody']
-    agents = {time: time_data['agents'] for time, time_data in data.items()}
-    fields = {time: time_data['fields'] for time, time_data in data.items()}
-
-    # agents plot
-    plot_settings = {
-        'agents_key': 'agents'}
-    plot_agents_multigen(data, plot_settings, out_dir, agent_type)
-
-    # snapshot plot
-    data = {
-        'agents': agents,
-        'fields': fields,
-        'config': multibody_config}
-    plot_config = {
-        'out_dir': out_dir,
-        'filename': agent_type + '_snapshots'}
-    plot_snapshots(data, plot_config)
 
 
 def test_growth_division_experiment():
+    '''test growth_division_minimal agent in lattice experiment'''
     growth_rate = 0.005  # fast!
     total_time = 150
 
@@ -287,26 +331,43 @@ def main():
     if args.growth_division_minimal or no_args:
         minimal_out_dir = os.path.join(out_dir, 'minimal')
         make_dir(minimal_out_dir)
-        run(
+        run_pipeline(
             agent_type='growth_division_minimal',
             out_dir=minimal_out_dir)
+
     elif args.growth_division:
         gd_out_dir = os.path.join(out_dir, 'growth_division')
         make_dir(gd_out_dir)
-        run(
+        run_pipeline(
             agent_type='growth_division',
+            simulation_settings=get_simulation_settings(
+                total_time=5000
+            ),
+            plot_settings=get_plot_settings(
+                fields=[
+                    'glc__D_e',
+                    'lcts_e',
+                ],
+                tags=[
+                    ('internal', 'protein1'),
+                    ('internal', 'protein2'),
+                    ('internal', 'protein3'),
+                ]
+            ),
             out_dir=gd_out_dir)
+
     elif args.flagella_metabolism:
         txp_mtb_out_dir = os.path.join(out_dir, 'flagella_metabolism')
         make_dir(txp_mtb_out_dir)
-        run(
+        run_pipeline(
             agent_type='flagella_metabolism',
             environment_type='iAF1260b',
             out_dir=txp_mtb_out_dir)
+
     elif args.transport_metabolism:
         txp_mtb_out_dir = os.path.join(out_dir, 'transport_metabolism')
         make_dir(txp_mtb_out_dir)
-        run(
+        run_pipeline(
             agent_type='transport_metabolism',
             out_dir=txp_mtb_out_dir)
 
