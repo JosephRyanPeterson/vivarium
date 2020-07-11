@@ -13,7 +13,10 @@ from vivarium.core.composition import (
     plot_agents_multigen,
     EXPERIMENT_OUT_DIR,
 )
-from vivarium.plots.multibody_physics import plot_snapshots
+from vivarium.plots.multibody_physics import (
+    plot_snapshots,
+    plot_tags
+)
 
 # compartments
 from vivarium.compartments.lattice import Lattice
@@ -62,6 +65,7 @@ agents_library = {
     },
 }
 
+# environment config
 def get_lattice_config(
     bounds=[20, 20],
     n_bins=[10, 10],
@@ -86,6 +90,18 @@ def get_lattice_config(
     }
     return environment_config
 
+environments_library = {
+    'glc_lcts': {
+        'type': DEFAULT_ENVIRONMENT_TYPE,
+        'config': get_lattice_config(),
+    },
+    'iAF1260b': {
+        'type': DEFAULT_ENVIRONMENT_TYPE,
+        'config': get_lattice_config(),
+    },
+}
+
+# simulation settings
 def get_simulation_settings(
         total_time=10000,
         emit_step=10,
@@ -144,21 +160,23 @@ def run_lattice_experiment(
     )
 
 
+
 def run(
         agent_type='growth_division_minimal',
+        n_agents=1,
+        environment_type='glc_lcts',
         out_dir='out',
         simulation_settings=get_simulation_settings()
 ):
+    # agent configuration
     agent_config = agents_library[agent_type]
-    agent_config['number'] = 1
+    agent_config['number'] = n_agents
     agents_config = [
         agent_config,
     ]
 
-    environment_config = {
-        'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_lattice_config(),
-    }
+    # environment configuration
+    environment_config = environments_library[environment_type]
 
     # simulate
     data = run_lattice_experiment(
@@ -211,9 +229,7 @@ def test_growth_division_experiment():
     agents_config = [agent_config]
 
     # get environment config
-    environment_config = {
-        'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_lattice_config()}
+    environment_config = environments_library['glc_lcts']
 
     # simulate
     simulation_settings = get_simulation_settings(
