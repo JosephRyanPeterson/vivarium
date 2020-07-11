@@ -247,7 +247,7 @@ def run_lattice_experiment(
     )
 
 
-def run_pipeline(
+def run_workflow(
         agent_type='growth_division_minimal',
         n_agents=1,
         environment_type='glc_lcts',
@@ -331,14 +331,14 @@ def main():
     if args.growth_division_minimal or no_args:
         minimal_out_dir = os.path.join(out_dir, 'minimal')
         make_dir(minimal_out_dir)
-        run_pipeline(
+        run_workflow(
             agent_type='growth_division_minimal',
             out_dir=minimal_out_dir)
 
     elif args.growth_division:
         gd_out_dir = os.path.join(out_dir, 'growth_division')
         make_dir(gd_out_dir)
-        run_pipeline(
+        run_workflow(
             agent_type='growth_division',
             simulation_settings=get_simulation_settings(
                 total_time=5000
@@ -359,7 +359,7 @@ def main():
     elif args.flagella_metabolism:
         txp_mtb_out_dir = os.path.join(out_dir, 'flagella_metabolism')
         make_dir(txp_mtb_out_dir)
-        run_pipeline(
+        run_workflow(
             agent_type='flagella_metabolism',
             environment_type='iAF1260b',
             out_dir=txp_mtb_out_dir)
@@ -367,7 +367,7 @@ def main():
     elif args.transport_metabolism:
         txp_mtb_out_dir = os.path.join(out_dir, 'transport_metabolism')
         make_dir(txp_mtb_out_dir)
-        run_pipeline(
+        run_workflow(
             agent_type='transport_metabolism',
             out_dir=txp_mtb_out_dir)
 
