@@ -24,7 +24,7 @@ HUES = [hue/360 for hue in np.linspace(0,360,30)]
 DEFAULT_HUE = HUES[0]
 DEFAULT_SV = [100.0/100.0, 70.0/100.0]
 BASELINE_TAG_COLOR = [220/360, 1.0, 0.2]  # HSV
-FLOURESCENT_SV = [0.5, 1.0]  # SV for fluorescent colors
+FLOURESCENT_SV = [0.75, 1.0]  # SV for fluorescent colors
 
 def check_plt_backend():
     # reset matplotlib backend for non-interactive plotting
@@ -56,7 +56,9 @@ def plot_agent(ax, data, color):
 
     # Create a rectangle
     rect = patches.Rectangle(
-        (x, y), width, length, angle=theta, linewidth=2, edgecolor='w', facecolor=rgb)
+        (x, y), width, length, angle=theta, linewidth=1,
+        edgecolor='gray', facecolor=rgb
+    )
 
     ax.add_patch(rect)
 
@@ -173,7 +175,10 @@ def plot_snapshots(data, plot_config):
         if field_ids:
             for row_idx, field_id in enumerate(field_ids):
 
-                ax = init_axes(fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time)
+                ax = init_axes(
+                    fig, edge_length_x, edge_length_y, grid, row_idx,
+                    col_idx, time, field_id
+                )
 
                 # transpose field to align with agents
                 field = np.transpose(np.array(fields[time][field_id])).tolist()
@@ -198,7 +203,10 @@ def plot_snapshots(data, plot_config):
                     ax.axis('off')
         else:
             row_idx = 0
-            ax = init_axes(fig, bounds[0], bounds[1], grid, row_idx, col_idx, time)
+            ax = init_axes(
+                fig, bounds[0], bounds[1], grid, row_idx, col_idx,
+                time, ""
+            )
             if agents:
                 agents_now = agents[time]
                 plot_agents(ax, agents_now, agent_colors)
@@ -324,7 +332,7 @@ def plot_tags(data, plot_config):
         for row_idx, tag_id in enumerate(tag_ranges.keys()):
             ax = init_axes(
                 fig, edge_length_x, edge_length_y, grid,
-                row_idx, col_idx, time
+                row_idx, col_idx, time, tag_id,
             )
             ax.set_facecolor('black')  # set background color
 
@@ -691,11 +699,16 @@ def plot_motility(timeseries, out_dir='out', filename='motility_analysis'):
     plt.close(fig)
 
 
-def init_axes(fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time):
+def init_axes(
+    fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time,
+    molecule,
+):
     ax = fig.add_subplot(grid[row_idx, col_idx])
     if row_idx == 0:
         plot_title = 'time: {:.4f} s'.format(float(time))
         plt.title(plot_title, y=1.08)
+    if col_idx == 0:
+        ax.set_ylabel(molecule, fontsize=20)
     ax.set(xlim=[0, edge_length_x], ylim=[0, edge_length_y], aspect=1)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
