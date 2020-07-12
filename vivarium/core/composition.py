@@ -75,7 +75,8 @@ def agent_environment_experiment(
         agents_config=None,
         environment_config=None,
         initial_state=None,
-        settings=None
+        settings=None,
+        initial_agent_state=None,
 ):
     if settings is None:
         settings = {}
@@ -90,6 +91,12 @@ def agent_environment_experiment(
         agent_ids = agents_config['ids']
         agent_compartment = agent_type(agents_config['config'])
         agents = make_agents(agent_ids, agent_compartment, agents_config['config'])
+
+        if initial_agent_state:
+            initial_state['agents'] = {
+                agent_id: initial_agent_state
+                for agent_id in agent_ids}
+
     elif isinstance(agents_config, list):
         # list with multiple agent configurations
         agents = {
@@ -102,6 +109,13 @@ def agent_environment_experiment(
             new_agents = make_agents(agent_ids, agent_compartment, config['config'])
             deep_merge(agents['processes'], new_agents['processes'])
             deep_merge(agents['topology'], new_agents['topology'])
+
+            if initial_agent_state:
+                if 'agents' not in initial_state:
+                    initial_state['agents'] = {}
+                initial_state['agents'].update({
+                    agent_id: initial_agent_state
+                    for agent_id in agent_ids})
 
     # initialize the environment
     environment_type = environment_config['type']

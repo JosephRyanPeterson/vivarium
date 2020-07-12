@@ -19,14 +19,20 @@ from vivarium.plots.multibody_physics import (
 )
 
 # processes
-from vivarium.processes.metabolism import Metabolism, get_iAF1260b_config
+from vivarium.processes.metabolism import (
+    Metabolism,
+    get_iAF1260b_config,
+)
 
 # compartments
 from vivarium.compartments.lattice import Lattice
 from vivarium.compartments.growth_division import GrowthDivision
 from vivarium.compartments.growth_division_minimal import GrowthDivisionMinimal
 from vivarium.compartments.transport_metabolism import TransportMetabolism
-from vivarium.compartments.flagella_expression import FlagellaExpressionMetabolism
+from vivarium.compartments.flagella_expression import (
+    FlagellaExpressionMetabolism,
+    get_flagella_initial_state,
+)
 
 
 
@@ -205,6 +211,7 @@ def run_lattice_experiment(
         agents_config=None,
         environment_config=None,
         initial_state=None,
+        initial_agent_state=None,
         simulation_settings=None,
         experiment_settings=None
 ):
@@ -212,6 +219,8 @@ def run_lattice_experiment(
         experiment_settings = {}
     if initial_state is None:
         initial_state = {}
+    if initial_agent_state is None:
+        initial_agent_state = {}
 
     # agents ids
     agent_ids = []
@@ -230,10 +239,11 @@ def run_lattice_experiment(
 
     # make the experiment
     experiment = agent_environment_experiment(
-        agents_config,
-        environment_config,
-        initial_state,
-        experiment_settings
+        agents_config=agents_config,
+        environment_config=environment_config,
+        initial_state=initial_state,
+        initial_agent_state=initial_agent_state,
+        settings=experiment_settings,
     )
 
     # simulate
@@ -251,6 +261,8 @@ def run_workflow(
         agent_type='growth_division_minimal',
         n_agents=1,
         environment_type='glc_lcts',
+        initial_state={},
+        initial_agent_state={},
         out_dir='out',
         simulation_settings=get_simulation_settings(),
         plot_settings=get_plot_settings()
@@ -269,6 +281,8 @@ def run_workflow(
     data = run_lattice_experiment(
         agents_config=agents_config,
         environment_config=environment_config,
+        initial_state=initial_state,
+        initial_agent_state=initial_agent_state,
         simulation_settings=simulation_settings,
     )
 
@@ -362,8 +376,10 @@ def main():
         run_workflow(
             agent_type='flagella_metabolism',
             environment_type='iAF1260b',
+            initial_agent_state=get_flagella_initial_state(),
             simulation_settings=get_simulation_settings(
-                total_time=10000
+                emit_step=20,
+                total_time=500,
             ),
             plot_settings=get_plot_settings(
                 fields=[
