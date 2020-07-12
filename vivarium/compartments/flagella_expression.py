@@ -29,6 +29,7 @@ from vivarium.processes.transcription import UNBOUND_RNAP_KEY
 from vivarium.processes.translation import UNBOUND_RIBOSOME_KEY
 from vivarium.processes.metabolism import Metabolism, get_iAF1260b_config
 from vivarium.processes.division_volume import DivisionVolume
+from vivarium.processes.meta_division import MetaDivision
 
 # compartments
 from vivarium.compartments.gene_expression import (
@@ -44,55 +45,78 @@ NAME = 'flagella_gene_expression'
 
 class FlagellaExpressionMetabolism(Generator):
     defaults = {
-        'global_path': ('global',),
-        'external_path': ('external',),
-        'config': {
-            'metabolism': get_iAF1260b_config()
-        }
+        'boundary_path': ('boundary',),
+        'agents_path': ('..', '..', 'agents',),
+        'daughter_path': tuple(),
+        'metabolism': get_iAF1260b_config()
     }
 
     def __init__(self, config=None):
         if not config:
             config = {}
-        self.config = deep_merge(self.defaults['config'], config)
-        self.global_path = self.or_default(
-            config, 'global_path')
-        self.external_path = self.or_default(
-            config, 'external_path')
-
-        # TODO -- how can these processes/topologies be combined?
-        # Upon division, Ribosomes and RNAP need to be 'set'! don't let them dilute
+        self.config = deep_merge(self.defaults, config)
 
     def generate_processes(self, config):
+        daughter_path = config['daughter_path']
+        agent_id = config['agent_id']
 
-        # flagella gene expression compartment
-        flagella_expression_config = get_flagella_expression_config(config)
+        # get paths
+        boundary_path = config['boundary_path']
+        agents_path = config['agents_path']
+        external_path = boundary_path + ('external',)
+        exchange_path = boundary_path + ('exchange',)
+
+        # configure a flagella gene expression compartment, and get its network
+        flagella_expression_config = get_flagella_expression_config({})
+        flagella_expression_config['global_path'] = boundary_path
         gene_expression = GeneExpression(flagella_expression_config)
         gene_expression_network = gene_expression.generate()
+        processes = gene_expression_network['processes']
+        self.topology = gene_expression_network['topology']
 
-        # metabolism process
+        # Metabolism
         metabolism = Metabolism(config['metabolism'])
 
+
         # Division
+        # configure division condition and meta-division processes
         # get initial volume from metabolism
-        division_config = config.get('division', {})
-        division_config.update({'initial_state': metabolism.initial_state})
-        division = DivisionVolume(division_config)
+        division_state = config.get('division', {})
+        division_state.update({'initial_state': metabolism.initial_state})
+
+        # import ipdb; ipdb.set_trace()
+        # TODO -- set 'division_volume'
+        division_condition = DivisionVolume({})
+
+        # meta-division
+        meta_division_config = dict(
+            {},
+            daughter_path=daughter_path,
+            agent_id=agent_id,
+            compartment=self)
+        meta_division = MetaDivision(meta_division_config)
 
         # combine processes
-        processes = gene_expression_network['processes']
         processes['metabolism'] = metabolism
-        processes['division'] = division
+        processes['division_condition'] = division_condition
+        processes['meta_division'] = meta_division
 
         # save the topology for generate_topology
-        self.topology = gene_expression_network['topology']
         self.topology['metabolism'] = {
                 'internal': ('molecules',),
-                'external': self.external_path,
+                'external': external_path,
                 'reactions': ('reactions',),
-                'exchange': ('exchange',),
+                'exchange': exchange_path,
                 'flux_bounds': ('flux_bounds',),
-                'global': self.global_path}
+                'global': boundary_path
+        }
+        self.topology['division_condition'] = {
+            'global': boundary_path
+        }
+        self.topology['meta_division'] = {
+            'global': boundary_path,
+            'cells': agents_path
+        }
 
         return processes
 

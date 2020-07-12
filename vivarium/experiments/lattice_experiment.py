@@ -363,7 +363,7 @@ def main():
             agent_type='flagella_metabolism',
             environment_type='iAF1260b',
             simulation_settings=get_simulation_settings(
-                total_time=1000
+                total_time=10000
             ),
             plot_settings=get_plot_settings(
                 fields=[
