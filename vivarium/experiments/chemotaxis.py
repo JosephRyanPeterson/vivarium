@@ -53,6 +53,8 @@ from vivarium.plots.multibody_physics import (
     plot_motility,
 )
 
+from vivarium.core.workflow import Workflow
+
 
 # make an agent from a lone MotorActivity process
 MotorActivityAgent = process_in_compartment(
@@ -469,5 +471,14 @@ def run_chemotaxis_simulation():
     plot_chemotaxis_experiment(data, field_config, control_out_dir)
 
 
+def main():
+    workflow = Workflow(
+        agents_library=agents_library,
+        )
+
+    workflow.execute()
+
+
 if __name__ == '__main__':
-    run_chemotaxis_simulation()
+    # run_chemotaxis_simulation()
+    main()

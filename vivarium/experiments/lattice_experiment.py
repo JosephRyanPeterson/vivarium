@@ -5,7 +5,7 @@ import sys
 import argparse
 
 from vivarium.core.experiment import Experiment
-from vivarium.core.control import ExperimentControl
+from vivarium.core.workflow import ExperimentControl
 from vivarium.core.composition import (
     agent_environment_experiment,
     simulate_experiment,
