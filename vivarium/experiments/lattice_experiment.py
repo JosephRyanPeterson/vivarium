@@ -4,8 +4,8 @@ import os
 import sys
 import argparse
 
+from vivarium.core.workflow import Workflow
 from vivarium.core.experiment import Experiment
-from vivarium.core.workflow import ExperimentControl
 from vivarium.core.composition import (
     agent_environment_experiment,
     simulate_experiment,
@@ -139,195 +139,41 @@ def get_simulation_settings(
     }
 
 
-# plot settings
-def get_plot_settings(
-        fields=[],
-        tags=[]
-):
-    return {
-        'plot_types': {
-            'agents': {},
-            'snapshots': {
-                'fields': fields
-            },
-            'tags': {
-                'tag_ids': tags
-            }
-        }
-    }
-
-def plot_experiment_output(
-        data,
-        plot_settings={},
-        out_dir='out',
-):
-    environment_config = plot_settings['environment_config']
-    agent_type = plot_settings.get('agent_type', 'agent')
-    plot_types = plot_settings['plot_types']
-
-    # extract data
-    multibody_config = environment_config['config']['multibody']
-    agents = {time: time_data['agents'] for time, time_data in data.items()}
-    fields = {time: time_data['fields'] for time, time_data in data.items()}
-
-    # pass to plots
-    if 'agents' in plot_types:
-        plot_settings = {
-            'agents_key': 'agents'}
-        plot_agents_multigen(data, plot_settings, out_dir, agent_type)
-
-    if 'snapshots' in plot_types:
-        field_ids = plot_types['snapshots']['fields']
-        plot_fields = {
-            time: {
-                field_id: field_instance[field_id]
-                for field_id in field_ids}
-            for time, field_instance in fields.items()}
-        data = {
-            'agents': agents,
-            'fields': plot_fields,
-            'config': multibody_config}
-        plot_config = {
-            'out_dir': out_dir,
-            'filename': agent_type + '_snapshots'}
-        plot_snapshots(data, plot_config)
-
-    if 'tags' in plot_types:
-        tags_ids = plot_types['tags']['tag_ids']
-        data = {
-            'agents': agents,
-            'config': multibody_config}
-        plot_config = {
-            'out_dir': out_dir,
-            'filename': agent_type + '_tags',
-            'tagged_molecules': tags_ids,
-        }
-        plot_tags(data, plot_config)
-
-
-# Experiment run function
-def run_lattice_experiment(
-        agents_config=None,
-        environment_config=None,
-        initial_state=None,
-        initial_agent_state=None,
-        simulation_settings=None,
-        experiment_settings=None
-):
-    if experiment_settings is None:
-        experiment_settings = {}
-    if initial_state is None:
-        initial_state = {}
-    if initial_agent_state is None:
-        initial_agent_state = {}
-
-    # agents ids
-    agent_ids = []
-    for config in agents_config:
-        number = config['number']
-        if 'name' in config:
-            name = config['name']
-            if number > 1:
-                new_agent_ids = [name + '_' + str(num) for num in range(number)]
-            else:
-                new_agent_ids = [name]
-        else:
-            new_agent_ids = [str(uuid.uuid1()) for num in range(number)]
-        config['ids'] = new_agent_ids
-        agent_ids.extend(new_agent_ids)
-
-    # make the experiment
-    experiment = agent_environment_experiment(
-        agents_config=agents_config,
-        environment_config=environment_config,
-        initial_state=initial_state,
-        initial_agent_state=initial_agent_state,
-        settings=experiment_settings,
-    )
-
-    # simulate
-    settings = {
-        'total_time': simulation_settings['total_time'],
-        'emit_step': simulation_settings['emit_step'],
-        'return_raw_data': simulation_settings['return_raw_data']}
-    return simulate_experiment(
-        experiment,
-        settings,
-    )
-
-
-def run_workflow(
-        agent_type='growth_division_minimal',
-        n_agents=1,
-        environment_type='glc_lcts',
-        initial_state={},
-        initial_agent_state={},
-        out_dir='out',
-        simulation_settings=get_simulation_settings(),
-        plot_settings=get_plot_settings()
-):
-    # agent configuration
-    agent_config = agents_library[agent_type]
-    agent_config['number'] = n_agents
-    agents_config = [
-        agent_config,
-    ]
-
-    # environment configuration
-    environment_config = environments_library[environment_type]
-
-    # simulate
-    data = run_lattice_experiment(
-        agents_config=agents_config,
-        environment_config=environment_config,
-        initial_state=initial_state,
-        initial_agent_state=initial_agent_state,
-        simulation_settings=simulation_settings,
-    )
-
-    plot_settings['environment_config'] = environment_config
-    plot_settings['agent_type'] = agent_type
-    plot_experiment_output(
-        data,
-        plot_settings,
-        out_dir,
-    )
-
-
-def test_growth_division_experiment():
-    '''test growth_division_minimal agent in lattice experiment'''
-    growth_rate = 0.005  # fast!
-    total_time = 150
-
-    # get minimal agent config and set growth rate
-    agent_config = agents_library['growth_division_minimal']
-    agent_config['config']['growth_rate'] = growth_rate
-    agent_config['number'] = 1
-    agents_config = [agent_config]
-
-    # get environment config
-    environment_config = environments_library['glc_lcts']
-
-    # simulate
-    simulation_settings = get_simulation_settings(
-        total_time=total_time,
-        return_raw_data=True)
-
-    data = run_lattice_experiment(
-        agents_config=agents_config,
-        environment_config=environment_config,
-        simulation_settings=simulation_settings)
-
-    # assert division
-    time = list(data.keys())
-    initial_agents = len(data[time[0]]['agents'])
-    final_agents = len(data[time[-1]]['agents'])
-    assert final_agents > initial_agents
-
-
-def make_dir(out_dir):
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
+#
+# def test_growth_division_experiment():
+#     '''test growth_division_minimal agent in lattice experiment'''
+#     growth_rate = 0.005  # fast!
+#     total_time = 150
+#
+#     # get minimal agent config and set growth rate
+#     agent_config = agents_library['growth_division_minimal']
+#     agent_config['config']['growth_rate'] = growth_rate
+#     agent_config['number'] = 1
+#     agents_config = [agent_config]
+#
+#     # get environment config
+#     environment_config = environments_library['glc_lcts']
+#
+#     # simulate
+#     simulation_settings = get_simulation_settings(
+#         total_time=total_time,
+#         return_raw_data=True)
+#
+#     data = run_lattice_experiment(
+#         agents_config=agents_config,
+#         environment_config=environment_config,
+#         simulation_settings=simulation_settings)
+#
+#     # assert division
+#     time = list(data.keys())
+#     initial_agents = len(data[time[0]]['agents'])
+#     final_agents = len(data[time[-1]]['agents'])
+#     assert final_agents > initial_agents
+#
+#
+# def make_dir(out_dir):
+#     if not os.path.exists(out_dir):
+#         os.makedirs(out_dir)
 
 
 def main():
@@ -399,5 +245,32 @@ def main():
             out_dir=txp_mtb_out_dir)
 
 
+
+experiment_library = {
+    'flagella_metabolism': {
+            'agent_type': 'flagella_metabolism',
+            'environment_type': 'iAF1260b',
+            'initial_agent_state': get_flagella_initial_state(),
+            'simulation_settings': {
+                'emit_step': 20,
+                'total_time': 500,
+            },
+            'plot_settings': {
+                'fields': ['glc__D_e'],
+                'tags': [['proteins', 'flagella']],
+            },
+        }
+    }
+
+def workflow():
+    workflow = Workflow(
+        name=NAME,
+        experiment_library=experiment_library,
+        )
+
+    workflow.execute()
+
+
 if __name__ == '__main__':
-    main()
+    # main()
+    workflow()
