@@ -77,6 +77,7 @@ def agent_environment_experiment(
         initial_state=None,
         settings=None,
         initial_agent_state=None,
+        invoke=None
 ):
     if settings is None:
         settings = {}
@@ -122,17 +123,21 @@ def agent_environment_experiment(
     environment_compartment = environment_type(environment_config['config'])
 
     # combine processes and topologies
-    network = environment_compartment.generate({})
+    network = environment_compartment.generate()
     processes = network['processes']
     topology = network['topology']
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
 
-    return Experiment({
+    experiment_config = {
         'processes': processes,
         'topology': topology,
         'emitter': emitter,
-        'initial_state': initial_state})
+        'initial_state': initial_state,
+    }
+    if invoke:
+        experiment_config['invoke'] = invoke
+    return Experiment(experiment_config)
 
 def process_in_compartment(process, topology={}):
     """ put a lone process in a compartment"""
@@ -648,7 +653,9 @@ def plot_agents_multigen(data, settings={}, out_dir='out', filename='agents'):
             ax.set_xlim([time_vec[0], time_vec[-1]])
 
             # if last state in this port, add time ticks
-            if row_idx >= max_rows or path_idx >= len(ordered_paths[port_id]):
+            if (row_idx >= highest_row
+                or path_idx >= len(ordered_paths[port_id]) - 1
+            ):
                 set_axes(ax, True)
                 ax.set_xlabel('time (s)')
             else:
