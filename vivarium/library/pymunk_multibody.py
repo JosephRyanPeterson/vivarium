@@ -419,7 +419,7 @@ def test_multibody(
         'initial_agents': agents,
         'screen': screen
     }
-    multibody = MultiBody(config)
+    multibody = PymunkMultibody(config)
 
     # run simulation
     time = 0
