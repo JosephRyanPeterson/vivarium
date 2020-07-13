@@ -6,6 +6,7 @@ Colony Metrics Experiment
 
 from __future__ import absolute_import, division, print_function
 
+from multiprocessing import Pool
 import os
 import random
 
@@ -27,7 +28,7 @@ from vivarium.core.emitter import (
     path_timeseries_from_embedded_timeseries,
     timeseries_from_data,
 )
-from vivarium.core.experiment import Experiment
+from vivarium.core.experiment import Experiment, MultiInvoke
 from vivarium.experiments.lattice_experiment import (
     agents_library,
     get_lattice_config,
@@ -79,6 +80,11 @@ def colony_metrics_experiment(config):
               which no location is specified will be placed randomly per
               the default behavior of
               :py:func:`vivarium.processes.multibody.single_agent_config`.
+            * **invoke**
+              (:py:class:`vivarium.core.experiment.MultiInvoke.invoke`):
+              The invoke function for multiprocessing. This argument is
+              optional, and if it is omitted, the experiment will not
+              use multiprocessing.
 
     Returns:
         vivarium.core.experiment.Experiment: An initialized experiment
@@ -125,12 +131,15 @@ def colony_metrics_experiment(config):
     }
     initial_state.update(config.get('initial_state', {}))
 
-    return Experiment({
+    experiment_config = {
         'processes': processes,
         'topology': topology,
         'emitter': emitter,
         'initial_state': initial_state,
-    })
+    }
+    if 'invoke' in config:
+        experiment_config['invoke'] = config['invoke']
+    return Experiment(experiment_config)
 
 
 def get_lattice_with_metrics_config():
@@ -168,21 +177,24 @@ def run_experiment(
     agent_config['config']['growth_rate_noise'] = 0
     agent_config['growth_rate'] = growth_rate
 
-    experiment_config = get_lattice_with_metrics_config()
-    experiment_config.update({
-        'n_agents': n_agents,
-        'agent': agent_config,
-        'locations': start_locations,
-    })
-    experiment = colony_metrics_experiment(experiment_config)
+    with Pool() as pool:
+        multi = MultiInvoke(pool)
+        experiment_config = get_lattice_with_metrics_config()
+        experiment_config.update({
+            'n_agents': n_agents,
+            'agent': agent_config,
+            'locations': start_locations,
+            'invoke': multi.invoke,
+        })
+        experiment = colony_metrics_experiment(experiment_config)
 
-    # simulate
-    settings = {
-        'emit_step': DEFAULT_EMIT_STEP,
-        'total_time': runtime,
-        'return_raw_data': True,
-    }
-    return simulate_experiment(experiment, settings), experiment_config
+        # simulate
+        settings = {
+            'emit_step': DEFAULT_EMIT_STEP,
+            'total_time': runtime,
+            'return_raw_data': True,
+        }
+        return simulate_experiment(experiment, settings), experiment_config
 
 
 @pytest.mark.slow
