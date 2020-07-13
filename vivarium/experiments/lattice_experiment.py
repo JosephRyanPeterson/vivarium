@@ -40,7 +40,7 @@ DEFAULT_ENVIRONMENT_TYPE = Lattice
 
 
 # agents and their configurations
-agents_library = {
+agent_library = {
     'growth_division': {
         'name': 'growth_division',
         'type': GrowthDivision,
@@ -115,7 +115,7 @@ def get_iAF1260b_environment():
         gradient=gradient,
     )
 
-environments_library = {
+environment_library = {
     'glc_lcts': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
         'config': get_lattice_config(),
@@ -138,42 +138,6 @@ def get_simulation_settings(
         'return_raw_data': return_raw_data
     }
 
-
-#
-# def test_growth_division_experiment():
-#     '''test growth_division_minimal agent in lattice experiment'''
-#     growth_rate = 0.005  # fast!
-#     total_time = 150
-#
-#     # get minimal agent config and set growth rate
-#     agent_config = agents_library['growth_division_minimal']
-#     agent_config['config']['growth_rate'] = growth_rate
-#     agent_config['number'] = 1
-#     agents_config = [agent_config]
-#
-#     # get environment config
-#     environment_config = environments_library['glc_lcts']
-#
-#     # simulate
-#     simulation_settings = get_simulation_settings(
-#         total_time=total_time,
-#         return_raw_data=True)
-#
-#     data = run_lattice_experiment(
-#         agents_config=agents_config,
-#         environment_config=environment_config,
-#         simulation_settings=simulation_settings)
-#
-#     # assert division
-#     time = list(data.keys())
-#     initial_agents = len(data[time[0]]['agents'])
-#     final_agents = len(data[time[-1]]['agents'])
-#     assert final_agents > initial_agents
-#
-#
-# def make_dir(out_dir):
-#     if not os.path.exists(out_dir):
-#         os.makedirs(out_dir)
 
 
 def main():
@@ -265,6 +229,8 @@ experiment_library = {
 def workflow():
     workflow = Workflow(
         name=NAME,
+        agent_library=agent_library,
+        environment_library=environment_library,
         experiment_library=experiment_library,
         )
 

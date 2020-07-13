@@ -19,23 +19,6 @@ from vivarium.core.composition import (
 )
 from vivarium.analysis.analyze import plot
 
-# plot settings
-def get_plot_settings(
-        fields=[],
-        tags=[]
-):
-    return {
-        'plot_types': {
-            'agents': {},
-            'snapshots': {
-                'fields': fields
-            },
-            'tags': {
-                'tag_ids': tags
-            }
-        }
-    }
-
 def plot_workflow_output(
         data,
         plot_settings={},
@@ -84,58 +67,6 @@ def plot_workflow_output(
         }
         plot_tags(data, plot_config)
 
-# Experiment run function
-def run_agent_environment_experiment(
-        agents_config=None,
-        environment_config=None,
-        initial_state=None,
-        initial_agent_state=None,
-        simulation_settings=None,
-        experiment_settings=None
-):
-    if experiment_settings is None:
-        experiment_settings = {}
-    if initial_state is None:
-        initial_state = {}
-    if initial_agent_state is None:
-        initial_agent_state = {}
-
-    # agents ids
-    agent_ids = []
-    for config in agents_config:
-        number = config['number']
-        if 'name' in config:
-            name = config['name']
-            if number > 1:
-                new_agent_ids = [name + '_' + str(num) for num in range(number)]
-            else:
-                new_agent_ids = [name]
-        else:
-            new_agent_ids = [str(uuid.uuid1()) for num in range(number)]
-        config['ids'] = new_agent_ids
-        agent_ids.extend(new_agent_ids)
-
-    # make the experiment
-    experiment = agent_environment_experiment(
-        agents_config=agents_config,
-        environment_config=environment_config,
-        initial_state=initial_state,
-        initial_agent_state=initial_agent_state,
-        settings=experiment_settings,
-    )
-
-    # simulate
-    settings = {
-        'total_time': simulation_settings['total_time'],
-        'emit_step': simulation_settings['emit_step'],
-        'return_raw_data': simulation_settings['return_raw_data']}
-    return simulate_experiment(
-        experiment,
-        settings,
-    )
-
-
-
 
 
 # parsing expression grammar for agents
@@ -158,16 +89,18 @@ def make_dir(out_dir):
 class Workflow():
 
     def __init__(
-        self,
-        name=None,
-        agents_library={},
-        environment_library={},
-        experiment_library={},
+            self,
+            name=None,
+            agent_library={},
+            environment_library={},
+            experiment_library={},
+            simulation_settings={},
+            plot_settings={},
     ):
         if name is None:
             name = timestamp()
 
-        self.agents_library = agents_library
+        self.agent_library = agent_library
         self.environment_library = environment_library
         self.experiment_library = experiment_library
 
@@ -177,10 +110,9 @@ class Workflow():
 
         # TODO plot settings
 
-        # TODO save out_dir
-        out_dir = os.path.join(EXPERIMENT_OUT_DIR, name)
-        make_dir(out_dir)
-        import ipdb; ipdb.set_trace()
+        # save workflow out_dir
+        self.out_dir = os.path.join(EXPERIMENT_OUT_DIR, name)
+        make_dir(self.out_dir)
 
 
     def add_arguments(self):
@@ -191,13 +123,13 @@ class Workflow():
             '--agents', '-a',
             type=str,
             nargs='+',
-            default=None,
+            default=argparse.SUPPRESS,
             help='A list of agent types and numbers in the format "agent_type1 number1 agent_type2 number2"'
         )
         parser.add_argument(
             '--environment', '-v',
             type=str,
-            default=None,
+            default=argparse.SUPPRESS,
             help='the environment type'
         )
         parser.add_argument(
@@ -215,23 +147,27 @@ class Workflow():
         parser.add_argument(
             '--experiment', '-e',
             type=str,
-            default=None,
+            default=argparse.SUPPRESS,
             help='preconfigured experiments'
         )
 
-        return parser.parse_args()
+        return vars(parser.parse_args())
+
 
     def execute(self):
 
-        if self.args.experiment:
-            import ipdb; ipdb.set_trace()
-            # get a preset experiment
+        if self.args['experiment']:
             # make a directory for this experiment
-            experiment_name = str(args.experiment)
-            control_out_dir = os.path.join(out_dir, experiment_name)
+            experiment_name = self.args['experiment']
+            control_out_dir = os.path.join(self.out_dir, experiment_name)
             make_dir(control_out_dir)
 
-            experiment_config = preset_experiments[experiment_name]
+            experiment_config = self.experiment_library[experiment_name]
+
+
+            import ipdb; ipdb.set_trace()
+
+
             agents_config = experiment_config['agents_config']
             environment_config = experiment_config['environment_config']
             simulation_settings = experiment_config['simulation_settings']
@@ -247,7 +183,7 @@ class Workflow():
         environment_config = environments_library[environment_type]
 
         # simulate
-        data = run_agent_environment_experiment(
+        data = self.run_experiment(
             agents_config=agents_config,
             environment_config=environment_config,
             initial_state=initial_state,
@@ -257,10 +193,77 @@ class Workflow():
 
         plot_settings['environment_config'] = environment_config
         plot_settings['agent_type'] = agent_type
+        # TODO -- use plot from analysis/analyze.py
         plot_experiment_output(
             data,
             plot_settings,
             out_dir,
         )
 
-        # TODO -- use plot from analysis/analyze.py
+
+    def run_experiment(
+            self,
+            agents_config=None,
+            environment_config=None,
+            initial_state=None,
+            initial_agent_state=None,
+            simulation_settings=None,
+            experiment_settings=None
+    ):
+        if experiment_settings is None:
+            experiment_settings = {}
+        if initial_state is None:
+            initial_state = {}
+        if initial_agent_state is None:
+            initial_agent_state = {}
+
+        # agents ids
+        agent_ids = []
+        for config in agents_config:
+            number = config['number']
+            if 'name' in config:
+                name = config['name']
+                if number > 1:
+                    new_agent_ids = [name + '_' + str(num) for num in range(number)]
+                else:
+                    new_agent_ids = [name]
+            else:
+                new_agent_ids = [str(uuid.uuid1()) for num in range(number)]
+            config['ids'] = new_agent_ids
+            agent_ids.extend(new_agent_ids)
+
+        # make the experiment
+        experiment = agent_environment_experiment(
+            agents_config=agents_config,
+            environment_config=environment_config,
+            initial_state=initial_state,
+            initial_agent_state=initial_agent_state,
+            settings=experiment_settings,
+        )
+
+        # simulate
+        settings = {
+            'total_time': simulation_settings['total_time'],
+            'emit_step': simulation_settings['emit_step'],
+            'return_raw_data': simulation_settings['return_raw_data']}
+        return simulate_experiment(
+            experiment,
+            settings,
+        )
+
+    def get_plot_settings(
+            self,
+            fields=[],
+            tags=[]
+    ):
+        return {
+            'plot_types': {
+                'agents': {},
+                'snapshots': {
+                    'fields': fields
+                },
+                'tags': {
+                    'tag_ids': tags
+                }
+            }
+        }
