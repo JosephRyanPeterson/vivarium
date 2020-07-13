@@ -28,6 +28,7 @@ from pint.quantity import _Quantity as Quantity
 
 #: Units registry that stores the units used throughout Vivarium
 units = pint.UnitRegistry()
+pint.set_application_registry(units)
 
 
 def remove_units(collection):
