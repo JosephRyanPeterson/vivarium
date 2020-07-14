@@ -574,7 +574,7 @@ class Store(object):
             the tree.
         * `_add` - Adds a state into the subtree:
             * path - Path to the added state key.
-            * value - The value of the added state.
+            * state - The value of the added state.
         * `_generate` - The value has four keys, which are essentially
             the arguments to the `generate()` function:
             * path - Path into the tree to generate this subtree.
