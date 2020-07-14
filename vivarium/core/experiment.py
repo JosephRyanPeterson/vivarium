@@ -572,6 +572,9 @@ class Store(object):
         * `_updater` - Override the default updater with any updater you want.
         * `_delete` - The value here is a list of paths to delete from
             the tree.
+        * `_add` - Adds a state into the subtree:
+            * path - Path to the added state key.
+            * value - The value of the added state.
         * `_generate` - The value has four keys, which are essentially
             the arguments to the `generate()` function:
             * path - Path into the tree to generate this subtree.
