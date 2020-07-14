@@ -193,7 +193,7 @@ def test_experiment(seed=1):
         os.makedirs(OUT_DIR)
     data, _ = run_experiment(
         start_locations=[[0.3, 0.3], [0.5, 0.5]],
-        growth_rate=0.001,
+        # growth_rate=0.001,
     )
     path_ts = path_timeseries_from_data(data)
     filtered = {
