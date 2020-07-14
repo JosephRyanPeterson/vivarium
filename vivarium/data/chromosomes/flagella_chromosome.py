@@ -407,6 +407,7 @@ class FlagellaChromosome(object):
             'flhDC',
             'flagellar motor switch',
             'flagella',
+            'flagellar export apparatus subunit',
             'flagellar export apparatus',
             'flagellar motor']
 
@@ -420,8 +421,8 @@ class FlagellaChromosome(object):
                 'fliG': -26.0,
                 'fliM': -34.0,
                 'fliN': -1.0},
-            'flagellar export apparatus reaction': {
-                'flagellar export apparatus': 1.0,
+            'flagellar export apparatus reaction 1': {
+                'flagellar export apparatus subunit': 1.0,
                 'flhA': -1.0,
                 'flhB': -1.0,
                 'fliO': -1.0,
@@ -429,7 +430,10 @@ class FlagellaChromosome(object):
                 'fliQ': -1.0,
                 'fliR': -1.0,
                 'fliJ': -1.0,
-                'fliI': -6.0,
+                'fliI': -6.0},
+            'flagellar export apparatus reaction 2': {
+                'flagellar export apparatus': 1.0,
+                'flagellar export apparatus subunit': -1.0,
                 'fliH': -12.0},
             'flagellar motor reaction': {
                 'flagellar motor': 1.0,
@@ -459,7 +463,8 @@ class FlagellaChromosome(object):
         self.complexation_rates = {
             'flhDC': reaction_default,
             'flagellar motor switch reaction': reaction_default,
-            'flagellar export apparatus reaction': reaction_default,
+            'flagellar export apparatus reaction 1': reaction_default,
+            'flagellar export apparatus reaction 2': reaction_default,
             'flagellar motor reaction': reaction_default,
             'flagellum reaction': reaction_default}
 

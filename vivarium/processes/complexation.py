@@ -114,10 +114,14 @@ class Complexation(Process):
         for index, complex_id in enumerate(self.complex_ids):
             substrate[index + len(self.monomer_ids)] = complexes[complex_id]
 
-        result = self.complexation.evolve(
-            timestep,
-            substrate,
-            self.complexation_rates)
+        try:
+            result = self.complexation.evolve(
+                timestep,
+                substrate,
+                self.complexation_rates)
+        except:
+            print('Failed simulation. \n substrate {} \n monomers {} \n complexes {}'.format(
+                substrate, self.monomer_ids, self.complex_ids))
 
         outcome = result['outcome'] - substrate
 
