@@ -379,7 +379,7 @@ def main():
             initial_agent_state=get_flagella_initial_state(),
             simulation_settings=get_simulation_settings(
                 emit_step=20,
-                total_time=500,
+                total_time=3000,
             ),
             plot_settings=get_plot_settings(
                 fields=[

@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 import random
+import uuid
 
 from vivarium.core.process import Generator
 from vivarium.core.experiment import Experiment
@@ -10,6 +11,7 @@ from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     plot_compartment_topology,
     plot_simulation_output,
+    save_timeseries,
     COMPARTMENT_OUT_DIR,
 )
 from vivarium.data.nucleotides import nucleotides
@@ -22,7 +24,10 @@ from vivarium.parameters.parameters import (
     get_parameters_logspace,
     plot_scan_results,
 )
+
+# vivarium libraries
 from vivarium.library.dict_utils import deep_merge
+from vivarium.library.units import units
 
 # processes
 from vivarium.processes.transcription import UNBOUND_RNAP_KEY
@@ -40,21 +45,36 @@ from vivarium.compartments.gene_expression import (
 
 
 NAME = 'flagella_gene_expression'
+COMPARTMENT_TIMESTEP = 10.0
 
+def default_metabolism_config():
+    metabolism_config = get_iAF1260b_config()
+    metabolism_config.update({
+        'initial_mass': 1339.0,  # 200, # fg of metabolite pools
+        'time_step': COMPARTMENT_TIMESTEP,
+    })
+    return metabolism_config
 
 
 class FlagellaExpressionMetabolism(Generator):
     defaults = {
         'boundary_path': ('boundary',),
-        'agents_path': ('..', '..', 'agents',),
+        'agents_path': ('agents',),  # ('..', '..', 'agents',),
         'daughter_path': tuple(),
-        'metabolism': get_iAF1260b_config()
+        'metabolism': default_metabolism_config(),
+        'gene_expression': {
+            'initial_mass': 0.0 * units.fg,
+            'time_step': COMPARTMENT_TIMESTEP,
+        }
     }
 
     def __init__(self, config=None):
         if not config:
             config = {}
         self.config = deep_merge(self.defaults, config)
+
+        if 'agent_id' not in self.config:
+            self.config['agent_id'] = str(uuid.uuid1())
 
     def generate_processes(self, config):
         daughter_path = config['daughter_path']
@@ -69,6 +89,7 @@ class FlagellaExpressionMetabolism(Generator):
         # configure a flagella gene expression compartment, and get its network
         flagella_expression_config = get_flagella_expression_config({})
         flagella_expression_config['global_path'] = boundary_path
+        flagella_expression_config.update(config['gene_expression'])
         gene_expression = GeneExpression(flagella_expression_config)
         gene_expression_network = gene_expression.generate()
         processes = gene_expression_network['processes']
@@ -77,18 +98,9 @@ class FlagellaExpressionMetabolism(Generator):
         # Metabolism
         metabolism = Metabolism(config['metabolism'])
 
-
         # Division
         # configure division condition and meta-division processes
-        # get initial volume from metabolism
-        division_state = config.get('division', {})
-        division_state.update({'initial_state': metabolism.initial_state})
-
-        # import ipdb; ipdb.set_trace()
-        # TODO -- set 'division_volume'
         division_condition = DivisionVolume({})
-
-        # meta-division
         meta_division_config = dict(
             {},
             daughter_path=daughter_path,
@@ -243,11 +255,15 @@ def run_flagella_compartment(compartment, out_dir='out'):
     initial_state = get_flagella_initial_state()
     settings = {
         # a cell cycle of 2520 sec is expected to express 8 flagella.
-        # 2 flagella expected in ~630 seconds.
+        # 2 flagella expected in approximately 630 seconds.
         'total_time': 760,
+        'emit_step': COMPARTMENT_TIMESTEP,
         'verbose': True,
         'initial_state': initial_state}
     timeseries = simulate_compartment_in_experiment(compartment, settings)
+
+    # save reference timeseries
+    save_timeseries(timeseries, out_dir)
 
     plot_config = {
         'name': 'flagella_expression',

@@ -33,7 +33,9 @@ class GeneExpression(Generator):
 
     defaults = {
         'global_path': ('global',),
-        'initial_mass': 1339.0 * units.fg}
+        'initial_mass': 1339.0 * units.fg,
+        'time_step': 1.0,
+    }
 
     def __init__(self, config):
         self.config = config
@@ -41,10 +43,22 @@ class GeneExpression(Generator):
         self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
 
     def generate_processes(self, config):
-        transcription = Transcription(config.get('transcription', self.config.get('transcription')))
-        translation = Translation(config.get('translation', self.config.get('translation')))
-        degradation = RnaDegradation(config.get('degradation', self.config.get('degradation')))
-        complexation = Complexation(config.get('complexation', self.config.get('complexation')))
+        transcription_config = config.get('transcription', self.config.get('transcription'))
+        translation_config = config.get('translation', self.config.get('translation'))
+        degradation_config = config.get('degradation', self.config.get('degradation'))
+        complexation_config = config.get('complexation', self.config.get('complexation'))
+
+        # update timestep
+        transcription_config.update({'time_step': self.config['time_step']})
+        translation_config.update({'time_step': self.config['time_step']})
+        degradation_config.update({'time_step': self.config['time_step']})
+        complexation_config.update({'time_step': self.config['time_step']})
+
+        # make the processes
+        transcription = Transcription(transcription_config)
+        translation = Translation(translation_config)
+        degradation = RnaDegradation(degradation_config)
+        complexation = Complexation(complexation_config)
         mass_deriver = TreeMass(config.get('mass_deriver', {
             'initial_mass': config.get('initial_mass', self.initial_mass)}))
         division = DivisionVolume(config)

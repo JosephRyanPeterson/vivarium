@@ -45,7 +45,9 @@ class Complexation(Process):
         'complex_ids': chromosome.complexation_complex_ids,
         'stoichiometry': chromosome.complexation_stoichiometry,
         'rates': chromosome.complexation_rates,
-        'mass_deriver_key': 'mass_deriver'}
+        'mass_deriver_key': 'mass_deriver',
+        'time_step': 1.0,
+    }
 
     def __init__(self, initial_parameters=None):
         if not initial_parameters:

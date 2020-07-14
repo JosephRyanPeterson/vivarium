@@ -101,7 +101,9 @@ class Translation(Process):
         'concentration_keys': [],
 
         'mass_deriver_key': 'mass_deriver',
-        'concentrations_deriver_key': 'translation_concentrations'}
+        'concentrations_deriver_key': 'translation_concentrations',
+        'time_step': 1.0,
+    }
 
     def __init__(self, initial_parameters=None):
         '''A stochastic translation model
@@ -380,17 +382,20 @@ class Translation(Process):
             'molecules': {
                 molecule: add_mass({
                     '_emit': True,
-                    '_default': 0}, molecular_weight, molecule)
+                    '_default': 0,
+                    '_divider': 'split'}, molecular_weight, molecule)
                 for molecule in self.molecule_ids},
 
             'transcripts': {
                 transcript: add_mass({
-                    '_default': 0}, molecular_weight, transcript)
+                    '_default': 0,
+                    '_divider': 'split'}, molecular_weight, transcript)
                 for transcript in list(self.operons.keys())},
 
             'proteins': {
                 protein: add_mass({
                     '_default': 0,
+                    '_divider': 'split',
                     '_emit': True}, molecular_weight, protein)
                 for protein in self.all_protein_keys},
 
