@@ -14,6 +14,8 @@ from vivarium.core.composition import (
 )
 from vivarium.library.make_network import save_network
 from vivarium.library.units import units
+from vivarium.library.dict_utils import deep_merge
+
 # processes
 from vivarium.data.amino_acids import amino_acids
 from vivarium.processes.tree_mass import TreeMass
@@ -38,7 +40,7 @@ class GeneExpression(Generator):
     }
 
     def __init__(self, config):
-        self.config = config
+        self.config = deep_merge(dict(self.defaults), config)
         self.global_path = config.get('global_path', self.defaults['global_path'])
         self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
 
