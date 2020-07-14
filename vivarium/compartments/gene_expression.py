@@ -37,6 +37,10 @@ class GeneExpression(Generator):
         'global_path': ('global',),
         'initial_mass': 1339.0 * units.fg,
         'time_step': 1.0,
+        'transcription': {},
+        'translation': {},
+        'degradation': {},
+        'complexation': {},
     }
 
     def __init__(self, config):
