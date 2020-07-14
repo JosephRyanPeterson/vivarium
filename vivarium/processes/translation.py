@@ -11,6 +11,7 @@ import logging as log
 from arrow import StochasticSystem
 
 from vivarium.core.process import Process
+from vivarium.core.experiment import pp
 from vivarium.data.amino_acids import amino_acids
 from vivarium.data.molecular_weight import molecular_weight
 from vivarium.library.datum import Datum
@@ -309,6 +310,8 @@ class Translation(Process):
 
         self.monomer_ids = self.parameters['monomer_ids']
         self.molecule_ids = self.parameters['molecule_ids']
+        self.molecule_ids.append('ATP')
+
         self.protein_ids = self.parameters['protein_ids']
         self.symbol_to_monomer = self.parameters['symbol_to_monomer']
         self.elongation = 0
@@ -535,6 +538,11 @@ class Translation(Process):
             key: count * -1
             for key, count in elongation.monomers.items()}
 
+        # ATP hydrolysis cost is 2 per amino acid elongation
+        molecules['ATP'] = 0
+        for count in elongation.monomers.values():
+            molecules['ATP'] -= 2 * count
+
         completed_ribosomes = (
             set(original_ribosome_keys) - set(ribosomes.keys()))
         ribosome_updates = {
@@ -559,7 +567,7 @@ def test_translation():
 
     states = {
         'ribosomes': {},
-        'molecules': {},
+        'molecules': {'ATP': 100000},
         'proteins': {UNBOUND_RIBOSOME_KEY: 10},
         'transcripts': {
             'oA': 10,
@@ -572,7 +580,7 @@ def test_translation():
 
     update = translation.next_update(10.0, states)
 
-    print(update)
+    pp(update)
     print('complete!')
 
 
