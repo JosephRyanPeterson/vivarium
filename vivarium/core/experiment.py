@@ -613,9 +613,9 @@ class Store(object):
                     path = added['path']
                     state = added['state']
                     target = self.establish_path(path, {})
+                    self.apply_subschemas()
+                    self.apply_defaults()
                     target.set_value(state)
-                self.apply_subschemas()
-                self.apply_defaults()
 
                 update = dissoc(update, ['_add'])
 
@@ -679,10 +679,10 @@ class Store(object):
                         topology_updates = deep_merge(
                             topology_updates,
                             {key: inner_updates})
-                elif self.subschema:
-                    self.inner[key] = Store(self.subschema, self)
-                    self.inner[key].set_value(value)
-                    self.inner[key].apply_defaults()
+                # elif self.subschema:
+                #     self.inner[key] = Store(self.subschema, self)
+                #     self.inner[key].set_value(value)
+                #     self.inner[key].apply_defaults()
 
             return topology_updates
 

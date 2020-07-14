@@ -267,7 +267,7 @@ def compartment_in_experiment(compartment, settings={}):
         })
         topology['timeline_process'].update({
                 port_id: ports[port_id]
-                for port_id in timeline_process.ports if port_id is not 'global'})
+                for port_id in timeline_process.ports if port_id != 'global'})
 
     if environment:
         '''
