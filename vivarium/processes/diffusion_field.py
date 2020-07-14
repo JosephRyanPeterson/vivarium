@@ -312,7 +312,7 @@ class DiffusionField(Process):
         return schema
 
     def next_update(self, timestep, states):
-        fields = states['fields'].copy()
+        fields = states['fields']
         agents = states['agents']
 
         # uptake/secretion from agents
