@@ -216,6 +216,7 @@ class Transcription(Process):
 
         self.transcription_factors = self.parameters['transcription_factors']
         self.molecule_ids = self.parameters['molecule_ids']
+        self.molecule_ids.append('ATP')
         self.monomer_ids = self.parameters['monomer_ids']
         self.transcript_ids = self.parameters['transcript_ids']
         self.elongation = 0
@@ -501,6 +502,11 @@ class Transcription(Process):
             key: count * -1
             for key, count in elongation.monomers.items()}
 
+        # 1 ATP hydrolysis cost per nucleotide elongation
+        molecules['ATP'] = 0
+        for count in elongation.monomers.values():
+            molecules['ATP'] -= count
+
         chromosome_dict = chromosome.to_dict()
         rnaps = chromosome_dict['rnaps']
 
@@ -541,12 +547,15 @@ def test_transcription():
     chromosome = Chromosome(toy_chromosome_config)
     transcription = Transcription(parameters)
 
+    initial_molecules = {
+                nucleotide: 10
+                for nucleotide in transcription.monomer_ids}
+    initial_molecules['ATP'] = 100000
+
     experiment = process_in_experiment(transcription, {
         'initial_state': {
             'chromosome': chromosome.to_dict(),
-            'molecules': {
-                nucleotide: 10
-                for nucleotide in transcription.monomer_ids},
+            'molecules': initial_molecules,
             'proteins': {UNBOUND_RNAP_KEY: 10},
             'factors': {'tfA': 0.2, 'tfB': 0.7}}})
 
