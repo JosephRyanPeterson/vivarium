@@ -179,7 +179,7 @@ def divide_split(state):
     Raises:
         Exception: if ``state`` is of an unrecognized type.
     """
-    if isinstance(state, int):
+    if isinstance(state, (int, np.integer)):
         remainder = state % 2
         half = int(state / 2)
         if random.choice([True, False]):

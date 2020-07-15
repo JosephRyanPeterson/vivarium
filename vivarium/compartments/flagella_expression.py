@@ -4,6 +4,7 @@ import os
 import argparse
 import random
 
+from vivarium.core.process import Generator
 from vivarium.core.experiment import Experiment
 from vivarium.core.composition import (
     simulate_compartment_in_experiment,
@@ -16,21 +17,118 @@ from vivarium.data.amino_acids import amino_acids
 from vivarium.data.chromosomes.flagella_chromosome import FlagellaChromosome
 from vivarium.plots.gene_expression import plot_timeseries_heatmaps
 from vivarium.states.chromosome import Chromosome, rna_bases, sequence_monomers
-from vivarium.processes.transcription import UNBOUND_RNAP_KEY
-from vivarium.processes.translation import UNBOUND_RIBOSOME_KEY
-from vivarium.compartments.gene_expression import (
-    GeneExpression,
-    plot_gene_expression_output,
-    gene_network_plot,
-)
 from vivarium.parameters.parameters import (
     parameter_scan,
     get_parameters_logspace,
     plot_scan_results,
 )
+from vivarium.library.dict_utils import deep_merge
+
+# processes
+from vivarium.processes.transcription import UNBOUND_RNAP_KEY
+from vivarium.processes.translation import UNBOUND_RIBOSOME_KEY
+from vivarium.processes.metabolism import Metabolism, get_iAF1260b_config
+from vivarium.processes.division_volume import DivisionVolume
+from vivarium.processes.meta_division import MetaDivision
+
+# compartments
+from vivarium.compartments.gene_expression import (
+    GeneExpression,
+    plot_gene_expression_output,
+    gene_network_plot,
+)
 
 
 NAME = 'flagella_gene_expression'
+
+
+
+class FlagellaExpressionMetabolism(Generator):
+    defaults = {
+        'boundary_path': ('boundary',),
+        'agents_path': ('..', '..', 'agents',),
+        'daughter_path': tuple(),
+        'metabolism': get_iAF1260b_config()
+    }
+
+    def __init__(self, config=None):
+        if not config:
+            config = {}
+        self.config = deep_merge(self.defaults, config)
+
+    def generate_processes(self, config):
+        daughter_path = config['daughter_path']
+        agent_id = config['agent_id']
+
+        # get paths
+        boundary_path = config['boundary_path']
+        agents_path = config['agents_path']
+        external_path = boundary_path + ('external',)
+        exchange_path = boundary_path + ('exchange',)
+
+        # configure a flagella gene expression compartment, and get its network
+        flagella_expression_config = get_flagella_expression_config({})
+        flagella_expression_config['global_path'] = boundary_path
+        gene_expression = GeneExpression(flagella_expression_config)
+        gene_expression_network = gene_expression.generate()
+        processes = gene_expression_network['processes']
+        self.topology = gene_expression_network['topology']
+
+        # Metabolism
+        metabolism = Metabolism(config['metabolism'])
+
+
+        # Division
+        # configure division condition and meta-division processes
+        # get initial volume from metabolism
+        division_state = config.get('division', {})
+        division_state.update({'initial_state': metabolism.initial_state})
+
+        # import ipdb; ipdb.set_trace()
+        # TODO -- set 'division_volume'
+        division_condition = DivisionVolume({})
+
+        # meta-division
+        meta_division_config = dict(
+            {},
+            daughter_path=daughter_path,
+            agent_id=agent_id,
+            compartment=self)
+        meta_division = MetaDivision(meta_division_config)
+
+        # combine processes
+        processes['metabolism'] = metabolism
+        processes['division_condition'] = division_condition
+        processes['meta_division'] = meta_division
+
+        # save the topology for generate_topology
+        self.topology['metabolism'] = {
+                'internal': ('molecules',),
+                'external': external_path,
+                'reactions': ('reactions',),
+                'exchange': exchange_path,
+                'flux_bounds': ('flux_bounds',),
+                'global': boundary_path
+        }
+        self.topology['division_condition'] = {
+            'global': boundary_path
+        }
+        self.topology['meta_division'] = {
+            'global': boundary_path,
+            'cells': agents_path
+        }
+
+        return processes
+
+    def generate_topology(self, config):
+        return self.topology
+
+
+
+
+def flagella_expression_compartment(config):
+    flagella_expression_config = get_flagella_expression_config(config)
+    return GeneExpression(flagella_expression_config)
 
 
 def get_flagella_expression_config(config):
@@ -112,25 +210,17 @@ def get_flagella_initial_state(ports={}):
     }
 
 
-def get_flagella_compartment(config):
-    flagella_expression_config = get_flagella_expression_config(config)
-    return GeneExpression(flagella_expression_config)
-
-
-def make_compartment_topology(out_dir='out'):
-    # load the compartment
-    flagella_compartment = get_flagella_compartment({})
-
+def make_compartment_topology(compartment, out_dir='out'):
     settings = {'show_ports': True}
     plot_compartment_topology(
-        flagella_compartment,
+        compartment,
         settings,
         out_dir)
 
 
 def make_flagella_network(out_dir='out'):
     # load the compartment
-    flagella_compartment = get_flagella_compartment({})
+    flagella_compartment = flagella_expression_compartment({})
 
     # make expression network plot
     flagella_expression_processes = flagella_compartment.generate_processes({})
@@ -144,9 +234,7 @@ def make_flagella_network(out_dir='out'):
     gene_network_plot(data, out_dir)
 
 
-def run_flagella_expression(out_dir='out'):
-    # load the compartment
-    flagella_compartment = get_flagella_compartment({})
+def run_flagella_compartment(compartment, out_dir='out'):
 
     # get flagella data
     flagella_data = FlagellaChromosome()
@@ -159,7 +247,7 @@ def run_flagella_expression(out_dir='out'):
         'total_time': 760,
         'verbose': True,
         'initial_state': initial_state}
-    timeseries = simulate_compartment_in_experiment(flagella_compartment, settings)
+    timeseries = simulate_compartment_in_experiment(compartment, settings)
 
     plot_config = {
         'name': 'flagella_expression',
@@ -199,7 +287,7 @@ def run_flagella_expression(out_dir='out'):
 
 
 def test_flagella_expression():
-    flagella_compartment = get_flagella_compartment({})
+    flagella_compartment = flagella_expression_compartment({})
 
     # initial state for flagella complexation
     initial_state = get_flagella_initial_state()
@@ -231,7 +319,7 @@ def test_flagella_expression():
 
 
 def scan_flagella_expression_parameters():
-    compartment = get_flagella_compartment({})
+    compartment = flagella_expression_compartment({})
     flagella_data = FlagellaChromosome()
 
     # conditions
@@ -281,6 +369,7 @@ if __name__ == '__main__':
     parser.add_argument('--scan', '-s', action='store_true', default=False,)
     parser.add_argument('--network', '-n', action='store_true', default=False,)
     parser.add_argument('--topology', '-t', action='store_true', default=False,)
+    parser.add_argument('--metabolism', '-m', action='store_true', default=False, )
     args = parser.parse_args()
 
     if args.scan:
@@ -289,7 +378,16 @@ if __name__ == '__main__':
     elif args.network:
         make_flagella_network(out_dir)
     elif args.topology:
-        make_compartment_topology(out_dir)
+        compartment = flagella_expression_compartment({})
+        make_compartment_topology(compartment, out_dir)
+    elif args.metabolism:
+        mtb_out_dir = os.path.join(out_dir, 'metabolism')
+        if not os.path.exists(mtb_out_dir):
+            os.makedirs(mtb_out_dir)
+        compartment = FlagellaExpressionMetabolism({})
+        make_compartment_topology(compartment, mtb_out_dir)
+        run_flagella_compartment(compartment, mtb_out_dir)
     else:
-        run_flagella_expression(out_dir)
+        compartment = flagella_expression_compartment({})
+        run_flagella_compartment(compartment, out_dir)
 

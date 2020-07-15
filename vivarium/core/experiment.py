@@ -572,6 +572,9 @@ class Store(object):
         * `_updater` - Override the default updater with any updater you want.
         * `_delete` - The value here is a list of paths to delete from
             the tree.
+        * `_add` - Adds a state into the subtree:
+            * path - Path to the added state key.
+            * state - The value of the added state.
         * `_generate` - The value has four keys, which are essentially
             the arguments to the `generate()` function:
             * path - Path into the tree to generate this subtree.
@@ -613,9 +616,9 @@ class Store(object):
                     path = added['path']
                     state = added['state']
                     target = self.establish_path(path, {})
+                    self.apply_subschemas()
+                    self.apply_defaults()
                     target.set_value(state)
-                self.apply_subschemas()
-                self.apply_defaults()
 
                 update = dissoc(update, ['_add'])
 
@@ -679,10 +682,10 @@ class Store(object):
                         topology_updates = deep_merge(
                             topology_updates,
                             {key: inner_updates})
-                elif self.subschema:
-                    self.inner[key] = Store(self.subschema, self)
-                    self.inner[key].set_value(value)
-                    self.inner[key].apply_defaults()
+                # elif self.subschema:
+                #     self.inner[key] = Store(self.subschema, self)
+                #     self.inner[key].set_value(value)
+                #     self.inner[key].apply_defaults()
 
             return topology_updates
 

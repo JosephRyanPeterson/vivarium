@@ -76,7 +76,9 @@ def agent_environment_experiment(
         agents_config=None,
         environment_config=None,
         initial_state=None,
-        settings=None
+        settings=None,
+        initial_agent_state=None,
+        invoke=None
 ):
     if settings is None:
         settings = {}
@@ -91,6 +93,12 @@ def agent_environment_experiment(
         agent_ids = agents_config['ids']
         agent_compartment = agent_type(agents_config['config'])
         agents = make_agents(agent_ids, agent_compartment, agents_config['config'])
+
+        if initial_agent_state:
+            initial_state['agents'] = {
+                agent_id: initial_agent_state
+                for agent_id in agent_ids}
+
     elif isinstance(agents_config, list):
         # list with multiple agent configurations
         agents = {
@@ -104,12 +112,19 @@ def agent_environment_experiment(
             deep_merge(agents['processes'], new_agents['processes'])
             deep_merge(agents['topology'], new_agents['topology'])
 
+            if initial_agent_state:
+                if 'agents' not in initial_state:
+                    initial_state['agents'] = {}
+                initial_state['agents'].update({
+                    agent_id: initial_agent_state
+                    for agent_id in agent_ids})
+
     # initialize the environment
     environment_type = environment_config['type']
     environment_compartment = environment_type(environment_config['config'])
 
     # combine processes and topologies
-    network = environment_compartment.generate({})
+    network = environment_compartment.generate()
     processes = network['processes']
     topology = network['topology']
     processes['agents'] = agents['processes']
@@ -124,11 +139,15 @@ def agent_environment_experiment(
         'names': ('names',)
     }
 
-    return Experiment({
+    experiment_config = {
         'processes': processes,
         'topology': topology,
         'emitter': emitter,
-        'initial_state': initial_state})
+        'initial_state': initial_state,
+    }
+    if invoke:
+        experiment_config['invoke'] = invoke
+    return Experiment(experiment_config)
 
 def process_in_compartment(process, topology={}):
     """ put a lone process in a compartment"""
@@ -258,7 +277,7 @@ def compartment_in_experiment(compartment, settings={}):
         })
         topology['timeline_process'].update({
                 port_id: ports[port_id]
-                for port_id in timeline_process.ports if port_id is not 'global'})
+                for port_id in timeline_process.ports if port_id != 'global'})
 
     if environment:
         '''
@@ -644,7 +663,9 @@ def plot_agents_multigen(data, settings={}, out_dir='out', filename='agents'):
             ax.set_xlim([time_vec[0], time_vec[-1]])
 
             # if last state in this port, add time ticks
-            if row_idx >= max_rows or path_idx >= len(ordered_paths[port_id]):
+            if (row_idx >= highest_row
+                or path_idx >= len(ordered_paths[port_id]) - 1
+            ):
                 set_axes(ax, True)
                 ax.set_xlabel('time (s)')
             else:
