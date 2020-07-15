@@ -201,7 +201,10 @@ def get_path_list_from_dict(dictionary):
 
 
 def get_value_from_path(dictionary, path):
-    return reduce(operator.getitem, path, dictionary)
+    try:
+        return reduce(operator.getitem, path, dictionary)
+    except:
+        return None
 
 
 def make_path_dict(embedded_dict):

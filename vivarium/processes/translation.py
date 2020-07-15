@@ -273,7 +273,7 @@ class Translation(Process):
         ... )
         >>> update = translation.next_update(1, states)
         >>> print(update['ribosomes'])
-        {1: <class 'vivarium.processes.translation.Ribosome'>: {'id': 1, 'state': 'occluding', 'position': 9, 'template': ('oAZ', 'eZ'), 'template_index': 0, 'terminator': 0}, 2: <class 'vivarium.processes.translation.Ribosome'>: {'id': 2, 'state': 'occluding', 'position': 9, 'template': ('oAZ', 'eZ'), 'template_index': 0, 'terminator': 0}, '_delete': []}
+        {'_add': [{'path': (1,), 'state': <class 'vivarium.processes.translation.Ribosome'>: {'id': 1, 'state': 'occluding', 'position': 9, 'template': ('oAZ', 'eZ'), 'template_index': 0, 'terminator': 0}}, {'path': (2,), 'state': <class 'vivarium.processes.translation.Ribosome'>: {'id': 2, 'state': 'occluding', 'position': 9, 'template': ('oAZ', 'eZ'), 'template_index': 0, 'terminator': 0}}], '_delete': []}
         '''
 
         if not initial_parameters:
@@ -538,20 +538,31 @@ class Translation(Process):
             key: count * -1
             for key, count in elongation.monomers.items()}
 
+        original = set(original_ribosome_keys)
+        current = set(ribosomes.keys())
+        bound_ribosomes = current - original
+        completed_ribosomes = original - current
+        continuing_ribosomes = original - completed_ribosomes
+
         # ATP hydrolysis cost is 2 per amino acid elongation
         molecules['ATP'] = 0
         for count in elongation.monomers.values():
             molecules['ATP'] -= 2 * count
 
-        completed_ribosomes = (
-            set(original_ribosome_keys) - set(ribosomes.keys()))
         ribosome_updates = {
-            id: ribosome
-            for id, ribosome in ribosomes.items()
-            if id not in completed_ribosomes}
-        ribosome_updates['_delete'] = [
+            id: ribosomes[id]
+            for id in continuing_ribosomes}
+
+        add_ribosomes = [
+            {'path': (bound,), 'state': ribosomes[bound]}
+            for bound in bound_ribosomes]
+
+        delete_ribosomes = [
             (completed,)
             for completed in completed_ribosomes]
+
+        ribosome_updates['_add'] = add_ribosomes
+        ribosome_updates['_delete'] = delete_ribosomes
 
         update = {
             'ribosomes': ribosome_updates,

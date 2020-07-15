@@ -12,7 +12,7 @@ from arrow import StochasticSystem
 
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge, keys_list
-from vivarium.core.experiment import pp
+from vivarium.core.experiment import pp, pf
 from vivarium.core.process import Process
 from vivarium.core.composition import process_in_experiment
 from vivarium.states.chromosome import Chromosome, Rnap, Promoter, frequencies, add_merge, toy_chromosome_config
@@ -185,7 +185,7 @@ class Transcription(Process):
         ... }
         >>> update = transcription_process.next_update(1.0, state)
         >>> print(update['chromosome'])
-        {'rnaps': {2: <class 'vivarium.states.chromosome.Rnap'>: {'id': 2, 'template': 'pA', 'template_index': 0, 'terminator': 1, 'domain': 0, 'state': 'polymerizing', 'position': 7}, 3: <class 'vivarium.states.chromosome.Rnap'>: {'id': 3, 'template': 'pB', 'template_index': 1, 'terminator': 0, 'domain': 0, 'state': 'occluding', 'position': 3}, 4: <class 'vivarium.states.chromosome.Rnap'>: {'id': 4, 'template': 'pA', 'template_index': 0, 'terminator': 0, 'domain': 0, 'state': 'occluding', 'position': 0}, '_delete': []}, 'rnap_id': 4, 'domains': {0: <class 'vivarium.states.chromosome.Domain'>: {'id': 0, 'lead': 0, 'lag': 0, 'children': []}}, 'root_domain': 0}
+        {'rnaps': {'_add': [{'path': (2,), 'state': <class 'vivarium.states.chromosome.Rnap'>: {'id': 2, 'template': 'pA', 'template_index': 0, 'terminator': 1, 'domain': 0, 'state': 'polymerizing', 'position': 7}}, {'path': (3,), 'state': <class 'vivarium.states.chromosome.Rnap'>: {'id': 3, 'template': 'pB', 'template_index': 1, 'terminator': 0, 'domain': 0, 'state': 'occluding', 'position': 3}}, {'path': (4,), 'state': <class 'vivarium.states.chromosome.Rnap'>: {'id': 4, 'template': 'pA', 'template_index': 0, 'terminator': 0, 'domain': 0, 'state': 'occluding', 'position': 0}}], '_delete': []}, 'rnap_id': 4, 'domains': {0: <class 'vivarium.states.chromosome.Domain'>: {'id': 0, 'lead': 0, 'lag': 0, 'children': []}}, 'root_domain': 0}
         '''
 
         if not initial_parameters:
@@ -510,15 +510,25 @@ class Transcription(Process):
         chromosome_dict = chromosome.to_dict()
         rnaps = chromosome_dict['rnaps']
 
-        completed_rnaps = set(original_rnap_keys) - set(rnaps.keys())
+        original = set(original_rnap_keys)
+        current = set(rnaps.keys())
+        bound_rnaps = current - original
+        completed_rnaps = original - current
+        continuing_rnaps = original - completed_rnaps
+
         rnap_updates = {
-            rnap_id: rnap
-            for rnap_id, rnap in rnaps.items()
-            if rnap_id not in completed_rnaps}
+            rnap_id: rnaps[rnap_id]
+            for rnap_id in continuing_rnaps}
+
+        add_rnaps = [
+            {'path': (bound,), 'state': rnaps[bound]}
+            for bound in bound_rnaps]
+
         delete_rnaps = [
             (completed,)
             for completed in completed_rnaps]
 
+        rnap_updates['_add'] = add_rnaps
         rnap_updates['_delete'] = delete_rnaps
         chromosome_dict['rnaps'] = rnap_updates
 

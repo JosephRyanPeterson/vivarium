@@ -36,6 +36,22 @@ def gaussian(deviation, distance):
 def make_gradient(gradient, n_bins, size):
     '''Create a gradient from a configuration
 
+    **Uniform**
+
+    A uniform gradient fills the field evenly with each molecule, at
+    the concentrations specified.
+
+    Example configuration:
+
+    .. code-block:: python
+
+        'gradient': {
+            'type': 'uniform',
+            'molecules': {
+                'mol_id1': 1.0,
+                'mol_id2': 2.0
+            }},
+
     **Gaussian**
 
     A gaussian gradient multiplies the base concentration of the given
@@ -176,6 +192,11 @@ def make_gradient(gradient, n_bins, size):
                     distance = np.sqrt(dx ** 2 + dy ** 2)
                     field[x_bin][y_bin] = scale * base ** (distance/1000)
             fields[molecule_id] = field
+
+    elif gradient.get('type') == 'uniform':
+        for molecule_id, fill_value in gradient['molecules'].items():
+            fields[molecule_id] = np.full((bins_x, bins_y), fill_value, dtype=np.float64)
+
     return fields
 
 
@@ -291,7 +312,7 @@ class DiffusionField(Process):
         return schema
 
     def next_update(self, timestep, states):
-        fields = states['fields'].copy()
+        fields = states['fields']
         agents = states['agents']
 
         # uptake/secretion from agents
