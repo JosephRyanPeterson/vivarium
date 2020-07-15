@@ -256,6 +256,29 @@ class NumpySerializer(Serializer):
     def deserialize(self, data):
         return np.array(data)
 
+class NumpyScalarSerializer(Serializer):
+    def serialize(self, data):
+        if isinstance(data, np.integer):
+            return int(data)
+        if isinstance(data, np.floating):
+            return float(data)
+        raise ValueError(
+            'Cannot serialize numpy scalar {} of type {}.'.format(
+                data, type(data)
+            )
+        )
+
+    def deserialize(self, data):
+        if isinstance(data, int):
+            return np.int64(data)
+        if isinstance(data, float):
+            return np.float64(data)
+        raise ValueError(
+            'Cannot deserialize scalar {} of type {}.'.format(
+                data, type(data)
+            )
+        )
+
 class UnitsSerializer(Serializer):
     def serialize(self, data):
         return data.magnitude
@@ -275,6 +298,7 @@ class FunctionSerializer(Serializer):
 # register serializers in the serializer_registry
 serializer_registry = Registry()
 serializer_registry.register('numpy', NumpySerializer())
+serializer_registry.register('numpy_scalar', NumpyScalarSerializer())
 serializer_registry.register('units', UnitsSerializer())
 serializer_registry.register('process', ProcessSerializer())
 serializer_registry.register('compartment', GeneratorSerializer())
