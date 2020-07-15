@@ -265,70 +265,38 @@ class FlagellaChromosome(object):
             for key, promoter in self.chromosome.promoters.items()}
 
         self.promoters = [
-            'flhDp',
-            'fliLp1',
-            'fliEp1',
-            'fliFp1',
-            'flgAp',
-            'flgBp',
-            'flhBp',
-            'fliAp1',
-            'fliDp',
-            'flgKp',
-            'fliCp',
-            'tarp',
-            'motAp'
-            'flgMp']
+            'flhDp', 'fliLp1', 'fliEp1', 'fliFp1', 'flgAp', 'flgBp', 'flhBp',
+            'fliAp1', 'fliDp', 'flgKp', 'fliCp', 'tarp', 'motAp' 'flgMp']
 
         self.flhDC_activated = [
-            'fliLp1',
-            'fliEp1',
-            'fliFp1',
-            'flgAp',
-            'flgBp',
-            'flgEp',
-            'flhBp',
-            'fliAp1',
-            'fliDp',
-            'flgKp']
+            'fliLp1', 'fliEp1', 'fliFp1', 'flgAp', 'flgBp', 'flgEp', 'flhBp',
+            'fliAp1', 'fliDp', 'flgKp']
 
         self.fliA_activated = [
-            'fliCp',
-            'tarp',
-            'motAp',
-            'flgMp']
+            'fliCp', 'tarp', 'motAp', 'flgMp']
 
         flhDC_factors = {
             'fliLp1': {
-                'flhDC': 1.2,
-                'fliA': 0.25},
+                'flhDC': 1.2, 'fliA': 0.25},
             'fliEp1': {
-                'flhDC': 0.45,
-                'fliA': 0.35},
+                'flhDC': 0.45, 'fliA': 0.35},
             'fliFp1': {
-                'flhDC': 0.35,
-                'fliA': 0.30},
+                'flhDC': 0.35, 'fliA': 0.30},
             'flgBp': {
-                'flhDC': 0.35,
-                'fliA': 0.45},
+                'flhDC': 0.35, 'fliA': 0.45},
             'flgAp': {
-                'flhDC': 0.15,
-                'fliA': 0.3},
+                'flhDC': 0.15, 'fliA': 0.3},
             'flgEp': {
-                'flhDC': 1.0,
-                'fliA': 4.0},
+                'flhDC': 1.0, 'fliA': 4.0},
             'flhBp': {
-                'flhDC': 0.1,
-                'fliA': 0.35},
+                'flhDC': 0.1, 'fliA': 0.35},
             'fliAp1': {
-                'flhDC': 1.0,
-                'fliA': 0.3},
+                'flhDC': 1.0, 'fliA': 0.3},
             'fliDp': {
-                'flhDC': 1.2,
-                'fliA': 0.25},
+                'flhDC': 1.2, 'fliA': 0.25},
             'flgKp': {
-                'flhDC': 1.2,
-                'fliA': 0.25}}
+                'flhDC': 1.2, 'fliA': 0.25}
+        }
 
         def binary_sum_gates(promoter_factors):
             affinities = {}
@@ -401,7 +369,10 @@ class FlagellaChromosome(object):
             'flhDC', 'fliA', 'CsgD', 'CRP', 'GadE', 'H-NS', 'CpxR', 'Fnr']
 
         self.complexation_monomer_ids = [
-            'fliG', 'fliM', 'fliN', 'flhA', 'flhB', 'flhD', 'flhC', 'fliO', 'fliP', 'fliQ', 'fliR', 'fliJ', 'fliI', 'fliH', 'fliL', 'flgH', 'motA', 'motB', 'flgB', 'flgC', 'flgF', 'flgG', 'flgI', 'fliF', 'fliE','fliC','flgL','flgK','fliD','flgE']
+            'fliG', 'fliM', 'fliN', 'flhA', 'flhB', 'flhD', 'flhC', 'fliO',
+            'fliP', 'fliQ', 'fliR', 'fliJ', 'fliI', 'fliH', 'fliL', 'flgH',
+            'motA', 'motB', 'flgB', 'flgC', 'flgF', 'flgG', 'flgI', 'fliF',
+            'fliE','fliC','flgL','flgK','fliD','flgE']
 
         self.complexation_complex_ids = [
             'flhDC',
@@ -409,18 +380,21 @@ class FlagellaChromosome(object):
             'flagella',
             'flagellar export apparatus subunit',
             'flagellar export apparatus',
+            'flagellar hook',
             'flagellar motor']
 
         self.complexation_stoichiometry = {
             'flhDC': {
                 'flhD': -4.0,
                 'flhC': -2.0,
-                'flhDC': 1.0},
+                'flhDC': 1.0
+            },
             'flagellar motor switch reaction': {
                 'flagellar motor switch': 1.0,
                 'fliG': -26.0,
                 'fliM': -34.0,
-                'fliN': -1.0},
+                'fliN': -1.0
+            },
             'flagellar export apparatus reaction 1': {
                 'flagellar export apparatus subunit': 1.0,
                 'flhA': -1.0,
@@ -430,11 +404,13 @@ class FlagellaChromosome(object):
                 'fliQ': -1.0,
                 'fliR': -1.0,
                 'fliJ': -1.0,
-                'fliI': -6.0},
+                'fliI': -6.0
+            },
             'flagellar export apparatus reaction 2': {
                 'flagellar export apparatus': 1.0,
                 'flagellar export apparatus subunit': -1.0,
-                'fliH': -12.0},
+                'fliH': -12.0,
+            },
             'flagellar motor reaction': {
                 'flagellar motor': 1.0,
                 'flagellar motor switch': -1.0,
@@ -448,7 +424,12 @@ class FlagellaChromosome(object):
                 'flgG': -1.0,
                 'flgI': -1.0,
                 'fliF': -1.0,
-                'fliE': -1.0},
+                'fliE': -1.0,
+            },
+            'flagellar hook reaction': {
+                'flagellar hook': 1,
+                'flgE': -120.0,
+            },
             'flagellum reaction': {
                 'flagella': 1.0,
                 'flagellar export apparatus': -1.0,
@@ -457,7 +438,9 @@ class FlagellaChromosome(object):
                 'flgL': -1.0,
                 'flgK': -1.0,
                 'fliD': -5.0,
-                'flgE': -120.0}}
+                'flagellar hook': -1,
+            }
+        }
 
         reaction_default = 1e-5
         self.complexation_rates = {
@@ -466,5 +449,6 @@ class FlagellaChromosome(object):
             'flagellar export apparatus reaction 1': reaction_default,
             'flagellar export apparatus reaction 2': reaction_default,
             'flagellar motor reaction': reaction_default,
+            'flagellar hook reaction': reaction_default,
             'flagellum reaction': reaction_default}
 
