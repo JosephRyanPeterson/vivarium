@@ -145,6 +145,7 @@ def agent_environment_experiment(
         'emitter': emitter,
         'initial_state': initial_state,
     }
+    experiment_config.update(settings)
     if invoke:
         experiment_config['invoke'] = invoke
     return Experiment(experiment_config)

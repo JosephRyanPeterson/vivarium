@@ -1209,6 +1209,7 @@ class Experiment(object):
     def emit_configuration(self):
         data = {
             'time_created': timestamp(),
+            'name': self.config.get('name', 'experiment'),
             'experiment_id': self.experiment_id,
             'description': self.description,
             'processes': serialize_dictionary(self.processes),

@@ -242,8 +242,8 @@ def run_lattice_experiment(
         'type': 'database',
         'host': 'mongodb+srv://cyteam_user:cy2019!@cyteam-db-sanud.gcp.mongodb.net/vivarium?retryWrites=true&w=majority',
         'database': 'simulations2'}
-
-
+    experiment_settings['name'] = 'growth division experiment'
+    experiment_settings['description'] = 'a growth division agent that expresses a small set of proteins is placed in a lattice environment and simulated'
 
     # make the experiment
     experiment = agent_environment_experiment(
