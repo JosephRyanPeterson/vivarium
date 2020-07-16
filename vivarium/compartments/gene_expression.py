@@ -49,16 +49,16 @@ class GeneExpression(Generator):
         self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
 
     def generate_processes(self, config):
-        transcription_config = config.get('transcription', self.config.get('transcription'))
-        translation_config = config.get('translation', self.config.get('translation'))
-        degradation_config = config.get('degradation', self.config.get('degradation'))
-        complexation_config = config.get('complexation', self.config.get('complexation'))
+        transcription_config = config.get('transcription', {})
+        translation_config = config.get('translation', {})
+        degradation_config = config.get('degradation', {})
+        complexation_config = config.get('complexation', {})
 
         # update timestep
-        transcription_config.update({'time_step': self.config['time_step']})
-        translation_config.update({'time_step': self.config['time_step']})
-        degradation_config.update({'time_step': self.config['time_step']})
-        complexation_config.update({'time_step': self.config['time_step']})
+        transcription_config.update({'time_step': config['time_step']})
+        translation_config.update({'time_step': config['time_step']})
+        degradation_config.update({'time_step': config['time_step']})
+        complexation_config.update({'time_step': config['time_step']})
 
         # make the processes
         transcription = Transcription(transcription_config)
