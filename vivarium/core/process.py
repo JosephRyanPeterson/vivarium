@@ -36,6 +36,9 @@ def serialize_dictionary(d):
             serialized[key] = serialize_dictionary(serializer_registry.access('process').serialize(value))
         elif isinstance(value, Generator):
             serialized[key] = serialize_dictionary(serializer_registry.access('compartment').serialize(value))
+        elif isinstance(value, (np.integer, np.floating)):
+            serialized[key] = serializer_registry.access(
+                'numpy_scalar').serialize(value)
         else:
             serialized[key] = value
     return serialized
