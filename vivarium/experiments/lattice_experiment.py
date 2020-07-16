@@ -144,18 +144,22 @@ def get_simulation_settings(
 
 # plot settings
 def get_plot_settings(
+        skip_paths=[],
         fields=[],
         tags=[]
 ):
     return {
         'plot_types': {
-            'agents': {},
+            'agents': {
+                'skip_paths': skip_paths,
+                'remove_zeros': True,
+            },
             'snapshots': {
                 'fields': fields
             },
             'tags': {
                 'tag_ids': tags
-            }
+            },
         }
     }
 
@@ -175,8 +179,8 @@ def plot_experiment_output(
 
     # pass to plots
     if 'agents' in plot_types:
-        plot_settings = {
-            'agents_key': 'agents'}
+        plot_settings = plot_types['agents']
+        plot_settings['agents_key'] = 'agents'
         plot_agents_multigen(data, plot_settings, out_dir, agent_type)
 
     if 'snapshots' in plot_types:
@@ -360,6 +364,9 @@ def main():
                 total_time=8000
             ),
             plot_settings=get_plot_settings(
+                skip_paths=[
+                    ('boundary', 'location')
+                ],
                 fields=[
                     'glc__D_e',
                     'lcts_e',
@@ -382,9 +389,12 @@ def main():
             simulation_settings=get_simulation_settings(
                 emit_step=60,
                 emitter='database',
-                total_time=10000,
+                total_time=3000,
             ),
             plot_settings=get_plot_settings(
+                skip_paths=[
+                    ('boundary', 'external')
+                ],
                 fields=[
                     'glc__D_e',
                 ],

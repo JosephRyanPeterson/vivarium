@@ -576,25 +576,61 @@ def order_list_of_paths(path_list):
 
 def plot_agents_multigen(data, settings={}, out_dir='out', filename='agents'):
     '''
-    Make a plot of all agent data
-    TODO -- add agent color
+    Plot multi-agent simulation output, with all agents data combined for every
+    corresponding path in their stores.
+    Arguments::
+        data (dict): This is raw_data obtained from simulation output
+        settings (dict): Accepts the following keys:
+
+            * **max_rows** (:py:class:`int`): ports with more states
+              than this number of states get wrapped into a new column
+            * **remove_zeros** (:py:class:`bool`): if True, timeseries
+              with all zeros get removed
+            * **remove_flat** (:py:class:`bool`): if True, timeseries
+              with all the same value get removed
+            * **skip_paths** (:py:class:`list`): entire path, including subpaths
+              that won't be plotted
+
+    TODO -- add legend with agent color
     '''
+
     agents_key = settings.get('agents_key', 'agents')
     max_rows = settings.get('max_rows', 25)
+    remove_zeros = settings.get('remove_zeros', False)
+    remove_flat = settings.get('remove_flat', False)
     skip_paths = settings.get('skip_paths', [])
     title_size = settings.get('title_size', 16)
     tick_label_size = settings.get('tick_label_size', 12)
     time_vec = list(data.keys())
     timeseries = path_timeseries_from_data(data)
 
-    # get the agents' port_schema in a list of paths
+    # get the agents' port_schema in a set of paths.
+    # this assumes that the initial agent's schema and behavior
+    # is representative of later agents
     initial_agents = data[time_vec[0]][agents_key]
+    # make the set of paths
     port_schema_paths = set()
     for agent_id, agent_data in initial_agents.items():
         path_list = get_path_list_from_dict(agent_data)
         port_schema_paths.update(path_list)
-    # remove skipped paths
-    port_schema_paths = [path for path in port_schema_paths if path not in skip_paths]
+    # make set of paths to remove
+    remove_paths = set()
+    for path, series in timeseries.items():
+        if path[0] == agents_key and path[1] in list(initial_agents.keys()):
+            agent_path = path[2:]
+            if remove_flat:
+                if series.count(series[0]) == len(series):
+                    remove_paths.add(agent_path)
+            elif remove_zeros:
+                if all(v == 0 for v in series):
+                    remove_paths.add(agent_path)
+    # get paths and subpaths from skip_paths to remove
+    for path in port_schema_paths:
+        for remove in skip_paths:
+            if set(path) >= set(remove):
+                remove_paths.add(path)
+    # remove the paths
+    port_schema_paths = [path for path in port_schema_paths if path not in remove_paths]
     top_ports = set([path[0] for path in port_schema_paths])
 
     # get port columns, assign subplot locations
