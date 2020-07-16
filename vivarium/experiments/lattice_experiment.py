@@ -131,11 +131,13 @@ environments_library = {
 def get_simulation_settings(
         total_time=4000,
         emit_step=10,
+        emitter='timeseries',
         return_raw_data=True,
 ):
     return {
         'total_time': total_time,
         'emit_step': emit_step,
+        'emitter': emitter,
         'return_raw_data': return_raw_data
     }
 
@@ -378,8 +380,9 @@ def main():
             environment_type='iAF1260b',
             initial_agent_state=get_flagella_initial_state(),
             simulation_settings=get_simulation_settings(
-                emit_step=20,
-                total_time=3000,
+                emit_step=60,
+                emitter='database',
+                total_time=10000,
             ),
             plot_settings=get_plot_settings(
                 fields=[

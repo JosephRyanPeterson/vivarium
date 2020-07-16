@@ -32,6 +32,7 @@ from vivarium.library.units import units
 # processes
 from vivarium.processes.transcription import UNBOUND_RNAP_KEY
 from vivarium.processes.translation import UNBOUND_RIBOSOME_KEY
+from vivarium.processes.convenience_kinetics import ConvenienceKinetics, get_glc_lct_config
 from vivarium.processes.metabolism import Metabolism, get_iAF1260b_config
 from vivarium.processes.division_volume import DivisionVolume
 from vivarium.processes.meta_division import MetaDivision
@@ -52,8 +53,12 @@ def default_metabolism_config():
     metabolism_config.update({
         'initial_mass': 1339.0,  # 200, # fg of metabolite pools
         'time_step': COMPARTMENT_TIMESTEP,
-    })
+        'tolerance': {
+            'EX_glc__D_e': [1.05, 1.0],
+            'EX_lcts_e': [1.05, 1.0],
+        }})
     return metabolism_config
+
 
 
 class FlagellaExpressionMetabolism(Generator):
@@ -61,6 +66,7 @@ class FlagellaExpressionMetabolism(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('agents',),  # ('..', '..', 'agents',),
         'daughter_path': tuple(),
+        'transport': get_glc_lct_config(),
         'metabolism': default_metabolism_config(),
         'gene_expression': {
             'initial_mass': 0.0 * units.fg,
@@ -95,8 +101,15 @@ class FlagellaExpressionMetabolism(Generator):
         processes = gene_expression_network['processes']
         self.topology = gene_expression_network['topology']
 
+        # Transport
+        transport = ConvenienceKinetics(config['transport'])
+        target_fluxes = transport.kinetic_rate_laws.reaction_ids
+
         # Metabolism
-        metabolism = Metabolism(config['metabolism'])
+        # add target fluxes from transport
+        metabolism_config = config.get('metabolism')
+        metabolism_config.update({'constrained_reaction_ids': target_fluxes})
+        metabolism = Metabolism(metabolism_config)
 
         # Division
         # configure division condition and meta-division processes
@@ -109,11 +122,19 @@ class FlagellaExpressionMetabolism(Generator):
         meta_division = MetaDivision(meta_division_config)
 
         # combine processes
+        processes['transport'] = transport
         processes['metabolism'] = metabolism
         processes['division_condition'] = division_condition
         processes['meta_division'] = meta_division
 
         # save the topology for generate_topology
+        self.topology['transport'] = {
+            'internal': ('metabolites',),
+            'external': external_path,
+            'exchange': ('null',),  # metabolism's exchange is used
+            'fluxes': ('flux_bounds',),
+            'global': boundary_path
+        }
         self.topology['metabolism'] = {
                 'internal': ('molecules',),
                 'external': external_path,
@@ -216,8 +237,8 @@ def get_flagella_initial_state(ports={}):
                 'Fnr': 10,
                 'endoRNAse': 1,
                 'flagella': 8,
-                UNBOUND_RIBOSOME_KEY: 200,  # e. coli has ~ 20000 ribosomes
-                UNBOUND_RNAP_KEY: 200
+                UNBOUND_RIBOSOME_KEY: 150,  # e. coli has ~ 20000 ribosomes
+                UNBOUND_RNAP_KEY: 150
             }
     }
 
@@ -294,7 +315,7 @@ def run_flagella_compartment(compartment, out_dir='out'):
     # make a basic sim output
     plot_settings = {
         'max_rows': 30,
-        'remove_zeros': False,
+        'remove_zeros': True,
         'skip_ports': ['chromosome', 'ribosomes']}
     plot_simulation_output(
         timeseries,
