@@ -194,7 +194,7 @@ def get_flagella_expression_config(config):
 
             'sequences': sequences,
             'catalytic_rates': {
-                'endoRNAse': 0.01},
+                'endoRNAse': 0.02},
             'michaelis_constants': {
                 'transcripts': {
                     'endoRNAse': {
@@ -237,8 +237,8 @@ def get_flagella_initial_state(ports={}):
                 'Fnr': 10,
                 'endoRNAse': 1,
                 'flagella': 8,
-                UNBOUND_RIBOSOME_KEY: 150,  # e. coli has ~ 20000 ribosomes
-                UNBOUND_RNAP_KEY: 150
+                UNBOUND_RIBOSOME_KEY: 100,  # e. coli has ~ 20000 ribosomes
+                UNBOUND_RNAP_KEY: 100
             }
     }
 
@@ -277,7 +277,7 @@ def run_flagella_compartment(compartment, out_dir='out'):
     settings = {
         # a cell cycle of 2520 sec is expected to express 8 flagella.
         # 2 flagella expected in approximately 630 seconds.
-        'total_time': 760,
+        'total_time': 2520,
         'emit_step': COMPARTMENT_TIMESTEP,
         'verbose': True,
         'initial_state': initial_state}

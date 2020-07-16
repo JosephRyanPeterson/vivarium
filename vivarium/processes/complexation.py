@@ -82,6 +82,7 @@ class Complexation(Process):
                 monomer: {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'split',
                     '_properties': {
                         'mw': molecular_weight[
                             monomer]} if monomer in molecular_weight else {}}
@@ -90,6 +91,7 @@ class Complexation(Process):
                 complex: {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'split',
                     '_properties': {
                         'mw': molecular_weight[
                             complex]} if complex in molecular_weight else {}}

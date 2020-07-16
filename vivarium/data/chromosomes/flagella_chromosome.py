@@ -313,22 +313,22 @@ class FlagellaChromosome(object):
 
             return affinities
 
+        # promoter affinities are binding affinity of RNAP onto promoter
         self.promoter_affinities = {
             ('flhDp', 'CRP'): 0.01}
-
         # self.promoter_affinities[('motAp', 'CpxR')] = 1.0
-
         flhDC_affinities = binary_sum_gates(flhDC_factors)
         self.promoter_affinities.update(flhDC_affinities)
-
         # for promoter in self.flhDC_activated:
         #     self.promoter_affinities[(promoter, 'flhDC')] = 1.0
-
         for promoter in self.fliA_activated:
             self.promoter_affinities[(promoter, 'fliA')] = 1.0
-
         self.promoter_affinities.update(
             parameters.get('promoter_affinities', {}))
+        promoter_affinity_scaling = parameters.get('promoter_affinity_scaling', 1)
+        self.promoter_affinities = {
+            promoter: affinity * promoter_affinity_scaling
+            for promoter, affinity in self.promoter_affinities.items()}
 
         self.transcripts = [
             (operon, product)

@@ -389,7 +389,7 @@ def main():
             simulation_settings=get_simulation_settings(
                 emit_step=60,
                 emitter='database',
-                total_time=3000,
+                total_time=6000,
             ),
             plot_settings=get_plot_settings(
                 skip_paths=[
