@@ -331,7 +331,7 @@ def test_flagella_expression():
     # initial state for flagella complexation
     initial_state = get_flagella_initial_state()
     initial_state['proteins'].update({
-        'Ribosome': 400,  # plenty of ribosomes
+        'Ribosome': 100,  # plenty of ribosomes
         'flagella': 0,
         # required flagella components
         'flagellar export apparatus': 1,
@@ -347,7 +347,7 @@ def test_flagella_expression():
     random.seed(0)  # set seed because process is stochastic
     settings = {
         'total_time': 1000,
-        'emit_step': 10,
+        'emit_step': 100,
         'initial_state': initial_state}
     timeseries = simulate_compartment_in_experiment(flagella_compartment, settings)
 
