@@ -1265,7 +1265,8 @@ class Experiment(object):
             'time': self.local_time})
         emit_config = {
             'table': 'history',
-            'data': data}
+            'data': serialize_dictionary(data),
+        }
         self.emitter.emit(emit_config)
 
     def send_updates(self, updates, derivers=None):
