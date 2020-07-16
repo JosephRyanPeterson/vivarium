@@ -323,6 +323,7 @@ def run_flagella_compartment(compartment, out_dir='out'):
         out_dir)
 
 
+@pytest.mark.slow
 def test_flagella_expression():
     flagella_compartment = flagella_expression_compartment({})
 
@@ -344,7 +345,7 @@ def test_flagella_expression():
     # run simulation
     random.seed(0)  # set seed because process is stochastic
     settings = {
-        'total_time': 100,
+        'total_time': 1000,
         'emit_step': 10,
         'initial_state': initial_state}
     timeseries = simulate_compartment_in_experiment(flagella_compartment, settings)
@@ -352,7 +353,7 @@ def test_flagella_expression():
     print(timeseries['proteins']['flagella'])
     final_flagella = timeseries['proteins']['flagella'][-1]
     # this should have been long enough for flagellar complexation to occur
-    assert final_flagella == 1
+    assert final_flagella > 1
 
 
 def scan_flagella_expression_parameters():
