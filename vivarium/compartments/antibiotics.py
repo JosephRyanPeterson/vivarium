@@ -15,9 +15,6 @@ from vivarium.core.composition import (
     assert_timeseries_close,
 )
 from vivarium.processes.antibiotic_transport import AntibioticTransport
-from vivarium.processes.antibiotic_transport import (
-    DEFAULT_INITIAL_STATE as ANTIBIOTIC_DEFAULT_INITIAL_STATE,
-)
 from vivarium.processes.death import DeathFreezeState
 from vivarium.processes.division_volume import DivisionVolume
 from vivarium.processes.growth import Growth
@@ -48,11 +45,7 @@ class Antibiotics(Generator):
         protein_map.setdefault(
             'AcrAB-TolC', 'AcrAB-TolC_RNA')
 
-        initial_state_config = self.config.setdefault(
-            'initial_state', ANTIBIOTIC_DEFAULT_INITIAL_STATE)
-        internal_initial_config = initial_state_config.setdefault(
-            'internal', {})
-        internal_initial_config['AcrAB-TolC'] = 0.0
+        self.config.setdefault('initial_pump', 0.0)
 
         # Death Config
         checkers_config = self.config.setdefault('checkers', {})
