@@ -13,28 +13,85 @@ from vivarium.core.composition import (
 
 # processes
 from vivarium.processes.growth_protein import GrowthProtein
-from vivarium.processes.growth import Growth
 from vivarium.processes.meta_division import MetaDivision
+from vivarium.processes.diffusion_network import DiffusionNetwork
 
 from vivarium.library.dict_utils import deep_merge
 
 
 NAME = 'spatial_model'
-DEFAULT_CONFIG = {}
+
+def get_spatial_config():
+    locations = [
+        # 'outer_membrane',
+        'periplasm',
+        # 'inner_membrane',
+        'front_cytoplasm',
+        'back_cytoplasm',
+        'center_cytoplasm',
+        'nucleoid',
+    ]
+
+    # membranes = [
+    #     'inner_membrane',
+    #     'outer_membrane'
+    # ]
+
+    edges = [
+        ('front_cytoplasm', 'center_cytoplasm'),
+        ('back_cytoplasm', 'center_cytoplasm'),
+        ('periplasm', 'front_cytoplasm'),
+        ('periplasm', 'center_cytoplasm'),
+        ('periplasm', 'back_cytoplasm'),
+        ('nucleoid', 'front_cytoplasm'),
+        ('nucleoid', 'center_cytoplasm'),
+        ('nucleoid', 'back_cytoplasm'),
+    ]
+
+    membrane_edges = [
+        ('periplasm', 'front_cytoplasm'),
+        ('periplasm', 'center_cytoplasm'),
+        ('periplasm', 'back_cytoplasm'),
+    ]
+
+    initial_state = {
+        'membrane_composition': {
+            'porin': 5},
+        'concentrations': {
+            'periplasm': {
+                'glc': 20.0},
+            'front_cytoplasm': {
+                'glc': 20.0},
+            'center_cytoplasm': {
+                'glc': 20.0},
+            'back_cytoplasm': {
+                'glc': 20.0},
+            'nucleoid': {
+                'glc': 20.0},
+        }}
+
+    return {
+        'locations': locations,
+        'network': {
+            'initial_state': initial_state,
+            'molecules': ['glc'],
+            'network': {
+                'type': 'standard',
+                'locations': locations,
+                'edges': edges,
+                'membrane_edges': membrane_edges,
+            },
+            'channels':{
+                'porin': 5e-2  # diffusion rate through porin
+            },
+            'diffusion': 1e-1
+        }
+    }
 
 
 class SpatialModel(Generator):
 
     defaults = {
-        'locations': [
-            'outer_membrane',
-            'periplasm',
-            'inner_membrane',
-            'front_cytoplasm',
-            'back_cytoplasm',
-            'center_cytoplasm',
-            'nucleoid',
-        ],
         'growth_rate': 0.006,  # very fast growth
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
@@ -57,6 +114,9 @@ class SpatialModel(Generator):
             growth_process_name = location + '_growth'
             processes[growth_process_name] = GrowthProtein(growth_config)
 
+        # connect all locations with diffusion network
+        processes['diffusion_network'] = DiffusionNetwork(config['network'])
+
         # division config
         daughter_path = config['daughter_path']
         agent_id = config['agent_id']
@@ -72,6 +132,10 @@ class SpatialModel(Generator):
     def generate_topology(self, config):
         boundary_path = config['boundary_path']
         agents_path = config['agents_path']
+
+        import ipdb;
+        ipdb.set_trace()
+        # TODO -- connect up diffusion network
 
         topology = {
             location + '_growth': {
@@ -93,7 +157,7 @@ if __name__ == '__main__':
         os.makedirs(out_dir)
 
     agent_id = '0'
-    parameters = copy.deepcopy(DEFAULT_CONFIG)
+    parameters = get_spatial_config()
     parameters['agent_id'] = agent_id
     compartment = SpatialModel(parameters)
 
