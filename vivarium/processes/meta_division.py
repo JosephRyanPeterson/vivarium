@@ -24,6 +24,7 @@ def divider_set_false(state):
 
 class MetaDivision(Deriver):
 
+    name = 'meta_division'
     defaults = {
         'initial_state': {},
         'daughter_path': ('cell',),
@@ -76,6 +77,7 @@ class MetaDivision(Deriver):
             log.info(
                 'DIVIDE! \n--> MOTHER: {} \n--> DAUGHTERS: {}'.format(
                     self.agent_id, daughter_ids))
+
             # initial state will be provided by division in the tree
             return {
                 'cells': {

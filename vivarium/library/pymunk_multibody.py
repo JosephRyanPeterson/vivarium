@@ -69,7 +69,7 @@ class NullScreen(object):
         pass
 
 
-class MultiBody(object):
+class PymunkMultibody(object):
     """
     Multibody object for interfacing with pymunk
     """
@@ -98,7 +98,7 @@ class MultiBody(object):
         self.friction = self.defaults['friction']
         self.damping = self.defaults['damping']
         self.angular_damping = self.defaults['angular_damping']
-        self.physics_dt = self.defaults['physics_dt']
+        self.physics_dt = config.get('physics_dt', self.defaults['physics_dt'])
         self.force_scaling = self.defaults['force_scaling']
 
         # configured parameters
@@ -419,7 +419,7 @@ def test_multibody(
         'initial_agents': agents,
         'screen': screen
     }
-    multibody = MultiBody(config)
+    multibody = PymunkMultibody(config)
 
     # run simulation
     time = 0

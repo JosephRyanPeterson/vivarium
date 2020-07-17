@@ -16,11 +16,9 @@ from vivarium.core.emitter import (
 )
 from vivarium.core.experiment import (
     Experiment,
-    Compartment,
     update_in,
-    generate_derivers,
 )
-from vivarium.core.process import Process, Deriver
+from vivarium.core.process import Process, Deriver, Generator, generate_derivers
 from vivarium.core import emitter as emit
 from vivarium.library.dict_utils import (
     deep_merge,
@@ -30,10 +28,19 @@ from vivarium.library.dict_utils import (
 )
 from vivarium.library.units import units
 
+# import classes for registration
+
 # processes
-from vivarium.processes.derive_globals import AVOGADRO
 from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.nonspatial_environment import NonSpatialEnvironment
+
+# derivers
+import vivarium.processes.derive_globals
+import vivarium.processes.derive_counts
+import vivarium.processes.derive_concentrations
+import vivarium.processes.tree_mass
+from vivarium.processes.derive_globals import AVOGADRO
+
 
 REFERENCE_DATA_DIR = os.path.join('vivarium', 'reference_data')
 TEST_OUT_DIR = os.path.join('out', 'tests')
@@ -68,7 +75,9 @@ def agent_environment_experiment(
         agents_config=None,
         environment_config=None,
         initial_state=None,
-        settings=None
+        settings=None,
+        initial_agent_state=None,
+        invoke=None
 ):
     if settings is None:
         settings = {}
@@ -83,6 +92,12 @@ def agent_environment_experiment(
         agent_ids = agents_config['ids']
         agent_compartment = agent_type(agents_config['config'])
         agents = make_agents(agent_ids, agent_compartment, agents_config['config'])
+
+        if initial_agent_state:
+            initial_state['agents'] = {
+                agent_id: initial_agent_state
+                for agent_id in agent_ids}
+
     elif isinstance(agents_config, list):
         # list with multiple agent configurations
         agents = {
@@ -96,29 +111,40 @@ def agent_environment_experiment(
             deep_merge(agents['processes'], new_agents['processes'])
             deep_merge(agents['topology'], new_agents['topology'])
 
+            if initial_agent_state:
+                if 'agents' not in initial_state:
+                    initial_state['agents'] = {}
+                initial_state['agents'].update({
+                    agent_id: initial_agent_state
+                    for agent_id in agent_ids})
+
     # initialize the environment
     environment_type = environment_config['type']
     environment_compartment = environment_type(environment_config['config'])
 
     # combine processes and topologies
-    network = environment_compartment.generate({})
+    network = environment_compartment.generate()
     processes = network['processes']
     topology = network['topology']
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
 
-    return Experiment({
+    experiment_config = {
         'processes': processes,
         'topology': topology,
         'emitter': emitter,
-        'initial_state': initial_state})
+        'initial_state': initial_state,
+    }
+    if invoke:
+        experiment_config['invoke'] = invoke
+    return Experiment(experiment_config)
 
-def process_in_compartment(process, paths={}):
+def process_in_compartment(process, topology={}):
     """ put a lone process in a compartment"""
-    class ProcessCompartment(Compartment):
+    class ProcessCompartment(Generator):
         def __init__(self, config):
             self.config = config
-            self.paths = paths
+            self.topology = topology
             self.process = process(config)
 
         def generate_processes(self, config):
@@ -127,7 +153,7 @@ def process_in_compartment(process, paths={}):
         def generate_topology(self, config):
             return {
                 'process': {
-                    port: self.paths.get(port, (port,)) for port in self.process.ports_schema().keys()}}
+                    port: self.topology.get(port, (port,)) for port in self.process.ports_schema().keys()}}
 
     return ProcessCompartment
 
@@ -241,7 +267,7 @@ def compartment_in_experiment(compartment, settings={}):
         })
         topology['timeline_process'].update({
                 port_id: ports[port_id]
-                for port_id in timeline_process.ports if port_id is not 'global'})
+                for port_id in timeline_process.ports if port_id != 'global'})
 
     if environment:
         '''
@@ -627,7 +653,9 @@ def plot_agents_multigen(data, settings={}, out_dir='out', filename='agents'):
             ax.set_xlim([time_vec[0], time_vec[-1]])
 
             # if last state in this port, add time ticks
-            if row_idx >= max_rows or path_idx >= len(ordered_paths[port_id]):
+            if (row_idx >= highest_row
+                or path_idx >= len(ordered_paths[port_id]) - 1
+            ):
                 set_axes(ax, True)
                 ax.set_xlabel('time (s)')
             else:
@@ -886,9 +914,11 @@ def assert_timeseries_close(
         timeseries1, timeseries2, keys, required_frac_checked)
     for key in keys:
         tolerance = tolerances.get(key, default_tolerance)
-        if not np.allclose(
-            arrays1[key], arrays2[key], atol=tolerance, equal_nan=True
-        ):
+        close_mask = np.isclose(arrays1[key], arrays2[key],
+            atol=tolerance, equal_nan=True)
+        if not np.all(close_mask):
+            print('Timeseries 1:', arrays1[key][~close_mask])
+            print('Timeseries 2:', arrays2[key][~close_mask])
             raise AssertionError(
                 'The data for {} differed by more than {}'.format(
                     key, tolerance)
@@ -897,6 +927,8 @@ def assert_timeseries_close(
 
 # TESTS
 class ToyLinearGrowthDeathProcess(Process):
+
+    name = 'toy_linear_growth_death'
 
     GROWTH_RATE = 1.0
     THRESHOLD = 6.0
@@ -929,6 +961,7 @@ class ToyLinearGrowthDeathProcess(Process):
 
         return update
 
+
 class TestSimulateProcess:
 
     def test_process_deletion(self):
@@ -951,6 +984,8 @@ class TestSimulateProcess:
 
 # toy processes
 class ToyMetabolism(Process):
+    name = 'toy_metabolism'
+
     def __init__(self, initial_parameters={}):
         parameters = {'mass_conversion_rate': 1}
         parameters.update(initial_parameters)
@@ -979,6 +1014,8 @@ class ToyMetabolism(Process):
         return update
 
 class ToyTransport(Process):
+    name = 'toy_transport'
+
     def __init__(self, initial_parameters={}):
         parameters = {'intake_rate': 2}
         parameters.update(initial_parameters)
@@ -1007,6 +1044,8 @@ class ToyTransport(Process):
         return update
 
 class ToyDeriveVolume(Deriver):
+    name = 'toy_derive_volume'
+
     def __init__(self, initial_parameters={}):
         parameters = {}
         super(ToyDeriveVolume, self).__init__(parameters)
@@ -1031,6 +1070,8 @@ class ToyDeriveVolume(Deriver):
         return update
 
 class ToyDeath(Process):
+    name = 'toy_death'
+
     def __init__(self, initial_parameters={}):
         self.targets = initial_parameters.get('targets', [])
         super(ToyDeath, self).__init__({})
@@ -1060,7 +1101,7 @@ class ToyDeath(Process):
 
         return update
 
-class ToyCompartment(Compartment):
+class ToyCompartment(Generator):
     '''
     a toy compartment for testing
 

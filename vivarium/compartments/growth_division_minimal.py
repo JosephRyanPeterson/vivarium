@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 
 from vivarium.library.units import units
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     plot_agents_multigen,
@@ -19,10 +19,10 @@ from vivarium.library.dict_utils import deep_merge
 
 NAME = 'growth_division_minimal'
 
-class GrowthDivisionMinimal(Compartment):
+class GrowthDivisionMinimal(Generator):
 
     defaults = {
-        'growth_rate': 0.006,  # very fast growth
+        # 'growth_rate': 0.006,  # very fast growth
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple()}
@@ -44,8 +44,8 @@ class GrowthDivisionMinimal(Compartment):
             compartment=self)
 
         growth_config = config.get('growth', {})
-        growth_rate = config['growth_rate']
-        growth_config['growth_rate'] = growth_rate
+        if 'growth_rate' in config:
+            growth_config['growth_rate'] = config['growth_rate']
 
         return {
             'growth': GrowthProtein(growth_config),

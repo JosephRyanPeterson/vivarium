@@ -28,6 +28,8 @@ NAME = 'injector'
 
 class Injector(Process):
 
+    name = NAME
+
     def __init__(self, initial_parameters=None):
         """Models the direct injection of substrates into a cell
 

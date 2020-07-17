@@ -18,7 +18,7 @@ from shapely.geometry.polygon import Polygon
 from vivarium.core.experiment import get_in
 from vivarium.core.process import Deriver
 from vivarium.library.units import units
-from vivarium.processes.derive_total_metric import assert_no_divide
+from vivarium.core.registry import assert_no_divide
 
 
 class Variables():
@@ -98,6 +98,7 @@ class ColonyShapeDeriver(Deriver):
     '''Derives colony shape metrics from cell locations
     '''
 
+    name = 'colony_shape_deriver'
     defaults = {
         'alpha': 1.0,
     }
@@ -211,6 +212,7 @@ class ColonyShapeDeriver(Deriver):
             }
         }
 
+ColonyShapeDeriver()
 
 class TestDeriveColonyShape():
 

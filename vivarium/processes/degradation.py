@@ -14,7 +14,7 @@ from vivarium.data.nucleotides import nucleotides
 from vivarium.library.units import units
 
 
-NAME = 'degradation'
+NAME = 'rna_degradation'
 
 def all_subkeys(d):
     subkeys = set([])
@@ -51,6 +51,8 @@ TOY_CONFIG = {
 
 
 class RnaDegradation(Process):
+
+    name = NAME
     defaults = {
         'sequences': {},
         'catalytic_rates': {
@@ -78,6 +80,7 @@ class RnaDegradation(Process):
         self.transcript_order = self.parameters['transcript_order']
         self.protein_order = self.parameters['protein_order']
         self.molecule_order = list(nucleotides.values())
+        self.molecule_order.append('ATP')
 
         self.partial_transcripts = {
             transcript: 0
@@ -123,7 +126,7 @@ class RnaDegradation(Process):
     def derivers(self):
         return {
             self.global_deriver_key: {
-                'deriver': 'globals',
+                'deriver': 'globals_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {
@@ -169,6 +172,8 @@ class RnaDegradation(Process):
             sequence = self.sequences[transcript]
             for base in sequence:
                 delta_molecules[nucleotides[base]] -= count
+                # ATP hydrolysis cost is 1 per nucleotide degraded
+                delta_molecules['ATP'] -= count
 
         return {
             'transcripts': transcript_counts,
@@ -185,6 +190,7 @@ def test_rna_degradation(end_time=10):
     molecules = {
         molecule: 10
         for molecule in rna_degradation.molecule_order}
+    molecules['ATP'] = 100000
     transcripts = {
         transcript: 10
         for transcript in rna_degradation.transcript_order}

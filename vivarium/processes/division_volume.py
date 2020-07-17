@@ -7,6 +7,7 @@ from vivarium.core.process import Process
 
 class DivisionVolume(Process):
 
+    name = 'division_volume'
     defaults = {
         'initial_state': {},
         'division_volume': 2.4 * units.fL,  # fL
@@ -27,8 +28,8 @@ class DivisionVolume(Process):
     def ports_schema(self):
         return {
             'global': {
-                'division': {
-                    '_default': 0,
+                'divide': {
+                    '_default': False,
                     '_emit': True,
                     '_updater': 'set',
                     '_divider': 'zero'},
@@ -38,7 +39,7 @@ class DivisionVolume(Process):
     def next_update(self, timestep, states):
         volume = states['global']['volume']
         if volume >= self.parameters['division_volume']:
-            self.division = 1
-            return {'global': {'division': self.division}}
+            self.division = True
+            return {'global': {'divide': self.division}}
         else:
             return {}

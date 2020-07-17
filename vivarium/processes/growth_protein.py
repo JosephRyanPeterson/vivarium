@@ -17,7 +17,8 @@ from vivarium.processes.derive_globals import AVOGADRO
 NAME = 'growth_protein'
 
 class GrowthProtein(Process):
- 
+
+    name = NAME
     defaults = {
         'initial_mass': 1339 * units.fg,
         # 'initial_protein': 3.9e7,  # counts of protein
@@ -73,12 +74,12 @@ class GrowthProtein(Process):
     def derivers(self):
         return {
             self.global_deriver_key: {
-                'deriver': 'globals',
+                'deriver': 'globals_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {}},
             self.mass_deriver_key: {
-                'deriver': 'mass',
+                'deriver': 'mass_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {}},

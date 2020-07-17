@@ -45,6 +45,9 @@ NAME = 'antibiotic_transport'
 
 
 class AntibioticTransport(ConvenienceKinetics):
+
+    name = NAME
+
     def __init__(self, initial_parameters=None):
         if initial_parameters is None:
             initial_parameters = {}

@@ -57,7 +57,7 @@ from vivarium.plots.multibody_physics import (
 # make an agent from a lone MotorActivity process
 MotorActivityAgent = process_in_compartment(
     MotorActivity,
-    paths={
+    topology={
         'external': ('boundary',),
         'internal': ('cell',)
     })

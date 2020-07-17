@@ -161,7 +161,8 @@ def plot_colony_metrics(
                         continue
                     array = np.array(metrics_list)
                     means.append(np.mean(array))
-                    sems.append(stats.sem(array))
+                    sems.append(
+                        stats.sem(array) if len(array) > 1 else 0)
                     plot_times.append(times[i_time])
                 x = np.array(plot_times)
                 y = np.array(means)

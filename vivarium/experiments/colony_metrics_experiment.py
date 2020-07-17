@@ -9,6 +9,9 @@ from __future__ import absolute_import, division, print_function
 import os
 import random
 
+import numpy as np
+import pytest
+
 from vivarium.compartments.lattice import Lattice
 from vivarium.core.composition import (
     EXPERIMENT_OUT_DIR,
@@ -145,7 +148,9 @@ def get_lattice_with_metrics_config():
     return config
 
 
-def run_experiment(runtime=400, n_agents=2, start_locations=None):
+def run_experiment(
+    runtime=2400, n_agents=2, start_locations=None, growth_rate=0.000275
+):
     '''Run a Colony Metrics Experiment
 
     Arguments:
@@ -161,6 +166,7 @@ def run_experiment(runtime=400, n_agents=2, start_locations=None):
     '''
     agent_config = agents_library['growth_division_minimal']
     agent_config['config']['growth_rate_noise'] = 0
+    agent_config['growth_rate'] = growth_rate
 
     experiment_config = get_lattice_with_metrics_config()
     experiment_config.update({
@@ -179,11 +185,15 @@ def run_experiment(runtime=400, n_agents=2, start_locations=None):
     return simulate_experiment(experiment, settings), experiment_config
 
 
-def test_experiment():
+@pytest.mark.slow
+def test_experiment(seed=1):
+    random.seed(seed)
+    np.random.seed(seed)
     if not os.path.exists(OUT_DIR):
         os.makedirs(OUT_DIR)
     data, _ = run_experiment(
-        start_locations=[[0, 0], [0.5, 0.5]],
+        start_locations=[[0.3, 0.3], [0.5, 0.5]],
+        # growth_rate=0.001,
     )
     path_ts = path_timeseries_from_data(data)
     filtered = {
@@ -212,14 +222,8 @@ def main():
         os.makedirs(OUT_DIR)
 
     data, experiment_config = run_experiment(
-        runtime=1000,
-        n_agents=3,
-        start_locations=[
-            [0.3, 0.3],
-            [0.5, 0.5]
-        ],
+        start_locations=[[0.3, 0.3], [0.5, 0.5]],
     )
-
     # extract data
     multibody_config = experiment_config['environment']['multibody']
     agents = {time: time_data['agents'] for time, time_data in data.items()}

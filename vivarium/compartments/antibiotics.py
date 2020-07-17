@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 import math
 import os
 
-from vivarium.core.experiment import Compartment
+from vivarium.core.process import Generator
 from vivarium.core.composition import (
     simulate_compartment_in_experiment,
     plot_simulation_output,
@@ -30,7 +30,7 @@ DIVISION_TIME = 2400  # seconds to divide
 
 
 
-class Antibiotics(Compartment):
+class Antibiotics(Generator):
 
     def __init__(self, config):
         self.config = config
@@ -142,7 +142,15 @@ def test_antibiotics_composite_similar_to_reference():
     flattened = flatten_timeseries(timeseries)
     reference = load_timeseries(
         os.path.join(REFERENCE_DATA_DIR, NAME + '.csv'))
-    assert_timeseries_close(flattened, reference)
+    assert_timeseries_close(
+        flattened, reference,
+        tolerances={
+            'cell_counts_AcrAB-TolC': 99999,
+            'cell_counts_antibiotic': 999,
+            'cell_counts_AcrAB-TolC_RNA': 9,
+            'cell_counts_porin': 9999,
+        }
+    )
 
 
 def main():

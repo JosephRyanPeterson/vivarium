@@ -16,6 +16,7 @@ from vivarium.library.units import units
 
 class GlucosePhosphorylation(Process):
 
+    name = 'glucose_phosphorylation'
     defaults = {
         'k_cat': 2e-3,
         'K_ATP': 5e-2,
@@ -116,7 +117,7 @@ class GlucosePhosphorylation(Process):
     def derivers(self):
         return {
             'my_deriver': {
-                'deriver': 'mass',
+                'deriver': 'mass_deriver',
                 'port_mapping': {
                     'global': 'global',
                 },

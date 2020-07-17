@@ -67,6 +67,7 @@ def run_to_steady_state(receptor, state, timestep):
 
 class ReceptorCluster(Process):
 
+    name = NAME
     defaults = {
         'ligand_id': 'MeAsp',
         'initial_ligand': 5.0,
@@ -124,10 +125,10 @@ class ReceptorCluster(Process):
         '''
 
         # states
-        n_methyl = copy.copy(states['internal']['n_methyl'])
-        P_on = copy.copy(states['internal']['chemoreceptor_activity'])
-        CheR = copy.copy(states['internal']['CheR'] * (units.mmol / units.L))
-        CheB = copy.copy(states['internal']['CheB'] * (units.mmol / units.L))
+        n_methyl = states['internal']['n_methyl']
+        P_on = states['internal']['chemoreceptor_activity']
+        CheR = states['internal']['CheR'] * (units.mmol / units.L)
+        CheB = states['internal']['CheB'] * (units.mmol / units.L)
         ligand_conc = states['external'][self.ligand_id]   # mmol/L
 
         # convert to umol / L
