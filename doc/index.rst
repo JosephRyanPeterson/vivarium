@@ -9,8 +9,7 @@ environments, within which they can grow, divide, and thrive.
     :width: 100%
     :alt: A sequence of six frames showing simulated *E. coli* colony
         growth. The colony grows from a single cell in the leftmost
-        frame to around 50 in the rightmost. From left to right, the
-        background fades from a deep green to pale yellow.
+        frame to around 100 in the rightmost.
 
 .. toctree::
    :maxdepth: 2
