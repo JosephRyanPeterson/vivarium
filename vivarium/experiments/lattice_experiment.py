@@ -79,7 +79,7 @@ agents_library = {
 def get_lattice_config(
     bounds=[20, 20],
     n_bins=[10, 10],
-    jitter_force=1e-4,
+    jitter_force=1e-3,
     depth=3000.0,
     diffusion=1e-2,
     molecules=['glc__D_e', 'lcts_e'],
@@ -120,7 +120,8 @@ environments_library = {
     'glc_lcts': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
         'config': get_lattice_config(
-            bounds=[20,20]
+            bounds=[30,30],
+            jitter_force=1e-5,
         ),
     },
     'iAF1260b': {
@@ -350,7 +351,7 @@ def main():
         run_workflow(
             agent_type='growth_division_minimal',
             simulation_settings=get_simulation_settings(
-                total_time=5000
+                total_time=6000
             ),
             out_dir=minimal_out_dir)
 
@@ -359,6 +360,7 @@ def main():
         make_dir(gd_out_dir)
         run_workflow(
             agent_type='growth_division',
+            environment_type='glc_lcts',
             simulation_settings=get_simulation_settings(
                 total_time=8000
             ),
