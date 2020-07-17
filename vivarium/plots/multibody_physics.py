@@ -43,20 +43,20 @@ def plot_agent(ax, data, color, agent_shape):
     length = data['boundary']['length']
     width = data['boundary']['width']
 
-    # get bottom left position
-    x_offset = (width / 2)
-    y_offset = (length / 2)
-    theta_rad = math.radians(theta)
-    dx = x_offset * math.cos(theta_rad) - y_offset * math.sin(theta_rad)
-    dy = x_offset * math.sin(theta_rad) + y_offset * math.cos(theta_rad)
-
-    x = x_center - dx
-    y = y_center - dy
-
     # get color, convert to rgb
     rgb = hsv_to_rgb(color)
 
     if agent_shape is 'rectangle':
+        # get bottom left position
+        x_offset = (width / 2)
+        y_offset = (length / 2)
+        theta_rad = math.radians(theta)
+        dx = x_offset * math.cos(theta_rad) - y_offset * math.sin(theta_rad)
+        dy = x_offset * math.sin(theta_rad) + y_offset * math.cos(theta_rad)
+
+        x = x_center - dx
+        y = y_center - dy
+
         # Create a rectangle
         shape = patches.Rectangle(
             (x, y), width, length,
@@ -68,18 +68,24 @@ def plot_agent(ax, data, color, agent_shape):
         ax.add_patch(shape)
 
     elif agent_shape is 'segment':
+        radius = width / 2
+
+        # get the two ends
+        length_offset = (length / 2) - radius
+        theta_rad = math.radians(theta)
+        dx = - length_offset * math.sin(theta_rad)
+        dy = length_offset * math.cos(theta_rad)
+
+        x1 = x_center - dx
+        y1 = y_center - dy
+        x2 = x_center + dx
+        y2 = y_center + dy
+
         # segment plot
-        plt.plot([x - dx / 2, x + dx / 2], [y - dy / 2, y + dy / 2],
+        plt.plot([x1, x2], [y1, y2],
                  color=rgb,
-                 linewidth=width*20,  # TODO -- how should linewidth be scaled?
+                 linewidth=width*25,  # TODO -- how should linewidth be scaled?
                  solid_capstyle='round')
-        # shape = patches.FancyBboxPatch(
-        #     (x, y), width, length, #theta,
-        #     boxstyle='round',
-        #     linewidth=2,
-        #     edgecolor='w',
-        #     facecolor=rgb
-        # )
 
 
 def plot_agents(ax, agents, agent_colors={}, agent_shape='segment'):

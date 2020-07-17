@@ -79,7 +79,7 @@ agents_library = {
 def get_lattice_config(
     bounds=[20, 20],
     n_bins=[10, 10],
-    jitter_force=1e-4,
+    jitter_force=1e-5,
     depth=3000.0,
     diffusion=1e-2,
     molecules=['glc__D_e', 'lcts_e'],
@@ -347,6 +347,9 @@ def main():
         make_dir(minimal_out_dir)
         run_workflow(
             agent_type='growth_division_minimal',
+            simulation_settings=get_simulation_settings(
+                total_time=5000
+            ),
             out_dir=minimal_out_dir)
 
     elif args.growth_division:
