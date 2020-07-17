@@ -8,6 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.lines as mlines
+from matplotlib.lines import Line2D
 from matplotlib.colors import hsv_to_rgb
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
@@ -34,8 +35,26 @@ def check_plt_backend():
     if plt.get_backend() == 'TkAgg':
         matplotlib.use('Agg')
 
+class LineWidthData(Line2D):
+    def __init__(self, *args, **kwargs):
+        _lw_data = kwargs.pop('linewidth', 1)
+        super().__init__(*args, **kwargs)
+        self._lw_data = _lw_data
 
-def plot_agent(ax, data, color):
+    def _get_lw(self):
+        if self.axes is not None:
+            ppd = 72./self.axes.figure.dpi
+            trans = self.axes.transData.transform
+            return ((trans((1, self._lw_data))-trans((0, 0)))*ppd)[1]
+        else:
+            return 1
+
+    def _set_lw(self, lw):
+        self._lw_data = lw
+
+    _linewidth = property(_get_lw, _set_lw)
+
+def plot_agent(ax, data, color, agent_shape):
     # location, orientation, length
     x_center = data['boundary']['location'][0]
     y_center = data['boundary']['location'][1]
@@ -43,29 +62,54 @@ def plot_agent(ax, data, color):
     length = data['boundary']['length']
     width = data['boundary']['width']
 
-    # get bottom left position
-    x_offset = (width / 2)
-    y_offset = (length / 2)
-    theta_rad = math.radians(theta)
-    dx = x_offset * math.cos(theta_rad) - y_offset * math.sin(theta_rad)
-    dy = x_offset * math.sin(theta_rad) + y_offset * math.cos(theta_rad)
-
-    x = x_center - dx
-    y = y_center - dy
-
     # get color, convert to rgb
     rgb = hsv_to_rgb(color)
 
-    # Create a rectangle
-    rect = patches.Rectangle(
-        (x, y), width, length, angle=theta, linewidth=1,
-        edgecolor='gray', facecolor=rgb
-    )
+    if agent_shape is 'rectangle':
+        # get bottom left position
+        x_offset = (width / 2)
+        y_offset = (length / 2)
+        theta_rad = math.radians(theta)
+        dx = x_offset * math.cos(theta_rad) - y_offset * math.sin(theta_rad)
+        dy = x_offset * math.sin(theta_rad) + y_offset * math.cos(theta_rad)
 
-    ax.add_patch(rect)
+        x = x_center - dx
+        y = y_center - dy
+
+        # Create a rectangle
+        shape = patches.Rectangle(
+            (x, y), width, length,
+            angle=theta,
+            linewidth=2,
+            edgecolor='w',
+            facecolor=rgb
+        )
+        ax.add_patch(shape)
+
+    elif agent_shape is 'segment':
+        radius = width / 2
+
+        # get the two ends
+        length_offset = (length / 2) - radius
+        theta_rad = math.radians(theta)
+        dx = - length_offset * math.sin(theta_rad)
+        dy = length_offset * math.cos(theta_rad)
+
+        x1 = x_center - dx
+        y1 = y_center - dy
+        x2 = x_center + dx
+        y2 = y_center + dy
+
+        # segment plot
+        line = LineWidthData(
+            [x1, x2], [y1, y2],
+            color=rgb,
+            linewidth=width,
+            solid_capstyle='round')
+        ax.add_line(line)
 
 
-def plot_agents(ax, agents, agent_colors={}):
+def plot_agents(ax, agents, agent_colors={}, agent_shape='segment'):
     '''
     - ax: the axis for plot
     - agents: a dict with {agent_id: agent_data} and
@@ -74,7 +118,7 @@ def plot_agents(ax, agents, agent_colors={}):
     '''
     for agent_id, agent_data in agents.items():
         color = agent_colors.get(agent_id, [DEFAULT_HUE]+DEFAULT_SV)
-        plot_agent(ax, agent_data, color)
+        plot_agent(ax, agent_data, color, agent_shape)
 
 
 def plot_snapshots(data, plot_config):
@@ -115,6 +159,7 @@ def plot_snapshots(data, plot_config):
     n_snapshots = plot_config.get('n_snapshots', 6)
     out_dir = plot_config.get('out_dir', 'out')
     filename = plot_config.get('filename', 'snapshots')
+    agent_shape = plot_config.get('agent_shape', 'segment')
 
     # get data
     agents = data.get('agents', {})
@@ -193,7 +238,7 @@ def plot_snapshots(data, plot_config):
                                 cmap='BuPu')
                 if agents:
                     agents_now = agents[time]
-                    plot_agents(ax, agents_now, agent_colors)
+                    plot_agents(ax, agents_now, agent_colors, agent_shape)
 
                 # colorbar in new column after final snapshot
                 if col_idx == n_snapshots-1 and (vmin != vmax):
@@ -211,7 +256,7 @@ def plot_snapshots(data, plot_config):
             )
             if agents:
                 agents_now = agents[time]
-                plot_agents(ax, agents_now, agent_colors)
+                plot_agents(ax, agents_now, agent_colors, agent_shape)
 
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.1)
@@ -274,6 +319,7 @@ def plot_tags(data, plot_config):
     n_snapshots = plot_config.get('n_snapshots', 6)
     out_dir = plot_config.get('out_dir', 'out')
     filename = plot_config.get('filename', 'tags')
+    agent_shape = plot_config.get('agent_shape', 'segment')
     tagged_molecules = plot_config['tagged_molecules']
 
     if tagged_molecules == []:
@@ -354,7 +400,7 @@ def plot_tags(data, plot_config):
 
                 agent_tag_colors[agent_id] = agent_color
 
-            plot_agents(ax, agents[time], agent_tag_colors)
+            plot_agents(ax, agents[time], agent_tag_colors, agent_shape)
 
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.1)
