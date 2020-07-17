@@ -120,7 +120,7 @@ environments_library = {
     'glc_lcts': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
         'config': get_lattice_config(
-            bounds=[20,20]
+            bounds=[30,30]
         ),
     },
     'iAF1260b': {
@@ -350,7 +350,7 @@ def main():
         run_workflow(
             agent_type='growth_division_minimal',
             simulation_settings=get_simulation_settings(
-                total_time=5000
+                total_time=6000
             ),
             out_dir=minimal_out_dir)
 

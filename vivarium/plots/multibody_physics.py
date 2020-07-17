@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import math
 import random
+import itertools
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -120,6 +121,61 @@ def plot_agents(ax, agents, agent_colors={}, agent_shape='segment'):
         color = agent_colors.get(agent_id, [DEFAULT_HUE]+DEFAULT_SV)
         plot_agent(ax, agent_data, color, agent_shape)
 
+def mutate_color(baseline_hsv):
+    mutation = 0.1
+    new_hsv = [
+        (n + np.random.uniform(-mutation, mutation))
+        for n in baseline_hsv]
+    # wrap hue around
+    new_hsv[0] = new_hsv[0] % 1
+    # reflect saturation and value
+    if new_hsv[1] > 1:
+        new_hsv[1] = 2 - new_hsv[1]
+    if new_hsv[2] > 1:
+        new_hsv[2] = 2 - new_hsv[2]
+    return new_hsv
+
+def color_phylogeny(ancestor_id, phylogeny, baseline_hsv, phylogeny_colors={}):
+    """
+    get colors for all descendants of the ancestor
+    through recursive calls to each generation
+    """
+    phylogeny_colors.update({ancestor_id: baseline_hsv})
+    daughter_ids = phylogeny.get(ancestor_id)
+    if daughter_ids:
+        for daughter_id in daughter_ids:
+            daughter_color = mutate_color(baseline_hsv)
+            color_phylogeny(daughter_id, phylogeny, daughter_color)
+    return phylogeny_colors
+
+def get_phylogeny_colors_from_names(agent_ids):
+    '''Get agent colors using phlogeny saved in agent_ids
+    This assumes the names use daughter_phylogeny_id() from meta_division
+    '''
+
+    # make phylogeny with {mother_id: [daughter_1_id, daughter_2_id]}
+    phylogeny = {agent_id: [] for agent_id in agent_ids}
+    for agent1, agent2 in itertools.combinations(agent_ids, 2):
+        if agent1 == agent2[0:-1]:
+            phylogeny[agent1].append(agent2)
+        elif agent2 == agent1[0:-1]:
+            phylogeny[agent2].append(agent1)
+
+    # get initial ancestors
+    daughters = list(phylogeny.values())
+    daughters = set([item for sublist in daughters for item in sublist])
+    mothers = set(list(phylogeny.keys()))
+    ancestors = list(mothers - daughters)
+
+    # agent colors based on phylogeny
+    agent_colors = {agent_id: [] for agent_id in agent_ids}
+    for agent_id in ancestors:
+        hue = random.choice(HUES)  # select random initial hue
+        initial_color = [hue] + DEFAULT_SV
+        agent_colors.update(color_phylogeny(agent_id, phylogeny, initial_color))
+
+    return agent_colors
+
 
 def plot_snapshots(data, plot_config):
     '''Plot snapshots of the simulation over time
@@ -149,6 +205,11 @@ def plot_snapshots(data, plot_config):
 
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
+            * **agent_shape** (:py:class:`str`): the shape of the agents.
+              select from **rectangle**, **segment**
+            * **phylogeny_names** (:py:class:`bool`): This selects agent
+              colors based on phylogenies seved in their names using
+              meta_division.py daughter_phylogeny_id()
             * **out_dir** (:py:class:`str`): Output directory, which is
               ``out`` by default.
             * **filename** (:py:class:`str`): Base name of output file.
@@ -160,6 +221,7 @@ def plot_snapshots(data, plot_config):
     out_dir = plot_config.get('out_dir', 'out')
     filename = plot_config.get('filename', 'snapshots')
     agent_shape = plot_config.get('agent_shape', 'segment')
+    phylogeny_names = plot_config.get('phylogeny_names', True)
 
     # get data
     agents = data.get('agents', {})
@@ -202,11 +264,14 @@ def plot_snapshots(data, plot_config):
         agent_ids = list(agent_ids)
 
         # set agent colors
-        agent_colors = {}
-        for agent_id in agent_ids:
-            hue = random.choice(HUES)  # select random initial hue
-            color = [hue] + DEFAULT_SV
-            agent_colors[agent_id] = color
+        if phylogeny_names:
+            agent_colors = get_phylogeny_colors_from_names(agent_ids)
+        else:
+            agent_colors = {}
+            for agent_id in agent_ids:
+                hue = random.choice(HUES)  # select random initial hue
+                color = [hue] + DEFAULT_SV
+                agent_colors[agent_id] = color
 
     # make the figure
     n_rows = max(len(field_ids), 1)
