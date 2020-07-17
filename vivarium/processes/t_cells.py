@@ -173,26 +173,33 @@ class TCellProcess(Process):
         cytotoxic_packets = 0
 
         # TODO migration
-        #also dependent on MHCI+
-        #50% bound vs. 30% bound in flow cytometry experiment on low vs. high
+        #  #also dependent on MHCI+
+        #  #50% bound vs. 30% bound in flow cytometry experiment on low vs. high
+        #  #@Eran how do I reference a parameter from tumors process that influences migration?
+        #  Also, how do I reference the environment here? You might already have migration modules,
+        #  so maybe we should do this one together.
 
         # TODO killing -- pass cytotoxic packets to contacted tumor cells, based on tumor type
         if new_cell_state == 'PD1n':
             # produce IFNg  # TODO -- integer? save remainder
+            #TODO - @Eran - What will we decide on time step? I can base these
+            # parameters/calculate based on that decision
             IFNg = self.parameters['PD1n_IFNg_production'] * timestep
 
             # cytotoxic_packets = f(PDL1, MHC1, PD1)
-            #TODO cytotoxic packets
+            #TODO cytotoxic packets -
+            # @Eran - I have done the research with packets and think I have a good place to start -
+            #   I think that the key thing will be to describe an activation event that happens once
+            #   the T cell encounters the tumor and depending on the states will dictate the rate of
+            #   production of cytotoxic packets and assume passage is equal. How do we save such an
+            #   occurance of contact?
             # Max production happens for PD1- T cells in contact with MHCI+ tumor
-            # linear production over 4 hr up to a total of 102+-20 granules
+            #   linear production over 4 hr up to a total of 102+-20 granules
             # #MHCI activates the T cell for production
-            # #4 fold reduction in killing packet production when low level of MHCI+
-
-            #1:10 fold reduction of PD1+ T cell cytotoxic production
-            #target behavior 3 contacts required for cell death, 1-4 cells killed/day
-            #
-
-            #similar reductions for IFNg expression with less MHCI+
+            #   #4 fold reduction in killing packet production when low level of MHCI+
+            # #1:10 fold reduction of PD1+ T cell cytotoxic production
+            # #target behavior 3 contacts required for cell death, 1-4 cells killed/day
+            # similar reductions for IFNg expression with less MHCI+ - production will mirror each other
 
 
             # self.parameters['PD1n_cytotoxic_packets']

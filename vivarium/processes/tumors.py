@@ -40,8 +40,10 @@ class TumorProcess(Process):
     defaults = {
         'diameter': 20 * units.um,
         'initial_PDL1n': 1.0,
-        #TODO - Find out how to initialize number of cells in grid (have this data)
-        #TODO - Ask if need separate parameter if it is the same value
+        #TODO - @Eran How do I initialize number of cells in grid (I have this data for both)
+        #   We may not need this now, but thought about this as a parameter
+        #TODO - @Eran - Some of the parameters for different states is the same value.
+        #   Do I need separate parameters for each state if it is the same value?
         # e.g. death/migration for both states
 
         # death rates
@@ -107,7 +109,9 @@ class TumorProcess(Process):
             },
             'neighbors': {
                 'PD1': {},
-                #TODO - ask if this is where the IFNg and cytotoxic packets would come in?
+                #TODO - @Eran - like the t_cell process, I am still a little uncertain how to connect
+                #   where the 2 processes interact. Is this where the IFNg and cytotoxic packets
+                #   from the t_cell process would come in?
             }
         }
 
@@ -145,13 +149,24 @@ class TumorProcess(Process):
         elif cell_state == 'PDL1p':
             pass
 
-        #TODO - ask if there is a way to stop simulation if tumor cells reach 5x10^5 total
+        #TODO - @Eran - Is there a way to stop simulation if tumor cells reach 5x10^5 total?
 
         # state transition
         new_cell_state = cell_state
         if cell_state == 'PDL1n':
-            #TODO - if IFNg > 1 ng/mL begin switch to PDL1p - target effect 300 um radius
-            # around T cells after 40 h - requires at least 6 h of contact with this conc.
+            #TODO - if IFNg > 1 ng/mL begin switch to PDL1p -
+            #   target effect 300 um radius around T cells after 40 h
+            #   requires at least 6 h of contact with this conc.
+            #   @Eran - it seems from all my research that tumor cells require a certain amount of
+            #       IFNg present for at least between 6-12 h and then the switch happens completely
+            #       by 24 h. Is there a way to start a timer for this? One thing I thought was that we
+            #       could start a constant production of MHCI and PDL1 from the moment of contact and then
+            #       once those values are above 50,000 then we could switch but not so physiological.
+            #       The dynamics psrobably come from some delay of transcription factor pathways, but I
+            #       am not really interested right now in that level of detail (maybe someday :))
+            #TODO - @Eran - How do I reference the environment - i.e. the number of IFNg molecules present
+            #   directly overlapping with the cancer cell to make this change?
+
 
         elif cell_state == 'PDL1p':
             pass
@@ -160,15 +175,18 @@ class TumorProcess(Process):
         MHCI = 0
         PDL1 = 0
 
-        # TODO migration
-
+        # TODO migration - Can do this once I learn
 
         # TODO death by killing (at end of time step?)
         if new_cell_state == 'PDL1n':
             #TODO - if cytotoxic packets >128 then cell is dead - 120 minute delay
+            # @Eran - If I reference cytotoxic packets above, then can I reference them here?
+            # See other comments about referencing parameters from other processes
 
         elif new_cell_state == 'PDL1p':
             #TODO - if cytotoxic packets >128 then cell is dead - 120 minute delay
+            # @Eran - if this parameter of death is the same for both states, do I need to
+            # specify both like this?
 
         return {
             'internal': {
@@ -177,7 +195,11 @@ class TumorProcess(Process):
             'boundary': {
                 'MHCI': MHCI,
                 'PDL1': PDL1,
-                #TODO - ask if need to be dynamic?
+                #TODO - @Eran - Based on my research, the expression of these ligands is dynamic
+                # and slowly grows the first 6 hours and then dramatically increases the next
+                # 6-12 h and plateaus once they reach their state. We do not necessarily need
+                # that in my opinion for the ligands, but the dealy may be nice for the phenotype
+                # switch. What do you think?
             },
         }
 
