@@ -79,7 +79,7 @@ agents_library = {
 def get_lattice_config(
     bounds=[20, 20],
     n_bins=[10, 10],
-    jitter_force=1e-5,
+    jitter_force=1e-4,
     depth=3000.0,
     diffusion=1e-2,
     molecules=['glc__D_e', 'lcts_e'],
@@ -119,7 +119,9 @@ def get_iAF1260b_environment():
 environments_library = {
     'glc_lcts': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_lattice_config(),
+        'config': get_lattice_config(
+            bounds=[20,20]
+        ),
     },
     'iAF1260b': {
         'type': DEFAULT_ENVIRONMENT_TYPE,

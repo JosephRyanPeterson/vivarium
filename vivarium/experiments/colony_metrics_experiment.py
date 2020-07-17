@@ -43,7 +43,7 @@ from vivarium.processes.multibody_physics import single_agent_config
 
 NAME = 'colony_metrics'
 OUT_DIR = os.path.join(EXPERIMENT_OUT_DIR, NAME)
-DEFAULT_BOUNDS = [20, 20]
+DEFAULT_BOUNDS = [40, 40]
 DEFAULT_EMIT_STEP = 30
 
 
@@ -224,6 +224,7 @@ def main():
     data, experiment_config = run_experiment(
         start_locations=[[0.3, 0.3], [0.5, 0.5]],
     )
+
     # extract data
     multibody_config = experiment_config['environment']['multibody']
     agents = {time: time_data['agents'] for time, time_data in data.items()}
