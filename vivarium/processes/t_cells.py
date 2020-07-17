@@ -173,12 +173,28 @@ class TCellProcess(Process):
         cytotoxic_packets = 0
 
         # TODO migration
+        #also dependent on MHCI+
+        #50% bound vs. 30% bound in flow cytometry experiment on low vs. high
+
         # TODO killing -- pass cytotoxic packets to contacted tumor cells, based on tumor type
         if new_cell_state == 'PD1n':
             # produce IFNg  # TODO -- integer? save remainder
             IFNg = self.parameters['PD1n_IFNg_production'] * timestep
 
             # cytotoxic_packets = f(PDL1, MHC1, PD1)
+            #TODO cytotoxic packets
+            # Max production happens for PD1- T cells in contact with MHCI+ tumor
+            # linear production over 4 hr up to a total of 102+-20 granules
+            # #MHCI activates the T cell for production
+            # #4 fold reduction in killing packet production when low level of MHCI+
+
+            #1:10 fold reduction of PD1+ T cell cytotoxic production
+            #target behavior 3 contacts required for cell death, 1-4 cells killed/day
+            #
+
+            #similar reductions for IFNg expression with less MHCI+
+
+
             # self.parameters['PD1n_cytotoxic_packets']
 
         elif new_cell_state == 'PD1p':

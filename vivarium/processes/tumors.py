@@ -17,52 +17,45 @@ from vivarium.core.process import Generator
 from vivarium.processes.meta_division import MetaDivision
 
 
-NAME = 'T_cell'
+NAME = 'Tumor'
 
 
-class TCellProcess(Process):
-    """T-cell process with 2 states
+class TumorProcess(Process):
+    """Tumor process with 2 states
 
     States:
-        - PD1p (PD1+)
-        - PD1n (PD1-)
+        - PDL1p (PDL1+, MHCI+)
+        - PDL1n (PDL1-, MHCI-)
 
     Required parameters:
         -
 
     Target behavior:
-        - a population of (how many) PD1n cells transition to PD1p in sigmoidal fashion in ~2 weeks
 
     TODOs
         - make this work!
     """
 
-    name = 't_cell'
+    name = 'Tumor'
     defaults = {
-        'diameter': 10 * units.um,
-        'initial_PD1n': 0.8,
-        'transition_PD1n_to_PD1p': 0.01,  # probability/sec
+        'diameter': 20 * units.um,
+        'initial_PDL1n': 1.0,
+        #TODO - Find out how to initialize number of cells in grid (have this data)
+        #TODO - Ask if need separate parameter if it is the same value
+        # e.g. death/migration for both states
+
         # death rates
-        'death_PD1p': 7e-3,  # 0.7 / 14 hrs (Petrovas 2007)
-        'death_PD1n': 2e-3,  # 0.2 / 14 hrs (Petrovas 2007)
-        'death_PD1p_next_to_PDL1p': 9.5e-3,  # 0.95 / 14 hrs (Petrovas 2007)
-        # production rates
-        'PD1n_IFNg_production': 1.6e4/3600,  # (molecules/cell/second) (Bouchnita 2017)
-        'PD1p_IFNg_production': 0.0,  # (molecules/cell/second)
-        'PD1p_PD1_equilibrium': 5e4,  # equilibrium value of PD1 for PD1p (TODO -- get reference)
-        # division rate (Petrovas 2007)
-        'PD1n_growth': 0.9,  # probability of division in 8 hours
-        'PD1p_growth': 0.05,  # probability of division in 8 hours
+        'death_PDL1p': 2e-5,  # fairly negligible compared to growth/killing
+        'death_PDL1n': 2e-5,  # same for above
+
+        # division rate
+        'PDL1n_growth': 0.3,  # probability of division in 8 hours - 1/24 hr (Eden, 2011)
+        #'PDL1p_growth': 0,  # Cells arrested - do not divide (data, Thibaut 2020, Hoekstra 2020)
+
         # migration
-        'PD1n_migration': 10.0,  # um/minute (Boissonnas 2007)
-        'PD1n_migration_MHC1p_tumor': 2.0,  # um/minute (Boissonnas 2007)
-        'PD1n_migration_MHC1p_tumor_dwell_time': 25.0,  # minutes (Thibaut 2020)
-        'PD1p_migration': 5.0,   # um/minute (Boissonnas 2007)
-        'PD1p_migration_MHC1p_tumor': 1.0,   # um/minute (Boissonnas 2007)
-        'PD1p_migration_MHC1p_tumor_dwell_time': 10.0,  # minutes (Thibaut 2020)
-        # killing  # TODO -- pass these to contacted tumor cells. TODO -- base this on tumor type (MHC1p, MHC1n)
-        'PD1n_cytotoxic_packets': 5,  # number of packets to each contacted tumor cell
-        'PD1p_cytotoxic_packets': 1,  # number of packets to each contacted tumor cell
+        'PDL1n_migration': 0.25,  # um/minute (Weigelin 2012)
+        'PDL1p_migration': 0.25,   # um/minute (Weigelin 2012)
+
         # settings
         'self_path': tuple(),
     }
@@ -72,12 +65,12 @@ class TCellProcess(Process):
             initial_parameters = {}
         parameters = copy.deepcopy(self.defaults)
         deep_merge(parameters, initial_parameters)
-        super(TCellProcess, self).__init__(parameters)
+        super(TumorProcess, self).__init__(parameters)
 
-        if random.uniform(0, 1) < self.defaults['initial_PD1n']:
-            self.initial_state = 'PD1n'
+        if random.uniform(0, 1) < self.defaults['initial_PDL1n']:
+            self.initial_state = 'PDL1n'
         else:
-            self.initial_state = 'PD1p'
+            self.initial_state = 'PDL1p'
 
         self.self_path = self.or_default(
             initial_parameters, 'self_path'
@@ -101,21 +94,20 @@ class TCellProcess(Process):
                 'diameter': {
                     '_default': self.parameters['diameter']
                 },
-                'IFNg': {
+                'PDL1': {
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'accumulate',
                 },
-                'PD1': {
+                'MHCI': {
                     '_default': 0,
                     '_emit': True,
                     '_updater': 'set',
-                },  # membrane protein, promotes T-cell death
-                'cytotoxic_packets': {},  # release into the tumor cells
+                },  # membrane protein, promotes Tumor death
             },
             'neighbors': {
-                'PDL1': {},
-                'MHC1': {},
+                'PD1': {},
+                #TODO - ask if this is where the IFNg and cytotoxic packets would come in?
             }
         }
 
@@ -123,17 +115,18 @@ class TCellProcess(Process):
         cell_state = states['internal']['cell_state']
 
         # death
-        if cell_state == 'PD1n':
-            if random.uniform(0, 1) < self.parameters['death_PD1n'] * timestep:
-                print('PD1n DEATH!')
+        if cell_state == 'PDL1n':
+            if random.uniform(0, 1) < self.parameters['death_PDL1n'] * timestep:
+                print('PDL1n DEATH!')
                 return {
                     '_delete': {
                         'path': self.self_path
                     }
                 }
-        elif cell_state == 'PD1p':
-            if random.uniform(0, 1) < self.parameters['death_PD1p'] * timestep:
-                print('PD1p DEATH!')
+
+        elif cell_state == 'PDL1p':
+            if random.uniform(0, 1) < self.parameters['death_PDL1p'] * timestep:
+                print('PDL1p DEATH!')
                 return {
                     '_delete': {
                         'path': self.self_path
@@ -141,68 +134,56 @@ class TCellProcess(Process):
                 }
 
         # division
-        if cell_state == 'PD1n':
-            if random.uniform(0, 1) < self.parameters['PD1n_growth'] * timestep:
-                print('PD1n DIVIDE!')
+        if cell_state == 'PDL1n':
+            if random.uniform(0, 1) < self.parameters['PDL1n_growth'] * timestep:
+                print('PDL1n DIVIDE!')
                 return {
                     'globals': {
                         'divide': True
                     }
                 }
-        elif cell_state == 'PD1p':
-            if random.uniform(0, 1) < self.parameters['PD1p_growth'] * timestep:
-                print('PD1p DIVIDE!')
-                return {
-                    'globals': {
-                        'divide': True
-                    }
-                }
+        elif cell_state == 'PDL1p':
+            pass
+
+        #TODO - ask if there is a way to stop simulation if tumor cells reach 5x10^5 total
 
         # state transition
         new_cell_state = cell_state
-        IFNg = 0.0
-        if cell_state == 'PD1n':
-            if random.uniform(0, 1) < self.parameters['transition_PD1n_to_PD1p'] * timestep:
-                new_cell_state = 'PD1p'
-        elif cell_state == 'PD1p':
+        if cell_state == 'PDL1n':
+            #TODO - if IFNg > 1 ng/mL begin switch to PDL1p - target effect 300 um radius
+            # around T cells after 40 h - requires at least 6 h of contact with this conc.
+
+        elif cell_state == 'PDL1p':
             pass
 
         # behavior
-        IFNg = 0
-        PD1 = 0
-        cytotoxic_packets = 0
+        MHCI = 0
+        PDL1 = 0
 
         # TODO migration
-        # TODO killing -- pass cytotoxic packets to contacted tumor cells, based on tumor type
-        if new_cell_state == 'PD1n':
-            # produce IFNg  # TODO -- integer? save remainder
-            IFNg = self.parameters['PD1n_IFNg_production'] * timestep
 
-            # cytotoxic_packets = f(PDL1, MHC1, PD1)
-            # self.parameters['PD1n_cytotoxic_packets']
 
-        elif new_cell_state == 'PD1p':
-            # produce IFNg  # TODO -- integer? save remainder
-            IFNg = self.parameters['PD1p_IFNg_production'] * timestep
-            PD1 = self.parameters['PD1p_PD1_equilibrium']
+        # TODO death by killing (at end of time step?)
+        if new_cell_state == 'PDL1n':
+            #TODO - if cytotoxic packets >128 then cell is dead - 120 minute delay
 
-            # cytotoxic_packets = function(PDL1, MHC1, PD1) TODO -- get this
-            # self.parameters['PD1p_cytotoxic_packets']
+        elif new_cell_state == 'PDL1p':
+            #TODO - if cytotoxic packets >128 then cell is dead - 120 minute delay
 
         return {
             'internal': {
                 'cell_state': new_cell_state
             },
             'boundary': {
-                'IFNg': IFNg,
-                'PD1': PD1,
-                'cytotoxic_packets': cytotoxic_packets,
+                'MHCI': MHCI,
+                'PDL1': PDL1,
+                #TODO - ask if need to be dynamic?
             },
         }
 
 
 
-class TCellCompartment(Generator):
+class TumorCompartment(Generator):
 
     defaults = {
         'boundary_path': ('boundary',),
@@ -229,16 +210,16 @@ class TCellCompartment(Generator):
             agent_id=agent_id,
             compartment=self)
 
-        t_cell = TCellProcess(config.get('growth', {}))
+        Tumor = TumorProcess(config.get('growth', {}))
         division = MetaDivision(division_config)
 
         return {
-            't_cell': t_cell,
+            'Tumor': Tumor,
             'division': division}
 
     def generate_topology(self, config):
         return {
-            't_cell': {
+            'Tumor': {
                 'internal': ('internal',),
                 'boundary': self.boundary_path,
                 'global': self.boundary_path},
@@ -249,17 +230,17 @@ class TCellCompartment(Generator):
 
 
 
-def test_single_t_cell(total_time=20, out_dir='out'):
-    t_cell_process = TCellProcess({})
+def test_single_Tumor(total_time=20, out_dir='out'):
+    Tumor_process = TumorProcess({})
     settings = {'total_time': total_time}
-    timeseries = simulate_process_in_experiment(t_cell_process, settings)
+    timeseries = simulate_process_in_experiment(Tumor_process, settings)
 
     # plot
     plot_settings = {}
     plot_simulation_output(timeseries, plot_settings, out_dir)
 
 
-def run_batch_t_cells(out_dir='out'):
+def run_batch_Tumor(out_dir='out'):
     import ipdb; ipdb.set_trace()
     pass
 
@@ -276,11 +257,11 @@ if __name__ == '__main__':
 
     total_time = 1000
     if args.single or no_args:
-        test_single_t_cell(
+        test_single_Tumor(
             total_time,
             out_dir)
 
     if args.batch:
-        run_batch_t_cells(
+        run_batch_Tumor(
             out_dir,
             total_time)
