@@ -88,6 +88,8 @@ def plot_agent(ax, data, color, agent_shape):
         ax.add_patch(shape)
 
     elif agent_shape is 'segment':
+        membrane_width = 0.1
+        membrane_color = [1, 1, 1]
         radius = width / 2
 
         # get the two ends
@@ -102,11 +104,17 @@ def plot_agent(ax, data, color, agent_shape):
         y2 = y_center + dy
 
         # segment plot
+        membrane = LineWidthData(
+            [x1, x2], [y1, y2],
+            color=membrane_color,
+            linewidth=width,
+            solid_capstyle='round')
         line = LineWidthData(
             [x1, x2], [y1, y2],
             color=rgb,
-            linewidth=width,
+            linewidth=width-membrane_width,
             solid_capstyle='round')
+        ax.add_line(membrane)
         ax.add_line(line)
 
 
