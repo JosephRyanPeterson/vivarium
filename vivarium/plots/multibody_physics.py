@@ -66,7 +66,7 @@ def plot_agent(ax, data, color, agent_shape):
     # get color, convert to rgb
     rgb = hsv_to_rgb(color)
 
-    if agent_shape is 'rectangle':
+    if agent_shape == 'rectangle':
         # get bottom left position
         x_offset = (width / 2)
         y_offset = (length / 2)
@@ -87,7 +87,7 @@ def plot_agent(ax, data, color, agent_shape):
         )
         ax.add_patch(shape)
 
-    elif agent_shape is 'segment':
+    elif agent_shape == 'segment':
         membrane_width = 0.1
         membrane_color = [1, 1, 1]
         radius = width / 2

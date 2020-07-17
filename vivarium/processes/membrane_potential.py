@@ -150,10 +150,10 @@ class MembranePotential(Process):
             internal = internal_state[ion_id]
             external = external_state[ion_id]
 
-            if charge is 'cation':
+            if charge == 'cation':
                 numerator += p_ion * external
                 denominator += p_ion * internal
-            elif charge is 'anion':
+            elif charge == 'anion':
                 numerator += p_ion * internal
                 denominator += p_ion * external
             else:
