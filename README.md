@@ -3,7 +3,7 @@
 Vivarium is a multiscale platform for simulating cells in dynamic
 environments, within which they can grow, divide, and thrive.
 
-![vivarium](https://user-images.githubusercontent.com/6809431/71849421-dc6b6c80-3086-11ea-932b-f292a9b78177.png)
+![vivarium](doc/_static/snapshots_fields.png)
 
 ## Documentation and Tutorials
 Visit [Vivarium documentation](https://wc-vivarium.readthedocs.io/)

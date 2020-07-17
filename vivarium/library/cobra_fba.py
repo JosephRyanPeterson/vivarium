@@ -294,7 +294,7 @@ class CobraFBA(object):
                 # no activity. reaction flux set to 0
                 reaction.upper_bound = 0.0
                 reaction.lower_bound = 0.0
-            elif activity and reaction.bounds is (0.0, 0.0):
+            elif activity and reaction.bounds == (0.0, 0.0):
                 # if new bounds need to be set
                 if reaction_id in self.flux_bounds:
                     bounds = self.flux_bounds[reaction_id]
