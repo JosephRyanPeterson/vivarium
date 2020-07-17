@@ -20,9 +20,6 @@ Submodules
    vivarium.processes.derive_concentrations
    vivarium.processes.derive_counts
    vivarium.processes.derive_globals
-   vivarium.processes.derive_total_cell_volume
-   vivarium.processes.derive_total_mass
-   vivarium.processes.derive_total_metric
    vivarium.processes.diffusion_field
    vivarium.processes.diffusion_network
    vivarium.processes.division_volume

@@ -5,12 +5,11 @@ Welcome to Vivarium's documentation!
 Vivarium is a multiscale platform for simulating cells in dynamic
 environments, within which they can grow, divide, and thrive.
 
-.. image:: ./_static/colony_growth.png
+.. image:: ./_static/growth_division_tags.png
     :width: 100%
     :alt: A sequence of six frames showing simulated *E. coli* colony
         growth. The colony grows from a single cell in the leftmost
-        frame to around 50 in the rightmost. From left to right, the
-        background fades from a deep green to pale yellow.
+        frame to around 100 in the rightmost.
 
 .. toctree::
    :maxdepth: 2
