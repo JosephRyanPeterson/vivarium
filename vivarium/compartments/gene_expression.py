@@ -45,14 +45,15 @@ class GeneExpression(Generator):
 
     def __init__(self, config):
         self.config = deep_merge(dict(self.defaults), config)
-        self.global_path = config.get('global_path', self.defaults['global_path'])
-        self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
+        # self.global_path = config.get('global_path', self.defaults['global_path'])
+        # self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
+
 
     def generate_processes(self, config):
-        transcription_config = config.get('transcription', {})
-        translation_config = config.get('translation', {})
-        degradation_config = config.get('degradation', {})
-        complexation_config = config.get('complexation', {})
+        transcription_config = config['transcription']
+        translation_config = config['translation']
+        degradation_config = config['degradation']
+        complexation_config = config['complexation']
 
         # update timestep
         transcription_config.update({'time_step': config['time_step']})
@@ -66,7 +67,7 @@ class GeneExpression(Generator):
         degradation = RnaDegradation(degradation_config)
         complexation = Complexation(complexation_config)
         mass_deriver = TreeMass(config.get('mass_deriver', {
-            'initial_mass': config.get('initial_mass', self.initial_mass)}))
+            'initial_mass': config['initial_mass']}))
         division = DivisionVolume(config)
 
         return {
@@ -78,7 +79,7 @@ class GeneExpression(Generator):
             'division': division}
 
     def generate_topology(self, config):
-        global_path = config.get('global_path', self.global_path)
+        global_path = config['global_path']
 
         return {
             'mass_deriver': {
@@ -505,7 +506,12 @@ def test_gene_expression(total_time=10):
             'genes': toy_chromosome_config['genes'],
             'promoter_affinities': toy_chromosome_config['promoter_affinities'],
             'transcription_factors': ['tfA', 'tfB'],
-            'elongation_rate': 10.0}}
+            'elongation_rate': 10.0},
+        # 'complexation': {
+        #     'monomer_ids': [],
+        #     'complex_ids': [],
+        #     'stoichiometry': {},
+        }}
     compartment = GeneExpression(compartment_config)
 
     molecules = {
