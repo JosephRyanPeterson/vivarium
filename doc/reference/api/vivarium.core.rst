@@ -10,7 +10,7 @@ Submodules
    vivarium.core.emitter
    vivarium.core.experiment
    vivarium.core.process
-   vivarium.core.repository
+   vivarium.core.registry
 
 Module contents
 ---------------
