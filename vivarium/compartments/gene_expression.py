@@ -510,8 +510,8 @@ def test_gene_expression(total_time=10):
         # 'complexation': {
         #     'monomer_ids': [],
         #     'complex_ids': [],
-        #     'stoichiometry': {},
-        }}
+        #     'stoichiometry': {}}
+    }
     compartment = GeneExpression(compartment_config)
 
     molecules = {
