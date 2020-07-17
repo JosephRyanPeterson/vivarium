@@ -27,6 +27,7 @@ class GrowthProtein(Process):
         'growth_rate': 0.000275,  # for doubling time about every 2520 seconds
         'global_deriver_key': 'global_deriver',
         'mass_deriver_key': 'mass_deriver',
+        'divide_condition': True,
     }
 
     def __init__(self, initial_parameters=None):
@@ -96,15 +97,23 @@ class GrowthProtein(Process):
         if where < extra:
             new_protein += 1
 
-        divide = False
-        if protein >= self.divide_protein:
-            divide = True
+        if self.parameters['divide_condition']:
+            divide = False
+            if protein >= self.divide_protein:
+                divide = True
 
-        return {
-            'internal': {
-                'protein': new_protein},
-            'global': {
-                'divide': divide}}
+            return {
+                'internal': {
+                    'protein': new_protein},
+                'global': {
+                    'divide': divide}}
+        else:
+            return {
+                'internal': {
+                    'protein': new_protein
+                }
+            }
+
 
 if __name__ == '__main__':
     out_dir = os.path.join(PROCESS_OUT_DIR, NAME)
