@@ -225,12 +225,14 @@ class DatabaseEmitter(Emitter):
 
     def get_data(self):
         query = {'experiment_id': self.experiment_id}
-        data = self.history.find(query)
-        data = list(data)
-        data = [{
-            key: value for key, value in datum.items()
-            if key not in ['_id', 'experiment_id']}
-            for datum in data]
+        raw_data = self.history.find(query)
+        raw_data = list(raw_data)
+        data = {}
+        for datum in raw_data:
+            time = datum['time']
+            data[time] = {
+                key: value for key, value in datum.items()
+                if key not in ['_id', 'experiment_id', 'time']}
         return data
 
 

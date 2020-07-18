@@ -17,30 +17,39 @@ from vivarium.library.dict_utils import deep_merge
 DEFAULT_TIME_STEP = 1.0
 
 
+def serialize_value(value):
+    if isinstance(value, dict):
+        return serialize_dictionary(value)
+    elif isinstance(value, list):
+        return serialize_list(value)
+    elif isinstance(value, np.ndarray):
+        return serializer_registry.access('numpy').serialize(value)
+    elif isinstance(value, Quantity):
+        return serializer_registry.access('units').serialize(value)
+    elif callable(value):
+        return serializer_registry.access('function').serialize(value)
+    elif isinstance(value, Process):
+        return serialize_dictionary(serializer_registry.access('process').serialize(value))
+    elif isinstance(value, Generator):
+        return serialize_dictionary(
+            serializer_registry.access('compartment').serialize(value))
+    elif isinstance(value, (np.integer, np.floating)):
+        return serializer_registry.access('numpy_scalar').serialize(value)
+    else:
+        return value
+
+def serialize_list(lst):
+    serialized = []
+    for value in lst:
+        serialized.append(serialize_value(value))
+    return serialized
 
 def serialize_dictionary(d):
     serialized = {}
     for key, value in d.items():
-        if isinstance(key, tuple):
+        if not isinstance(key, str):
             key = str(key)
-
-        if isinstance(value, dict):
-            serialized[key] = serialize_dictionary(value)
-        elif isinstance(value, np.ndarray):
-            serialized[key] = serializer_registry.access('numpy').serialize(value)
-        elif isinstance(value, Quantity):
-            serialized[key] = serializer_registry.access('units').serialize(value)
-        elif callable(value):
-            serialized[key] = serializer_registry.access('function').serialize(value)
-        elif isinstance(value, Process):
-            serialized[key] = serialize_dictionary(serializer_registry.access('process').serialize(value))
-        elif isinstance(value, Generator):
-            serialized[key] = serialize_dictionary(serializer_registry.access('compartment').serialize(value))
-        elif isinstance(value, (np.integer, np.floating)):
-            serialized[key] = serializer_registry.access(
-                'numpy_scalar').serialize(value)
-        else:
-            serialized[key] = value
+        serialized[key] = serialize_value(value)
     return serialized
 
 
