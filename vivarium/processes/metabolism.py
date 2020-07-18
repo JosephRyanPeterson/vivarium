@@ -111,6 +111,7 @@ class Metabolism(Process):
         'default_upper_bound': 0.0,
         'regulation': {},
         'initial_state': {},
+        'demand_objective': False,
         'exchange_threshold': 1e-6, # concentrations lower than exchange_threshold are considered depleted
         'initial_mass': 1339,  # fg
         'global_deriver_key': 'global_deriver',
@@ -146,22 +147,13 @@ class Metabolism(Process):
             reaction: build_rule(logic)
             for reaction, logic in regulation_logic.items()}
 
-        # get internal molecules from fba objective
-        self.objective_composition = {}
-        for reaction_id, coeff1 in self.fba.objective.items():
-            for mol_id, coeff2 in self.fba.stoichiometry[reaction_id].items():
-                if mol_id in self.objective_composition:
-                    self.objective_composition[mol_id] += coeff1 * coeff2
-                else:
-                    self.objective_composition[mol_id] = coeff1 * coeff2
-
         ## Get initial internal state from initial_mass
         initial_metabolite_mass = self.or_default(
             initial_parameters, 'initial_mass')
         mw = self.fba.molecular_weights
         composition = {
             mol_id: (-coeff if coeff < 0 else 0)
-            for mol_id, coeff in self.objective_composition.items()}
+            for mol_id, coeff in self.fba.objective_composition.items()}
         composition_mass = get_fg_from_counts(composition, mw)
         scaling_factor = (initial_metabolite_mass / composition_mass).magnitude
         internal_state = {mol_id: int(coeff * scaling_factor)
@@ -205,7 +197,7 @@ class Metabolism(Process):
         schema = {port: {} for port in ports}
 
         # internal
-        for state in list(self.objective_composition.keys()):
+        for state in list(self.fba.objective_composition.keys()):
             schema['internal'][state] = {
                 '_default': self.initial_state['internal'].get(state, 0),
                 '_emit': True,
@@ -270,6 +262,7 @@ class Metabolism(Process):
 
     def next_update(self, timestep, states):
         ## get the state
+        internal_state = states['internal']
         external_state = states['external']
         constrained_reaction_bounds = states['flux_bounds']  # (units.mmol / units.L / units.s)
         mmol_to_counts = states['global']['mmol_to_counts']
@@ -296,6 +289,10 @@ class Metabolism(Process):
 
         # finally, turn reactions on/off based on regulation
         self.fba.regulate_flux(regulation_state)
+
+        if self.parameters['demand_objective']:
+            # update the objective based on demand
+            self.fba.set_demand_objective(internal_state)
 
         ## solve the fba problem
         objective_exchange = self.fba.optimize() * timestep  # (units.mmol / units.L / units.s)
@@ -553,6 +550,7 @@ if __name__ == '__main__':
     if args.bigg:
         # configure BiGG metabolism
         config = get_iAF1260b_config()
+        config['demand_objective'] = True
         metabolism = Metabolism(config)
 
         # simulation settings
@@ -563,7 +561,6 @@ if __name__ == '__main__':
                     'exchange': ('exchange',),
                     'external': ('external',),
                 }},
-            # 'timestep': 1,
             'total_time': 20,  # 2520 sec (42 min) is the expected doubling time in minimal media
         }
 

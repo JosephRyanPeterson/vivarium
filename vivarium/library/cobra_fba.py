@@ -225,6 +225,19 @@ class CobraFBA(object):
 
         self.exchange_bounds_keys = list(self.exchange_bounds.keys())
 
+        # set objective composition
+        self.objective_composition = {}
+        for reaction_id, coeff1 in self.objective.items():
+            for mol_id, coeff2 in self.stoichiometry[reaction_id].items():
+                if mol_id in self.objective_composition:
+                    self.objective_composition[mol_id] += coeff1 * coeff2
+                else:
+                    self.objective_composition[mol_id] = coeff1 * coeff2
+        # total_objective_demand is based on metabolites used up to make biomass
+        self.total_objective_demand = sum([
+            -coeff for key, coeff in self.objective_composition.items()
+            if coeff < 0])
+
         # get minimal external state
         # TODO -- make sure that scaling is accounted for
         max_growth = self.model.slim_optimize()
@@ -314,6 +327,44 @@ class CobraFBA(object):
             return objective_value
         else:
             return float('nan')
+
+    def set_demand_objective(self, state):
+        ''' reset the objective based on supply and demand
+        determine the distance between supply (available state) and demand (the objective)
+        '''
+
+        # find distance between distributions of supply and demand,
+        # normalized to total_objective_demand
+        total_supply = sum(state.values())
+        supply_composition = {
+            mol_id: level/total_supply
+            for mol_id, level in state.items()}
+        demand_composition = {
+            mol_id: (-coeff if coeff < 0 else 0)
+            for mol_id, coeff in self.objective_composition.items()}
+        distance = {
+            mol_id: coeff - supply_composition[mol_id] * self.total_objective_demand
+            for mol_id, coeff in demand_composition.items()}
+
+        # set the demand objective
+        for expression in self.model.objective.expression.args:
+            exp_str = str(expression)
+            coeff, reaction_id = exp_str.split('*')
+            try:
+                objective_reaction = self.model.reactions.get_by_id(reaction_id)
+            except:
+                continue
+            objective_stoichiometry = objective_reaction.metabolites
+            demand_stoichiometry = {
+                metabolite: coeff + distance[metabolite.id]
+                for metabolite, coeff in objective_stoichiometry.items()}
+
+            new_objective_demand = sum([-coeff for key, coeff in demand_stoichiometry.items() if coeff < 0])
+            if abs(new_objective_demand - self.total_objective_demand) > 1e-10:
+                raise Exception('error between objective demands')
+
+            # update the reaction
+            objective_reaction.add_metabolites(demand_stoichiometry, False)
 
     def optimize(self):
 

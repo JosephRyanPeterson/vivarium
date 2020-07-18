@@ -54,6 +54,7 @@ def default_metabolism_config():
     metabolism_config.update({
         'initial_mass': 1339.0,  # 200, # fg of metabolite pools
         'time_step': COMPARTMENT_TIMESTEP,
+        'demand_objective': True,
         'tolerance': {
             'EX_glc__D_e': [1.05, 1.0],
             'EX_lcts_e': [1.05, 1.0],
