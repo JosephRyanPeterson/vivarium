@@ -149,7 +149,8 @@ def get_experiment_settings(
 def get_plot_settings(
         skip_paths=[],
         fields=[],
-        tags=[]
+        tags=[],
+        background_color='black'
 ):
     return {
         'plot_types': {
@@ -161,7 +162,8 @@ def get_plot_settings(
                 'fields': fields
             },
             'tags': {
-                'tag_ids': tags
+                'tagged_molecules': tags,
+                'background_color': background_color,
             },
         }
     }
@@ -203,15 +205,14 @@ def plot_experiment_output(
         plot_snapshots(data, plot_config)
 
     if 'tags' in plot_types:
-        tags_ids = plot_types['tags']['tag_ids']
+        plot_config = plot_types['tags']
         data = {
             'agents': agents,
             'config': multibody_config}
-        plot_config = {
+        plot_config.update({
             'out_dir': out_dir,
             'filename': agent_type + '_tags',
-            'tagged_molecules': tags_ids,
-        }
+        })
         plot_tags(data, plot_config)
 
 
@@ -391,7 +392,7 @@ def main():
             experiment_settings=get_experiment_settings(
                 emit_step=60,
                 emitter='database',
-                total_time=6000,
+                total_time=8000,
             ),
             plot_settings=get_plot_settings(
                 skip_paths=[
@@ -402,7 +403,8 @@ def main():
                 ],
                 tags=[
                     ('proteins', 'flagella'),
-                ]
+                ],
+                background_color='lightgray',
             ),
             out_dir=txp_mtb_out_dir)
 
