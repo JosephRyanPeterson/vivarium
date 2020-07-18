@@ -131,7 +131,7 @@ environments_library = {
 }
 
 # simulation settings
-def get_simulation_settings(
+def get_experiment_settings(
         total_time=4000,
         emit_step=10,
         emitter='timeseries',
@@ -221,8 +221,7 @@ def run_lattice_experiment(
         environment_config=None,
         initial_state=None,
         initial_agent_state=None,
-        simulation_settings=None,
-        experiment_settings=None
+        experiment_settings=None,
 ):
     if experiment_settings is None:
         experiment_settings = {}
@@ -256,13 +255,9 @@ def run_lattice_experiment(
     )
 
     # simulate
-    settings = {
-        'total_time': simulation_settings['total_time'],
-        'emit_step': simulation_settings['emit_step'],
-        'return_raw_data': simulation_settings['return_raw_data']}
     return simulate_experiment(
         experiment,
-        settings,
+        experiment_settings,
     )
 
 
@@ -273,7 +268,7 @@ def run_workflow(
         initial_state={},
         initial_agent_state={},
         out_dir='out',
-        simulation_settings=get_simulation_settings(),
+        experiment_settings=get_experiment_settings(),
         plot_settings=get_plot_settings()
 ):
     # agent configuration
@@ -292,7 +287,7 @@ def run_workflow(
         environment_config=environment_config,
         initial_state=initial_state,
         initial_agent_state=initial_agent_state,
-        simulation_settings=simulation_settings,
+        experiment_settings=experiment_settings,
     )
 
     plot_settings['environment_config'] = environment_config
@@ -319,14 +314,14 @@ def test_growth_division_experiment():
     environment_config = environments_library['glc_lcts']
 
     # simulate
-    simulation_settings = get_simulation_settings(
+    experiment_settings = experiment_settings(
         total_time=total_time,
         return_raw_data=True)
 
     data = run_lattice_experiment(
         agents_config=agents_config,
         environment_config=environment_config,
-        simulation_settings=simulation_settings)
+        experiment_settings=experiment_settings)
 
     # assert division
     time = list(data.keys())
@@ -356,7 +351,7 @@ def main():
         make_dir(minimal_out_dir)
         run_workflow(
             agent_type='growth_division_minimal',
-            simulation_settings=get_simulation_settings(
+            experiment_settings=get_experiment_settings(
                 total_time=6000
             ),
             out_dir=minimal_out_dir)
@@ -367,7 +362,7 @@ def main():
         run_workflow(
             agent_type='growth_division',
             environment_type='glc_lcts',
-            simulation_settings=get_simulation_settings(
+            experiment_settings=get_experiment_settings(
                 total_time=8000
             ),
             plot_settings=get_plot_settings(
@@ -393,7 +388,7 @@ def main():
             agent_type='flagella_metabolism',
             environment_type='iAF1260b',
             initial_agent_state=get_flagella_initial_state(),
-            simulation_settings=get_simulation_settings(
+            experiment_settings=get_experiment_settings(
                 emit_step=60,
                 emitter='database',
                 total_time=6000,
