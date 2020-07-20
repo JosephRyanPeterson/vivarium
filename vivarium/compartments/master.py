@@ -165,14 +165,13 @@ def run_master(out_dir):
     plot_settings = {
         'max_rows': 20,
         'remove_zeros': True,
-        'skip_ports': ['prior_state', 'null', 'flux_bounds', 'chromosome', 'reactions', 'exchange']}
+        'skip_ports': ['prior_state', 'null', 'flux_bounds', 'chromosome', 'reactions']}
     plot_simulation_output(timeseries, plot_settings, out_dir)
 
 def test_master():
     # load the compartment
     compartment_config = {
         'external_path': ('external',),
-        'exchange_path': ('exchange',),
         'global_path': ('global',),
         'agents_path': ('..', '..', 'cells',),
         'transcription': {

@@ -78,8 +78,9 @@ class Metabolism(Process):
     * **reactions**: Holds the IDs of the modeled metabolic reactions.
       The linked :term:`store` does not need to be shared with any other
       processes.
-    * **exchange**: The :term:`boundary store` between the compartment
-      this process is running in and its parent.
+    * **fields**: The environmental fields that will be updated with
+      cell intake and uptake.
+    * **dimensions**: Holds the dimensions of the environment.
     * **flux_bounds**: The bounds on the FBA, which are imposed by the
       availability of metabolites. For example, for the metabolism of a
       cell, the bounds represent the limits of transmembrane transport.
@@ -219,7 +220,7 @@ class Metabolism(Process):
                 '_emit': True,
             }
 
-        # exchange
+        # fields
         for state in self.fba.external_molecules:
             schema['fields'][state] = {
                 '_default': np.zeros((1, 1)),

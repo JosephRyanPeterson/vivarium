@@ -87,15 +87,15 @@ class GrowthDivision(Generator):
         boundary_path = config['boundary_path']
         agents_path = config['agents_path']
         external_path = boundary_path + ('external',)
-        exchange_path = boundary_path + ('exchange',)
 
         return {
             'transport': {
                 'internal': ('internal',),
                 'external': external_path,
-                'exchange': exchange_path,
+                'fields': ('fields',),
                 'fluxes': ('fluxes',),
-                'global': boundary_path
+                'global': boundary_path,
+                'dimensions': ('dimensions',),
             },
 
             'growth': {
@@ -135,8 +135,11 @@ if __name__ == '__main__':
         'environment': {
             'volume': 1e-6 * units.L,  # L
             'ports': {
-                'exchange': ('boundary', 'exchange',),
-                'external': ('boundary', 'external',)}
+                'fields': ('fields',),
+                'external': ('boundary', 'external',),
+                'global': ('boundary',),
+                'dimensions': ('dimensions',),
+            },
         },
         'outer_path': ('agents', agent_id),  # TODO -- need to set the agent_id through here?
         'return_raw_data': True,

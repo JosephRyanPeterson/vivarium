@@ -151,10 +151,14 @@ class ConvenienceKinetics(Process):
 
      * A ``fluxes`` port is added with variable names equal to
        the IDs of the configured reactions.
-     * An ``exchange`` port is added with the same variables as the
+     * A ``fields`` port is added with the same variables as the
        ``external`` port.
      * A ``global`` port is added with a variable named
-       ``mmol_to_counts``, which is set by a :term:`deriver`.
+       ``mmol_to_counts``, which is set by a :term:`deriver`, and
+       ``location``, which is set by the environment.
+     * A ``dimensions`` port is added with variables from the
+       environment that specify the environment length, width, depth,
+       and number of bins.
 
      Example configuring a process to model the kinetics and reaction
      described above.
@@ -259,8 +263,8 @@ class ConvenienceKinetics(Process):
                     '_default': self.initial_state[port][state_id],
                     '_emit': True}
 
-        # exchange
-        # Note: exchange depends on a port called external
+        # fields
+        # Note: fields depends on a port called external
         if 'external' in schema:
             schema['fields'] = {
                 state_id: {
@@ -328,7 +332,7 @@ class ConvenienceKinetics(Process):
         update = {port: {} for port in self.port_ids}
         update.update({'fluxes': fluxes})
 
-        # get exchange
+        # get exchange and update fields
         for reaction_id, flux in fluxes.items():
             stoichiometry = self.reactions[reaction_id]['stoichiometry']
             for port_state_id, coeff in stoichiometry.items():

@@ -241,7 +241,7 @@ def gene_network_plot(data, out_dir, filename='gene_network'):
     for complex, stoichiometry in complexes.items():
         complexes = [mol_id for mol_id, coeff in stoichiometry.items() if coeff>0]
         reactants = {mol_id: coeff for mol_id, coeff in stoichiometry.items() if coeff<0}
-        
+
         assert len(complexes) == 1, 'too many complexes'
         complex = complexes[0]
         complex_name = complex + complex_suffix
@@ -255,7 +255,7 @@ def gene_network_plot(data, out_dir, filename='gene_network'):
 
         # make edge
         for reactant, coeff in reactants.items():
-            
+
             # is this reactant a monomer or a complex?
             if reactant in monomer_set:
                 # TODO -- check that it is actually included in the genes?
@@ -476,7 +476,6 @@ def test_gene_expression(total_time=10):
     # load the compartment
     compartment_config = {
         'external_path': ('external',),
-        'exchange_path': ('exchange',),
         'global_path': ('global',),
         'agents_path': ('..', '..', 'cells',),
         'transcription': {

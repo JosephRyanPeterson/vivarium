@@ -374,32 +374,8 @@ class DiffusionField(Process):
                     self.get_single_local_environments(specs['boundary'], fields)
         return local_environments
 
-    def apply_single_exchange(self, delta_fields, specs):
-        exchange = specs.get('exchange', {})
-        bin_site = self.get_bin_site(specs['location'])
-        for mol_id, count in exchange.items():
-            if count != 0:
-                concentration = self.count_to_concentration(count)
-                delta_fields[mol_id][bin_site[0], bin_site[1]] += concentration
-
-    def empty_field(self):
-        return np.zeros((self.n_bins[0], self.n_bins[1]), dtype=np.float64)
-
     def ones_field(self):
         return np.ones((self.n_bins[0], self.n_bins[1]), dtype=np.float64)
-
-    def apply_exchanges(self, agents):
-        # initialize delta_fields with zero array
-        delta_fields = {
-            mol_id: self.empty_field()
-            for mol_id in self.molecule_ids}
-
-        if agents:
-            # apply exchanges to delta_fields
-            for agent_id, specs in agents.items():
-                self.apply_single_exchange(delta_fields, specs['boundary'])
-
-        return delta_fields
 
     # diffusion functions
     def diffusion_delta(self, field, timestep):
@@ -495,8 +471,6 @@ def get_secretion_agent_config(config={}):
                 'location': [
                         np.random.uniform(0, bounds[0]),
                         np.random.uniform(0, bounds[1])],
-                'exchange': {
-                    mol_id: 1e3 for mol_id in molecules},
                 'external': {
                     mol_id: 0 for mol_id in molecules}}}
     return {

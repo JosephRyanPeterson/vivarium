@@ -210,7 +210,7 @@ def run_chemotaxis_master(out_dir):
     plot_settings = {
         'max_rows': 40,
         'remove_zeros': True,
-        'skip_ports': ['reactions', 'exchange', 'prior_state', 'null']}
+        'skip_ports': ['reactions', 'prior_state', 'null']}
     plot_simulation_output(timeseries, plot_settings, out_dir)
 
     # gene expression plot
