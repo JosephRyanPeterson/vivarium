@@ -421,7 +421,13 @@ def test_ode_expression_chemotaxis(
         'initial_state': initial_state,
         'timeline': {
             'timeline': timeline,
-            'ports': {'external': ('boundary', 'external')}},
+            'ports': {
+                'external': ('boundary', 'external'),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+                'global': ('boundary',),
+            },
+        },
     }
     timeseries = simulate_compartment_in_experiment(
         compartment,

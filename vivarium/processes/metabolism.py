@@ -194,10 +194,11 @@ class Metabolism(Process):
         ports = [
             'internal',
             'external',
-            'exchange',
+            'fields',
             'reactions',
             'flux_bounds',
             'global',
+            'dimensions',
         ]
 
         schema = {port: {} for port in ports}
@@ -220,8 +221,8 @@ class Metabolism(Process):
 
         # exchange
         for state in self.fba.external_molecules:
-            schema['exchange'][state] = {
-                '_default': 0.0,
+            schema['fields'][state] = {
+                '_default': np.zeros((1, 1)),
             }
 
         # reactions
@@ -241,11 +242,30 @@ class Metabolism(Process):
 
         # globals
         schema['global']['mass'] = {
-            '_default': 0.0 * units.fg,
+            '_default': self.initial_mass,
             '_emit': True}
-        schema['global']['mmol_to_counts'] = {
-            '_default': 0.0 * units.L / units.mmol,
-            '_emit': True}
+        schema['global'] = {
+            'mmol_to_counts': {
+                '_default': 0.0 * units.L / units.mmol,
+                '_emit': True,
+            },
+            'location': {
+                '_default': [0.5, 0.5],
+            }
+        }
+
+        # dimensions
+        schema['dimensions'] = {
+            'bounds': {
+                '_default': [1, 1],
+            },
+            'n_bins': {
+                '_default': [1, 1],
+            },
+            'depth': {
+                '_default': 1,
+            },
+        }
 
         return schema
 
@@ -264,6 +284,7 @@ class Metabolism(Process):
                     'global': 'global'},
                 'config': {
                     'from_path': ('..', '..'),
+                    'initial_mass': self.initial_mass,
                 }}}
 
     def next_update(self, timestep, states):
@@ -316,17 +337,26 @@ class Metabolism(Process):
                     internal_state_update[mol_id] = added_count
 
         # convert exchange fluxes to counts
-        # TODO -- use derive_counts for exchange
-        exchange_deltas = {
-            reaction: int((flux * mmol_to_counts).magnitude)
-            for reaction, flux in exchange_fluxes.items()}
+        field_updates = {
+            reaction: {
+                '_value': int((flux * mmol_to_counts).magnitude),
+                '_updater': {
+                    'updater': 'update_field_with_exchange',
+                    'port_mapping': {
+                        'global': 'global',
+                        'dimensions': 'dimensions',
+                    },
+                },
+            }
+            for reaction, flux in exchange_fluxes.items()
+        }
 
         all_fluxes = {}
         all_fluxes.update(internal_fluxes)
         all_fluxes.update(exchange_reactions)
 
         return {
-            'exchange': exchange_deltas,
+            'fields': field_updates,
             'internal': internal_state_update,
             'reactions': all_fluxes,
         }
@@ -507,9 +537,7 @@ def test_toy_metabolism():
     settings = {
         'environment': {
             'volume': 1e-8 * units.L,
-            'ports': {
-                'external': ('external',),
-                'exchange': ('exchange',)}},
+        },
         'timestep': 1.0,
         'timeline': {
             'timeline': timeline}}
@@ -522,10 +550,7 @@ def test_BiGG_metabolism(config=get_iAF1260b_config(), settings={}):
 reference_sim_settings = {
     'environment': {
         'volume': 1e-5 * units.L,
-        'ports': {
-            'exchange': ('exchange',),
-            'external': ('external',),
-        }},
+    },
     'timestep': 1,
     'total_time': 10}
 
@@ -557,10 +582,7 @@ if __name__ == '__main__':
         sim_settings = {
             'environment': {
                 'volume': 1e-5 * units.L,
-                'ports': {
-                    'exchange': ('exchange',),
-                    'external': ('external',),
-                }},
+            },
             # 'timestep': 1,
             'total_time': 20,  # 2520 sec (42 min) is the expected doubling time in minimal media
         }

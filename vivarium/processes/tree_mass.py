@@ -28,7 +28,7 @@ class TreeMass(Deriver):
     name = 'mass_deriver'
     defaults = {
         'from_path': ('..', '..'),
-        'initial_mass': 0.0 * units.fg,
+        'initial_mass': 1339 * units.fg,
     }
 
     def __init__(self, initial_parameters=None):
@@ -59,7 +59,7 @@ class TreeMass(Deriver):
 
     def next_update(self, timestep, states):
         initial_mass = states['global']['initial_mass']
-        
+
         return {
             'global': {
                 'mass': {

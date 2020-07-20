@@ -223,14 +223,25 @@ def process_in_experiment(process, settings={}):
         '''
         environment requires ports for exchange and external
         '''
-        ports = environment.get('ports',
-            {'external': ('external',), 'exchange': ('exchange',)})
+        ports = environment.get(
+            'ports',
+            {
+                'external': ('external',),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+                'global': ('global',),
+            }
+        )
         environment_process = NonSpatialEnvironment(environment)
         processes.update({'environment_process': environment_process})
         topology.update({
             'environment_process': {
                 'external': ports['external'],
-                'exchange': ports['exchange']}})
+                'fields': ports['fields'],
+                'dimensions': ports['dimensions'],
+                'global': ports['global'],
+            },
+        })
 
     # add derivers
     derivers = generate_derivers(processes, topology)
@@ -273,14 +284,25 @@ def compartment_in_experiment(compartment, settings={}):
         '''
         environment requires ports for exchange and external
         '''
-        ports = environment.get('ports',
-            {'external': ('external',), 'exchange': ('exchange',)})
+        ports = environment.get(
+            'ports',
+            {
+                'external': ('external',),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+                'global': ('global',),
+            }
+        )
         environment_process = NonSpatialEnvironment(environment)
         processes.update({'environment_process': environment_process})
         topology.update({
             'environment_process': {
                 'external': ports['external'],
-                'exchange': ports['exchange']}})
+                'fields': ports['fields'],
+                'dimensions': ports['dimensions'],
+                'global': ports['global'],
+            },
+        })
 
     return Experiment({
         'processes': processes,
