@@ -1,6 +1,7 @@
 import os
 from vivarium.library.units import units
 
+from vivarium.core.experiment import pf
 from vivarium.core.composition import simulate_compartment_in_experiment
 from vivarium.data.proteins import GFP
 from vivarium.data.chromosomes.gfp_chromosome import gfp_plasmid_config
@@ -21,7 +22,7 @@ def degradation_sequences(sequence, promoters):
             promoter.last_terminator().position))
         for promoter_key, promoter in promoters.items()}
 
-def generate_gfp_compartment(config):
+def generate_gfp_config(config):
     media = Media()
     PURE = {
         key: value * units.mmol / units.L
@@ -38,7 +39,7 @@ def generate_gfp_compartment(config):
         for key, value in PURE.items()}
 
     print(PURE)
-    print(PURE_counts)
+    print(pf(PURE_counts))
 
     plasmid = Chromosome(gfp_plasmid_config)
     sequences = plasmid.product_sequences()
@@ -92,21 +93,26 @@ def generate_gfp_compartment(config):
             'transcripts': {'GFP_RNA': 0},
             'proteins': proteins}}
 
-    return GeneExpression(gfp_config)
+    return gfp_config
 
 if __name__ == '__main__':
     out_dir = os.path.join('out', 'tests', 'gfp_expression_composite')
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
+    gfp_config = generate_gfp_config({})
+
     # load the compartment
-    gfp_expression_compartment = generate_gfp_compartment()
+    gfp_expression_compartment = GeneExpression(gfp_config)
 
     # run simulation
     settings = {
         'total_time': 100,
-    }
-    timeseries = simulate_compartment(gfp_expression_compartment, settings)
+        'initial_state': gfp_config['initial_state']}
+
+    timeseries = simulate_compartment_in_experiment(
+        gfp_expression_compartment,
+        settings)
 
     plot_config = {
         'name': 'gfp_expression',

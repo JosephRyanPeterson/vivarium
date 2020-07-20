@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import copy
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
@@ -40,11 +41,26 @@ class GeneExpression(Generator):
         self.global_path = config.get('global_path', self.defaults['global_path'])
         self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
 
-    def generate_processes(self, config):
-        transcription = Transcription(config.get('transcription', self.config.get('transcription')))
-        translation = Translation(config.get('translation', self.config.get('translation')))
-        degradation = RnaDegradation(config.get('degradation', self.config.get('degradation')))
-        complexation = Complexation(config.get('complexation', self.config.get('complexation')))
+    def generate_processes(self, process_config):
+        config = copy.deepcopy(self.config)
+        config = deep_merge(config, process_config)
+
+        transcription_config = config['transcription']
+        translation_config = config['translation']
+        degradation_config = config['degradation']
+        complexation_config = config['complexation']
+
+        # update timestep
+        transcription_config.update({'time_step': config['time_step']})
+        translation_config.update({'time_step': config['time_step']})
+        degradation_config.update({'time_step': config['time_step']})
+        complexation_config.update({'time_step': config['time_step']})
+
+        # make the processes
+        transcription = Transcription(transcription_config)
+        translation = Translation(translation_config)
+        degradation = RnaDegradation(degradation_config)
+        complexation = Complexation(complexation_config)
         mass_deriver = TreeMass(config.get('mass_deriver', {
             'initial_mass': config.get('initial_mass', self.initial_mass)}))
         division = DivisionVolume(config)

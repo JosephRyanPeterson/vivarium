@@ -52,7 +52,7 @@ Y = random_string(monomer_symbols, 40)
 
 def gather_genes(affinities):
     genes = {}
-    for operon, product in affinities.keys():
+    for operon, product in affinities.items():
         if not operon in genes:
             genes[operon] = []
         genes[operon].append(product)
