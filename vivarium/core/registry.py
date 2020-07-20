@@ -29,10 +29,12 @@ Updater API
 
 An updater function MUST have a name that begins with ``update_``. The
 function MUST accept exactly two positional arguments: the first MUST be
-the current value of the variable (i.e. before applying the update), and
-the second MUST be the value associated with the variable in the update.
-The function SHOULD not accept any other parameters. The function MUST
-return the updated value of the variable only.
+either the current value of the variable (i.e. before applying the
+update) or a dictionary of states from the simulation hierarchy with the
+current value of the variable as the value of the key ``_old_value``,
+and the second MUST be the value associated with the variable in the
+update.  The function SHOULD not accept any other parameters. The
+function MUST return the updated value of the variable only.
 
 --------
 Dividers
@@ -78,15 +80,17 @@ that deriver.
 
 from __future__ import absolute_import, division, print_function
 
-import copy
 import random
 
 import numpy as np
 
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import Quantity
-
-
+from vivarium.library.lattice_utils import (
+    get_bin_site,
+    get_bin_volume,
+    count_to_concentration,
+)
 
 
 class Registry(object):
@@ -146,11 +150,48 @@ def update_accumulate(current_value, new_value):
     """
     return current_value + new_value
 
+def update_field_with_exchange(states, new_value):
+    '''Update environment with agent exchange
+
+    Arguments:
+        states: Dictionary with the following keys that specify the
+            pre-update simulation state:
+
+            * **global** (:py:class:`dict`): Contains the agent location
+              under the ``location`` key.
+            * **dimensions** (:py:class:`dict`): The contents of the
+              environment's dimensions :term:`store` with the
+              ``bounds``, ``n_bins``, and ``depth`` keys.
+            * **_old_value** (numpy ndarray): The pre-update value of
+              the field to update.
+
+        new_value: Count of molecules to exchange with the environment
+
+    Returns:
+        The updated field.
+    '''
+    location = states['global']['location']
+    n_bins = states['dimensions']['n_bins']
+    bounds = states['dimensions']['bounds']
+    depth = states['dimensions']['depth']
+    delta_field = np.zeros(
+        (n_bins[0], n_bins[1]), dtype=np.float64)
+    bin_site = get_bin_site(
+        location, n_bins, bounds)
+    bin_volume = get_bin_volume(
+        n_bins, bounds, depth)
+    concentration = count_to_concentration(new_value, bin_volume)
+    delta_field[bin_site[0], bin_site[1]] += concentration
+    return states['_old_value'] + delta_field
+
+
 #: Maps updater names to updater functions
 updater_registry = Registry()
 updater_registry.register('accumulate', update_accumulate)
 updater_registry.register('set', update_set)
 updater_registry.register('merge', update_merge)
+updater_registry.register(
+    'update_field_with_exchange', update_field_with_exchange)
 
 
 
