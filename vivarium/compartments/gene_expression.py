@@ -15,6 +15,7 @@ from vivarium.core.composition import (
 )
 from vivarium.library.make_network import save_network
 from vivarium.library.units import units
+from vivarium.library.dict_utils import deep_merge
 # processes
 from vivarium.data.amino_acids import amino_acids
 from vivarium.processes.tree_mass import TreeMass
@@ -33,11 +34,12 @@ NAME = 'gene_expression'
 class GeneExpression(Generator):
 
     defaults = {
+        'time_step': 1.0,
         'global_path': ('global',),
         'initial_mass': 1339.0 * units.fg}
 
     def __init__(self, config):
-        self.config = config
+        self.config = deep_merge(self.defaults, config)
         self.global_path = config.get('global_path', self.defaults['global_path'])
         self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
 
@@ -45,10 +47,10 @@ class GeneExpression(Generator):
         config = copy.deepcopy(self.config)
         config = deep_merge(config, process_config)
 
-        transcription_config = config['transcription']
-        translation_config = config['translation']
-        degradation_config = config['degradation']
-        complexation_config = config['complexation']
+        transcription_config = config.get('transcription', {})
+        translation_config = config.get('translation', {})
+        degradation_config = config.get('degradation', {})
+        complexation_config = config.get('complexation', {})
 
         # update timestep
         transcription_config.update({'time_step': config['time_step']})
