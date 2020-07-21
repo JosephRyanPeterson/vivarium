@@ -923,7 +923,7 @@ class Store(object):
                     'topology at path {} and source {} has keys that are not in the schema: {}'.format(
                         self.path_for(), source, mismatch_topology))
             if mismatch_schema:
-                log.info('{} schema has keys not in topology: {}'.format(
+                log.debug('{} schema has keys not in topology: {}'.format(
                     source, mismatch_schema))
             for port, subschema in schema.items():
                 path = topology.get(port, (port,))
@@ -1180,6 +1180,8 @@ class Experiment(object):
             self.initial_state)
 
         emitter_config = config.get('emitter', {})
+        if isinstance(emitter_config, str):
+            emitter_config = {'type': emitter_config}
         emitter_config['experiment_id'] = self.experiment_id
         self.emitter = get_emitter(emitter_config)
 
@@ -1362,6 +1364,7 @@ class Experiment(object):
 
                 time = future
                 self.local_time += full_step
+                log.info('time: {}'.format(self.local_time))
 
                 log.info('time: {}'.format(self.local_time))
 

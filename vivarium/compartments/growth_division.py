@@ -65,7 +65,7 @@ class GrowthDivision(Generator):
         growth = GrowthProtein(config['growth'])
         transport = ConvenienceKinetics(config['transport'])
         expression = MinimalExpression(config['expression'])
-        mass = TreeMass(config['mass'])
+        mass_deriver = TreeMass(config['mass'])
 
         # configure division
         division_config = dict(
@@ -79,7 +79,7 @@ class GrowthDivision(Generator):
             'transport': transport,
             'growth': growth,
             'expression': expression,
-            'mass': mass,
+            'mass_deriver': mass_deriver,
             'division': division,
         }
 
@@ -103,7 +103,7 @@ class GrowthDivision(Generator):
                 'global': boundary_path
             },
 
-            'mass': {
+            'mass_deriver': {
                 'global': boundary_path
             },
 

@@ -131,32 +131,43 @@ environments_library = {
 }
 
 # simulation settings
-def get_simulation_settings(
+def get_experiment_settings(
         total_time=4000,
         emit_step=10,
+        emitter='timeseries',
         return_raw_data=True,
 ):
     return {
         'total_time': total_time,
         'emit_step': emit_step,
+        'emitter': emitter,
         'return_raw_data': return_raw_data
     }
 
 
 # plot settings
 def get_plot_settings(
+        skip_paths=[],
         fields=[],
-        tags=[]
+        tags=[],
+        n_snapshots=6,
+        background_color='black',
 ):
     return {
         'plot_types': {
-            'agents': {},
+            'agents': {
+                'skip_paths': skip_paths,
+                'remove_zeros': True,
+            },
             'snapshots': {
-                'fields': fields
+                'fields': fields,
+                'n_snapshots': n_snapshots,
             },
             'tags': {
-                'tag_ids': tags
-            }
+                'tagged_molecules': tags,
+                'n_snapshots': n_snapshots,
+                'background_color': background_color,
+            },
         }
     }
 
@@ -176,11 +187,12 @@ def plot_experiment_output(
 
     # pass to plots
     if 'agents' in plot_types:
-        plot_settings = {
-            'agents_key': 'agents'}
+        plot_settings = plot_types['agents']
+        plot_settings['agents_key'] = 'agents'
         plot_agents_multigen(data, plot_settings, out_dir, agent_type)
 
     if 'snapshots' in plot_types:
+        plot_config = plot_types['snapshots']
         field_ids = plot_types['snapshots']['fields']
         plot_fields = {
             time: {
@@ -191,21 +203,21 @@ def plot_experiment_output(
             'agents': agents,
             'fields': plot_fields,
             'config': multibody_config}
-        plot_config = {
+        plot_config.update({
             'out_dir': out_dir,
-            'filename': agent_type + '_snapshots'}
+            'filename': agent_type + '_snapshots',
+        })
         plot_snapshots(data, plot_config)
 
     if 'tags' in plot_types:
-        tags_ids = plot_types['tags']['tag_ids']
+        plot_config = plot_types['tags']
         data = {
             'agents': agents,
             'config': multibody_config}
-        plot_config = {
+        plot_config.update({
             'out_dir': out_dir,
             'filename': agent_type + '_tags',
-            'tagged_molecules': tags_ids,
-        }
+        })
         plot_tags(data, plot_config)
 
 
@@ -215,8 +227,7 @@ def run_lattice_experiment(
         environment_config=None,
         initial_state=None,
         initial_agent_state=None,
-        simulation_settings=None,
-        experiment_settings=None
+        experiment_settings=None,
 ):
     if experiment_settings is None:
         experiment_settings = {}
@@ -250,13 +261,9 @@ def run_lattice_experiment(
     )
 
     # simulate
-    settings = {
-        'total_time': simulation_settings['total_time'],
-        'emit_step': simulation_settings['emit_step'],
-        'return_raw_data': simulation_settings['return_raw_data']}
     return simulate_experiment(
         experiment,
-        settings,
+        experiment_settings,
     )
 
 
@@ -267,7 +274,7 @@ def run_workflow(
         initial_state={},
         initial_agent_state={},
         out_dir='out',
-        simulation_settings=get_simulation_settings(),
+        experiment_settings=get_experiment_settings(),
         plot_settings=get_plot_settings()
 ):
     # agent configuration
@@ -286,7 +293,7 @@ def run_workflow(
         environment_config=environment_config,
         initial_state=initial_state,
         initial_agent_state=initial_agent_state,
-        simulation_settings=simulation_settings,
+        experiment_settings=experiment_settings,
     )
 
     plot_settings['environment_config'] = environment_config
@@ -313,14 +320,14 @@ def test_growth_division_experiment():
     environment_config = environments_library['glc_lcts']
 
     # simulate
-    simulation_settings = get_simulation_settings(
+    experiment_settings = get_experiment_settings(
         total_time=total_time,
         return_raw_data=True)
 
     data = run_lattice_experiment(
         agents_config=agents_config,
         environment_config=environment_config,
-        simulation_settings=simulation_settings)
+        experiment_settings=experiment_settings)
 
     # assert division
     time = list(data.keys())
@@ -350,7 +357,7 @@ def main():
         make_dir(minimal_out_dir)
         run_workflow(
             agent_type='growth_division_minimal',
-            simulation_settings=get_simulation_settings(
+            experiment_settings=get_experiment_settings(
                 total_time=6000
             ),
             out_dir=minimal_out_dir)
@@ -361,10 +368,13 @@ def main():
         run_workflow(
             agent_type='growth_division',
             environment_type='glc_lcts',
-            simulation_settings=get_simulation_settings(
-                total_time=8000
+            experiment_settings=get_experiment_settings(
+                total_time=18000
             ),
             plot_settings=get_plot_settings(
+                skip_paths=[
+                    ('boundary', 'location')
+                ],
                 fields=[
                     'glc__D_e',
                     'lcts_e',
@@ -373,7 +383,8 @@ def main():
                     ('internal', 'protein1'),
                     ('internal', 'protein2'),
                     ('internal', 'protein3'),
-                ]
+                ],
+                n_snapshots=5,
             ),
             out_dir=gd_out_dir)
 
@@ -384,17 +395,23 @@ def main():
             agent_type='flagella_metabolism',
             environment_type='iAF1260b',
             initial_agent_state=get_flagella_initial_state(),
-            simulation_settings=get_simulation_settings(
-                emit_step=20,
-                total_time=500,
+            experiment_settings=get_experiment_settings(
+                emit_step=120,
+                emitter='database',
+                total_time=11000,
             ),
             plot_settings=get_plot_settings(
+                skip_paths=[
+                    ('boundary', 'external')
+                ],
                 fields=[
                     'glc__D_e',
                 ],
                 tags=[
                     ('proteins', 'flagella'),
-                ]
+                ],
+                background_color='black',
+                n_snapshots=5,
             ),
             out_dir=txp_mtb_out_dir)
 

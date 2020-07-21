@@ -11,7 +11,7 @@ synonyms = {
     'NAD(H)': ['nad_c'],
     'NADP(H)': ['nadp_c'],
     'FAD(H2)': ['fad_c'],
-    'rATP': ['A', 'ATP', 'datp_c'],
+    'rATP': ['A', 'ATP', 'datp_c'],  # ATP name conflicts with the energy carrier
     'rGTP': ['G', 'GTP', 'dgtp_c'],
     'rUTP': ['U', 'UTP', 'dutp_c'],
     'rCTP': ['C', 'CTP', 'dctp_c'],

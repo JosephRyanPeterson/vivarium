@@ -16,6 +16,7 @@ from vivarium.core.composition import (
 from vivarium.library.make_network import save_network
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge
+
 # processes
 from vivarium.data.amino_acids import amino_acids
 from vivarium.processes.tree_mass import TreeMass
@@ -36,12 +37,19 @@ class GeneExpression(Generator):
     defaults = {
         'time_step': 1.0,
         'global_path': ('global',),
-        'initial_mass': 1339.0 * units.fg}
+        'initial_mass': 1339.0 * units.fg,
+        'time_step': 1.0,
+        'transcription': {},
+        'translation': {},
+        'degradation': {},
+        'complexation': {},
+    }
 
-    def __init__(self, config):
-        self.config = deep_merge(self.defaults, config)
-        self.global_path = config.get('global_path', self.defaults['global_path'])
-        self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
+    def __init__(self, config=None):
+        if config is None:
+            config = {}
+        self.config = copy.deepcopy(self.defaults)
+        self.config = deep_merge(self.config, config)
 
     def generate_processes(self, process_config):
         config = copy.deepcopy(self.config)
@@ -64,7 +72,7 @@ class GeneExpression(Generator):
         degradation = RnaDegradation(degradation_config)
         complexation = Complexation(complexation_config)
         mass_deriver = TreeMass(config.get('mass_deriver', {
-            'initial_mass': config.get('initial_mass', self.initial_mass)}))
+            'initial_mass': config['initial_mass']}))
         division = DivisionVolume(config)
 
         return {
@@ -76,7 +84,7 @@ class GeneExpression(Generator):
             'division': division}
 
     def generate_topology(self, config):
-        global_path = config.get('global_path', self.global_path)
+        global_path = config['global_path']
 
         return {
             'mass_deriver': {
@@ -503,7 +511,12 @@ def test_gene_expression(total_time=10):
             'genes': toy_chromosome_config['genes'],
             'promoter_affinities': toy_chromosome_config['promoter_affinities'],
             'transcription_factors': ['tfA', 'tfB'],
-            'elongation_rate': 10.0}}
+            'elongation_rate': 10.0},
+        # 'complexation': {
+        #     'monomer_ids': [],
+        #     'complex_ids': [],
+        #     'stoichiometry': {}}
+    }
     compartment = GeneExpression(compartment_config)
 
     molecules = {

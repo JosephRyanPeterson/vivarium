@@ -11,8 +11,6 @@ from vivarium.data.chromosomes.flagella_chromosome import FlagellaChromosome
 from vivarium.core.process import Process
 
 
-chromosome = FlagellaChromosome()
-
 def build_complexation_stoichiometry(
         stoichiometry,
         rates,
@@ -41,11 +39,13 @@ class Complexation(Process):
 
     name = 'complexation'
     defaults = {
-        'monomer_ids': chromosome.complexation_monomer_ids,
-        'complex_ids': chromosome.complexation_complex_ids,
-        'stoichiometry': chromosome.complexation_stoichiometry,
-        'rates': chromosome.complexation_rates,
-        'mass_deriver_key': 'mass_deriver'}
+        'monomer_ids': [],
+        'complex_ids': [],
+        'stoichiometry': {},
+        'rates': [],
+        'mass_deriver_key': 'mass_deriver',
+        'time_step': 1.0,
+    }
 
     def __init__(self, initial_parameters=None):
         if not initial_parameters:
@@ -69,7 +69,9 @@ class Complexation(Process):
             self.monomer_ids,
             self.complex_ids)
 
-        self.complexation = StochasticSystem(self.complexation_stoichiometry)
+        self.complexation = None
+        if self.stoichiometry:
+            self.complexation = StochasticSystem(self.complexation_stoichiometry)
 
         self.mass_deriver_key = self.or_default(initial_parameters, 'mass_deriver_key')
 
@@ -80,6 +82,7 @@ class Complexation(Process):
                 monomer: {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'split',
                     '_properties': {
                         'mw': molecular_weight[
                             monomer]} if monomer in molecular_weight else {}}
@@ -88,6 +91,7 @@ class Complexation(Process):
                 complex: {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'split',
                     '_properties': {
                         'mw': molecular_weight[
                             complex]} if complex in molecular_weight else {}}
@@ -112,10 +116,17 @@ class Complexation(Process):
         for index, complex_id in enumerate(self.complex_ids):
             substrate[index + len(self.monomer_ids)] = complexes[complex_id]
 
-        result = self.complexation.evolve(
-            timestep,
-            substrate,
-            self.complexation_rates)
+        result = {
+            'outcome': np.zeros(substrate.shape, dtype=np.int64)}
+        if not self.complexation is None:
+            try:
+                result = self.complexation.evolve(
+                    timestep,
+                    substrate,
+                    self.complexation_rates)
+            except:
+                print('Failed simulation. \n substrate {} \n monomers {} \n complexes {}'.format(
+                    substrate, self.monomer_ids, self.complex_ids))
 
         outcome = result['outcome'] - substrate
 
@@ -134,7 +145,14 @@ class Complexation(Process):
         return update
 
 def test_complexation():
-    complexation = Complexation()
+    chromosome = FlagellaChromosome()
+
+    complexation = Complexation({
+        'monomer_ids': chromosome.complexation_monomer_ids,
+        'complex_ids': chromosome.complexation_complex_ids,
+        'stoichiometry': chromosome.complexation_stoichiometry,
+        'rates': chromosome.complexation_rates})
+
     state = {
         'monomers': {
             monomer: 1000
@@ -145,8 +163,8 @@ def test_complexation():
 
     settings = {
         'total_time': 10,
-        'initial_state': state,
-    }
+        'initial_state': state}
+
     data = simulate_process_in_experiment(complexation, settings)
 
     print(data)
