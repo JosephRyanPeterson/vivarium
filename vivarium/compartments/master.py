@@ -90,13 +90,14 @@ class Master(Generator):
         division = DivisionVolume(division_config)
 
         return {
+            'metabolism': metabolism,
             'transport': transport,
             'transcription': transcription,
             'translation': translation,
             'degradation': degradation,
             'complexation': complexation,
-            'metabolism': metabolism,
-            'division': division}
+            'division': division,
+        }
 
     def generate_topology(self, config):
         return {

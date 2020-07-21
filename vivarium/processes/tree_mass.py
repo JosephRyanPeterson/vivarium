@@ -28,7 +28,7 @@ class TreeMass(Deriver):
     name = 'mass_deriver'
     defaults = {
         'from_path': ('..', '..'),
-        'initial_mass': 1339 * units.fg,
+        'initial_mass': 0 * units.fg,
     }
 
     def __init__(self, initial_parameters=None):

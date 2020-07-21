@@ -106,16 +106,17 @@ class ChemotaxisMaster(Generator):
         division = DivisionVolume(config['division'])
 
         return {
-            'PMF': PMF,
-            'receptor': receptor,
+            'metabolism': metabolism,
             'transport': transport,
             'transcription': transcription,
             'translation': translation,
             'degradation': degradation,
             'complexation': complexation,
-            'metabolism': metabolism,
+            'receptor': receptor,
             'flagella': flagella,
-            'division': division}
+            'PMF': PMF,
+            'division': division,
+        }
 
     def generate_topology(self, config):
         external_path = self.boundary_path + ('external',)

@@ -272,21 +272,26 @@ class Metabolism(Process):
 
     def derivers(self):
         return {
-            self.global_deriver_key: {
-                'deriver': 'globals_deriver',
-                'port_mapping': {
-                    'global': 'global'},
-                'config': {
-                    'initial_mass': self.initial_mass
-                }},
             self.mass_deriver_key: {
                 'deriver': 'mass_deriver',
                 'port_mapping': {
-                    'global': 'global'},
+                    'global': 'global',
+                },
                 'config': {
                     'from_path': ('..', '..'),
                     'initial_mass': self.initial_mass,
-                }}}
+                },
+            },
+            self.global_deriver_key: {
+                'deriver': 'globals_deriver',
+                'port_mapping': {
+                    'global': 'global',
+                },
+                'config': {
+                    'initial_mass': self.initial_mass,
+                },
+            }
+        }
 
     def next_update(self, timestep, states):
         ## get the state

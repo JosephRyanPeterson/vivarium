@@ -150,8 +150,6 @@ class ChemotaxisODEExpressionFlagella(Generator):
         self.config['growth'] = {
             'initial_mass': initial_mass,
             'growth_rate': growth_rate}
-        self.config['mass_deriver'] = {}
-        self.config['global_deriver'] = {}
 
     def generate_processes(self, config):
         # division config
@@ -169,8 +167,6 @@ class ChemotaxisODEExpressionFlagella(Generator):
             'expression': ODE_expression(config['expression']),
             'growth': GrowthProtein(config['growth']),
             'division': MetaDivision(division_config),
-            'mass_deriver': TreeMass(config['mass_deriver']),
-            'global_deriver': DeriveGlobals(config['global_deriver']),
         }
 
     def generate_topology(self, config):
@@ -179,7 +175,6 @@ class ChemotaxisODEExpressionFlagella(Generator):
         agents_path = config['agents_path']
 
         return {
-
             'receptor': {
                 'external': external_path,
                 'internal': ('cell',)},
@@ -204,12 +199,6 @@ class ChemotaxisODEExpressionFlagella(Generator):
             'division': {
                 'global': boundary_path,
                 'cells': agents_path},
-
-            'mass_deriver': {
-                'global': boundary_path},
-
-            'global_deriver': {
-                'global': boundary_path},
         }
 
 
