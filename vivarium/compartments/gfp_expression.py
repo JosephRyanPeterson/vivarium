@@ -68,12 +68,12 @@ def generate_gfp_config(config):
         'translation': {
 
             'sequences': {
-                'GFP_RNA': GFP.sequence},
+                ('GFP_RNA', 'GFP'): GFP.sequence},
             'templates': {
-                'GFP_RNA': generate_template(
-                    'GFP_RNA', len(GFP.sequence), ['GFP'])},
+                ('GFP_RNA', 'GFP'): generate_template(
+                    ('GFP_RNA', 'GFP'), len(GFP.sequence), ['GFP'])},
             'transcript_affinities': {
-                'GFP_RNA': 0.001},
+                ('GFP_RNA', 'GFP'): 0.001},
 
             'elongation_rate': 22,
             'polymerase_occlusion': 50},
@@ -107,8 +107,8 @@ if __name__ == '__main__':
 
     # run simulation
     settings = {
-        'total_time': 100, # 60 * 60 * 4,
-        # 'total_time': 60 * 60 * 4,
+        # 'total_time': 100,
+        'total_time': 60 * 60 * 4,
         'initial_state': gfp_config['initial_state']}
 
     timeseries = simulate_compartment_in_experiment(
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         settings)
 
     plot_config = {
-        'name': 'gfp_expression',
+        'name': 'gfp_expression_four_hours',
         'ports': {
             'transcripts': 'transcripts',
             'molecules': 'molecules',

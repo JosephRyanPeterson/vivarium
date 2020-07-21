@@ -1364,7 +1364,6 @@ class Experiment(object):
 
                 time = future
                 self.local_time += full_step
-                log.info('time: {}'.format(self.local_time))
 
                 log.info('time: {}'.format(self.local_time))
 
