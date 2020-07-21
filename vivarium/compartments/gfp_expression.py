@@ -29,7 +29,7 @@ def generate_gfp_config(config):
         for key, value in media.get_saved_media('PURE_Fuji_2014').items()}
 
     # TODO: deal with volume
-    volume = 1e-15 * units.L
+    volume = 0.322e-15 * units.L
     mmol_to_counts = AVOGADRO.to('1/mmol') * volume.to('L')
     
     print(mmol_to_counts)
@@ -50,7 +50,7 @@ def generate_gfp_config(config):
         UNBOUND_RNAP_KEY: PURE_counts[UNBOUND_RNAP_KEY],
         UNBOUND_RIBOSOME_KEY: PURE_counts[UNBOUND_RIBOSOME_KEY],
         'GFP': 0,
-        'endoRNAse': 1}
+        'endoRNAse': 0}
 
     gfp_config = {
 
@@ -107,7 +107,8 @@ if __name__ == '__main__':
 
     # run simulation
     settings = {
-        'total_time': 60 * 60 * 4,
+        'total_time': 100, # 60 * 60 * 4,
+        # 'total_time': 60 * 60 * 4,
         'initial_state': gfp_config['initial_state']}
 
     timeseries = simulate_compartment_in_experiment(
