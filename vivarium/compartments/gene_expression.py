@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import copy
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
@@ -43,11 +44,11 @@ class GeneExpression(Generator):
         'complexation': {},
     }
 
-    def __init__(self, config):
-        self.config = deep_merge(dict(self.defaults), config)
-        # self.global_path = config.get('global_path', self.defaults['global_path'])
-        # self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
-
+    def __init__(self, config=None):
+        if config is None:
+            config = {}
+        self.config = copy.deepcopy(self.defaults)
+        self.config = deep_merge(self.config, config)
 
     def generate_processes(self, config):
         transcription_config = config['transcription']
