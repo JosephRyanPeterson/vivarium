@@ -28,13 +28,13 @@ Updater API
 ===========
 
 An updater function MUST have a name that begins with ``update_``. The
-function MUST accept exactly two positional arguments: the first MUST be
-either the current value of the variable (i.e. before applying the
-update) or a dictionary of states from the simulation hierarchy with the
-current value of the variable as the value of the key ``_old_value``,
-and the second MUST be the value associated with the variable in the
-update.  The function SHOULD not accept any other parameters. The
-function MUST return the updated value of the variable only.
+function MUST accept exactly three positional arguments: the first MUST
+be the current value of the variable (i.e. before applying the update),
+the second MUST be the value associated with the variable in the update,
+and the third MUST be either a dictionary of states from the simulation
+hierarchy or None if no ``port_mapping`` key was specified in the
+updater definition. The function SHOULD not accept any other parameters.
+The function MUST return the updated value of the variable only.
 
 --------
 Dividers
@@ -114,12 +114,8 @@ process_registry = Registry()
 
 ## updater functions
 
-def update_merge(current_value, new_value):
+def update_merge(current_value, new_value, states):
     """Merge Updater
-
-    Arguments:
-        current_value (dict):
-        new_value (dict):
 
     Returns:
         dict: The merger of ``current_value`` and ``new_value``. For any
@@ -134,7 +130,7 @@ def update_merge(current_value, new_value):
             update[k] = new
     return update
 
-def update_set(current_value, new_value):
+def update_set(current_value, new_value, states):
     """Set Updater
 
     Returns:
@@ -142,7 +138,7 @@ def update_set(current_value, new_value):
     """
     return new_value
 
-def update_accumulate(current_value, new_value):
+def update_accumulate(current_value, new_value, states):
     """Accumulate Updater
 
     Returns:
@@ -150,7 +146,7 @@ def update_accumulate(current_value, new_value):
     """
     return current_value + new_value
 
-def update_field_with_exchange(states, new_value):
+def update_field_with_exchange(current_value, new_value, states):
     '''Update environment with agent exchange
 
     Arguments:
@@ -162,10 +158,10 @@ def update_field_with_exchange(states, new_value):
             * **dimensions** (:py:class:`dict`): The contents of the
               environment's dimensions :term:`store` with the
               ``bounds``, ``n_bins``, and ``depth`` keys.
-            * **_old_value** (numpy ndarray): The pre-update value of
-              the field to update.
 
         new_value: Count of molecules to exchange with the environment
+        current_value (numpy ndarray): The pre-update value of
+            the field to update.
 
     Returns:
         The updated field.
@@ -182,7 +178,7 @@ def update_field_with_exchange(states, new_value):
         n_bins, bounds, depth)
     concentration = count_to_concentration(new_value, bin_volume)
     delta_field[bin_site[0], bin_site[1]] += concentration
-    return states['_old_value'] + delta_field
+    return current_value + delta_field
 
 
 #: Maps updater names to updater functions

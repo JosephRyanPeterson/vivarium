@@ -713,6 +713,7 @@ class Store(object):
 
         else:
             updater, port_mapping = self.get_updater(update)
+            state_dict = None
             if isinstance(update, dict) and '_reduce' in update:
                 assert port_mapping is None
                 reduction = update['_reduce']
@@ -731,11 +732,10 @@ class Store(object):
                     updater_port: process_topology[proc_port]
                     for updater_port, proc_port in port_mapping.items()
                 }
-                value = state.outer.topology_state(
+                state_dict = state.outer.topology_state(
                     updater_topology)
-                value['_old_value'] = self.value
 
-            self.value = updater(value, update)
+            self.value = updater(self.value, update, state_dict)
 
     def inner_value(self, key):
         '''
