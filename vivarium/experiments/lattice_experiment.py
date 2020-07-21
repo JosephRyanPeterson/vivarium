@@ -150,7 +150,8 @@ def get_plot_settings(
         skip_paths=[],
         fields=[],
         tags=[],
-        background_color='black'
+        n_snapshots=6,
+        background_color='black',
 ):
     return {
         'plot_types': {
@@ -159,10 +160,12 @@ def get_plot_settings(
                 'remove_zeros': True,
             },
             'snapshots': {
-                'fields': fields
+                'fields': fields,
+                'n_snapshots': n_snapshots,
             },
             'tags': {
                 'tagged_molecules': tags,
+                'n_snapshots': n_snapshots,
                 'background_color': background_color,
             },
         }
@@ -189,6 +192,7 @@ def plot_experiment_output(
         plot_agents_multigen(data, plot_settings, out_dir, agent_type)
 
     if 'snapshots' in plot_types:
+        plot_config = plot_types['snapshots']
         field_ids = plot_types['snapshots']['fields']
         plot_fields = {
             time: {
@@ -199,9 +203,10 @@ def plot_experiment_output(
             'agents': agents,
             'fields': plot_fields,
             'config': multibody_config}
-        plot_config = {
+        plot_config.update({
             'out_dir': out_dir,
-            'filename': agent_type + '_snapshots'}
+            'filename': agent_type + '_snapshots',
+        })
         plot_snapshots(data, plot_config)
 
     if 'tags' in plot_types:
@@ -364,7 +369,7 @@ def main():
             agent_type='growth_division',
             environment_type='glc_lcts',
             experiment_settings=get_experiment_settings(
-                total_time=8000
+                total_time=18000
             ),
             plot_settings=get_plot_settings(
                 skip_paths=[
@@ -378,7 +383,8 @@ def main():
                     ('internal', 'protein1'),
                     ('internal', 'protein2'),
                     ('internal', 'protein3'),
-                ]
+                ],
+                n_snapshots=5,
             ),
             out_dir=gd_out_dir)
 
@@ -390,9 +396,9 @@ def main():
             environment_type='iAF1260b',
             initial_agent_state=get_flagella_initial_state(),
             experiment_settings=get_experiment_settings(
-                emit_step=60,
+                emit_step=120,
                 emitter='database',
-                total_time=8000,
+                total_time=11000,
             ),
             plot_settings=get_plot_settings(
                 skip_paths=[
@@ -404,7 +410,8 @@ def main():
                 tags=[
                     ('proteins', 'flagella'),
                 ],
-                background_color='lightgray',
+                background_color='black',
+                n_snapshots=5,
             ),
             out_dir=txp_mtb_out_dir)
 
