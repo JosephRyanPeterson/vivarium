@@ -320,7 +320,7 @@ def test_growth_division_experiment():
     environment_config = environments_library['glc_lcts']
 
     # simulate
-    experiment_settings = experiment_settings(
+    experiment_settings = get_experiment_settings(
         total_time=total_time,
         return_raw_data=True)
 
