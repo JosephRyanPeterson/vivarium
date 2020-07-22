@@ -45,7 +45,9 @@ class Complexation(Process):
         'complex_ids': chromosome.complexation_complex_ids,
         'stoichiometry': chromosome.complexation_stoichiometry,
         'rates': chromosome.complexation_rates,
-        'mass_deriver_key': 'mass_deriver'}
+        'mass_deriver_key': 'mass_deriver',
+        'time_step': 1.0,
+    }
 
     def __init__(self, initial_parameters=None):
         if not initial_parameters:
@@ -80,6 +82,7 @@ class Complexation(Process):
                 monomer: {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'split',
                     '_properties': {
                         'mw': molecular_weight[
                             monomer]} if monomer in molecular_weight else {}}
@@ -88,6 +91,7 @@ class Complexation(Process):
                 complex: {
                     '_default': 0,
                     '_emit': True,
+                    '_divider': 'split',
                     '_properties': {
                         'mw': molecular_weight[
                             complex]} if complex in molecular_weight else {}}
@@ -112,10 +116,14 @@ class Complexation(Process):
         for index, complex_id in enumerate(self.complex_ids):
             substrate[index + len(self.monomer_ids)] = complexes[complex_id]
 
-        result = self.complexation.evolve(
-            timestep,
-            substrate,
-            self.complexation_rates)
+        try:
+            result = self.complexation.evolve(
+                timestep,
+                substrate,
+                self.complexation_rates)
+        except:
+            print('Failed simulation. \n substrate {} \n monomers {} \n complexes {}'.format(
+                substrate, self.monomer_ids, self.complex_ids))
 
         outcome = result['outcome'] - substrate
 

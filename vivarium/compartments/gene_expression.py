@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import copy
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
@@ -14,6 +15,8 @@ from vivarium.core.composition import (
 )
 from vivarium.library.make_network import save_network
 from vivarium.library.units import units
+from vivarium.library.dict_utils import deep_merge
+
 # processes
 from vivarium.data.amino_acids import amino_acids
 from vivarium.processes.tree_mass import TreeMass
@@ -33,20 +36,39 @@ class GeneExpression(Generator):
 
     defaults = {
         'global_path': ('global',),
-        'initial_mass': 1339.0 * units.fg}
+        'initial_mass': 1339.0 * units.fg,
+        'time_step': 1.0,
+        'transcription': {},
+        'translation': {},
+        'degradation': {},
+        'complexation': {},
+    }
 
-    def __init__(self, config):
-        self.config = config
-        self.global_path = config.get('global_path', self.defaults['global_path'])
-        self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
+    def __init__(self, config=None):
+        if config is None:
+            config = {}
+        self.config = copy.deepcopy(self.defaults)
+        self.config = deep_merge(self.config, config)
 
     def generate_processes(self, config):
-        transcription = Transcription(config.get('transcription', self.config.get('transcription')))
-        translation = Translation(config.get('translation', self.config.get('translation')))
-        degradation = RnaDegradation(config.get('degradation', self.config.get('degradation')))
-        complexation = Complexation(config.get('complexation', self.config.get('complexation')))
+        transcription_config = config['transcription']
+        translation_config = config['translation']
+        degradation_config = config['degradation']
+        complexation_config = config['complexation']
+
+        # update timestep
+        transcription_config.update({'time_step': config['time_step']})
+        translation_config.update({'time_step': config['time_step']})
+        degradation_config.update({'time_step': config['time_step']})
+        complexation_config.update({'time_step': config['time_step']})
+
+        # make the processes
+        transcription = Transcription(transcription_config)
+        translation = Translation(translation_config)
+        degradation = RnaDegradation(degradation_config)
+        complexation = Complexation(complexation_config)
         mass_deriver = TreeMass(config.get('mass_deriver', {
-            'initial_mass': config.get('initial_mass', self.initial_mass)}))
+            'initial_mass': config['initial_mass']}))
         division = DivisionVolume(config)
 
         return {
@@ -58,7 +80,7 @@ class GeneExpression(Generator):
             'division': division}
 
     def generate_topology(self, config):
-        global_path = config.get('global_path', self.global_path)
+        global_path = config['global_path']
 
         return {
             'mass_deriver': {
@@ -485,7 +507,12 @@ def test_gene_expression(total_time=10):
             'genes': toy_chromosome_config['genes'],
             'promoter_affinities': toy_chromosome_config['promoter_affinities'],
             'transcription_factors': ['tfA', 'tfB'],
-            'elongation_rate': 10.0}}
+            'elongation_rate': 10.0},
+        # 'complexation': {
+        #     'monomer_ids': [],
+        #     'complex_ids': [],
+        #     'stoichiometry': {}}
+    }
     compartment = GeneExpression(compartment_config)
 
     molecules = {

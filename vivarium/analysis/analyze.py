@@ -105,7 +105,7 @@ def run():
             'under each agent boundary where the molecule is reported, '
             'and the second column should contain the name of the '
             'molecule. Setting this parameter causes a plot of the tagged '
-            'molecues to be produced.'
+            'molecules to be produced.'
         ),
     )
     parser.add_argument(

@@ -30,7 +30,7 @@ pytest
 pytest-benchmark
 scipy
 scs
-stochastic-arrow>=0.4.2
+stochastic-arrow>=0.4.3
 swiglpk
 
 # Arpeggio>=1.9.1

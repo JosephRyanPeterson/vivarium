@@ -386,6 +386,8 @@ def plot_tags(data, plot_config):
               :py:class:`tuple` of the path in the agent compartment
               to where the molecule's count can be found, with the last
               value being the molecule's count variable.
+            * **background_color** (:py:class:`str`): use matplotlib colors,
+              ``black`` by default
     '''
     check_plt_backend()
 
@@ -393,6 +395,7 @@ def plot_tags(data, plot_config):
     out_dir = plot_config.get('out_dir', 'out')
     filename = plot_config.get('filename', 'tags')
     agent_shape = plot_config.get('agent_shape', 'segment')
+    background_color = plot_config.get('background_color', 'black')
     tagged_molecules = plot_config['tagged_molecules']
 
     if tagged_molecules == []:
@@ -452,7 +455,7 @@ def plot_tags(data, plot_config):
                 fig, edge_length_x, edge_length_y, grid,
                 row_idx, col_idx, time, tag_id,
             )
-            ax.set_facecolor('black')  # set background color
+            ax.set_facecolor(background_color)
 
             # update agent colors based on tag_level
             agent_tag_colors = {}
