@@ -181,10 +181,10 @@ class Generator(object):
 
 class Process(Generator):
 
-    name = 'process'
     defaults = {}
 
     def __init__(self, parameters=None):
+        assert hasattr(self, 'name')
         if parameters is None:
              parameters = {}
         self.parameters = copy.deepcopy(self.defaults)
