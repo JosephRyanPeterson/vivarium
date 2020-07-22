@@ -119,7 +119,9 @@ class Metabolism(Process):
         'time_step': 1,
     }
 
-    def __init__(self, initial_parameters={}):
+    def __init__(self, initial_parameters=None):
+        if initial_parameters == None:
+            initial_parameters = {}
         self.nAvogadro = AVOGADRO
 
         time_step = self.or_default(
