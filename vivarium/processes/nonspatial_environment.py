@@ -31,6 +31,11 @@ class NonSpatialEnvironment(Deriver):
         super(NonSpatialEnvironment, self).__init__(parameters)
 
     def ports_schema(self):
+        bin_x = 1 * units.um
+        bin_y = 1 * units.um
+        depth = self.parameters['volume'] / bin_x / bin_y
+        n_bin_x = 1
+        n_bin_y = 1
         return {
             'external': {
                 '*': {
@@ -44,13 +49,16 @@ class NonSpatialEnvironment(Deriver):
             },
             'dimensions': {
                 'depth': {
-                    '_value': 1,
+                    '_value': depth.to(units.um).magnitude,
                 },
                 'n_bins': {
-                    '_value': [1, 1],
+                    '_value': [n_bin_x, n_bin_y],
                 },
                 'bounds': {
-                    '_value': [1, 1],
+                    '_value': [
+                        n_bin_x * bin_x.to(units.um).magnitude,
+                        n_bin_y * bin_y.to(units.um).magnitude,
+                    ],
                 },
             },
             'global': {
