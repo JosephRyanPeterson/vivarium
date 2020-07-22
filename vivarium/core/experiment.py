@@ -290,7 +290,7 @@ class Store(object):
             if self.leaf and config:
                 raise Exception('trying to assign create inner for leaf node: {}'.format(self.path_for()))
 
-            self.value = None
+            # self.value = None
 
             for key, child in config.items():
                 if key not in self.inner:
@@ -969,7 +969,7 @@ class Store(object):
                     '_serializer': 'process'}, outer=self)
                 self.inner[key] = process_state
 
-                subprocess.schema = subprocess.ports_schema()
+                subprocess.schema = subprocess.get_schema()
                 self.topology_ports(
                     subprocess.schema,
                     subtopology,

@@ -442,7 +442,7 @@ class FlagellaChromosome(object):
             }
         }
 
-        reaction_default = 1e-5
+        reaction_default = 1e-4
         self.complexation_rates = {
             'flhDC': reaction_default,
             'flagellar motor switch reaction': reaction_default,

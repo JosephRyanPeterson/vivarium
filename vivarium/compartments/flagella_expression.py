@@ -72,14 +72,30 @@ class FlagellaExpressionMetabolism(Generator):
         'gene_expression': {
             'initial_mass': 0.0 * units.fg,
             'time_step': COMPARTMENT_TIMESTEP,
+        },
+        '_schema':  {
+            'transcription': {
+                'proteins': {
+                    'CpxR': {
+                        # '_default': 10,
+                        '_divider': 'set'},
+                    'CRP': {
+                        # '_default': 10,
+                        '_divider': 'set'},
+                    'Fnr': {
+                        # '_default': 10,
+                        '_divider': 'set'},
+                    'endoRNAse': {
+                        # '_default': 1,
+                        '_divider': 'set'},
+                }
+            },
+            'translation': {},
         }
     }
 
     def __init__(self, config=None):
-        if not config:
-            config = {}
-        self.config = deep_merge(self.defaults, config)
-
+        super(FlagellaExpressionMetabolism, self).__init__(config)
         if 'agent_id' not in self.config:
             self.config['agent_id'] = str(uuid.uuid1())
 

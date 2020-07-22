@@ -44,10 +44,7 @@ class GeneExpression(Generator):
     }
 
     def __init__(self, config):
-        self.config = deep_merge(dict(self.defaults), config)
-        # self.global_path = config.get('global_path', self.defaults['global_path'])
-        # self.initial_mass = config.get('initial_mass', self.defaults['initial_mass'])
-
+        super(GeneExpression, self).__init__(config)
 
     def generate_processes(self, config):
         transcription_config = config['transcription']
