@@ -73,13 +73,13 @@ class GrowthProtein(Process):
 
     def derivers(self):
         return {
-            self.global_deriver_key: {
-                'deriver': 'globals_deriver',
+            self.mass_deriver_key: {
+                'deriver': 'mass_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {}},
-            self.mass_deriver_key: {
-                'deriver': 'mass_deriver',
+            self.global_deriver_key: {
+                'deriver': 'globals_deriver',
                 'port_mapping': {
                     'global': 'global'},
                 'config': {}},

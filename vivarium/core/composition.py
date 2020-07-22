@@ -210,9 +210,7 @@ def process_in_experiment(process, settings={}):
             port: paths.get(port, (port,)) for port in process.ports_schema().keys()}}
 
     if timeline:
-        '''
-        adding a timeline to a process requires only the timeline
-        '''
+        # Adding a timeline to a process requires only the timeline
         timeline_process = TimelineProcess({'timeline': timeline['timeline']})
         processes.update({'timeline_process': timeline_process})
         topology.update({
@@ -220,17 +218,27 @@ def process_in_experiment(process, settings={}):
                 port: (port,) for port in timeline_process.ports}})
 
     if environment:
-        '''
-        environment requires ports for exchange and external
-        '''
-        ports = environment.get('ports',
-            {'external': ('external',), 'exchange': ('exchange',)})
+        # Environment requires ports for external, fields, dimensions,
+        # and global (for location)
+        ports = environment.get(
+            'ports',
+            {
+                'external': ('external',),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+                'global': ('global',),
+            }
+        )
         environment_process = NonSpatialEnvironment(environment)
         processes.update({'environment_process': environment_process})
         topology.update({
             'environment_process': {
                 'external': ports['external'],
-                'exchange': ports['exchange']}})
+                'fields': ports['fields'],
+                'dimensions': ports['dimensions'],
+                'global': ports['global'],
+            },
+        })
 
     # add derivers
     derivers = generate_derivers(processes, topology)
@@ -256,9 +264,7 @@ def compartment_in_experiment(compartment, settings={}):
     topology = network['topology']
 
     if timeline is not None:
-        '''
-        environment requires ports for all states defined in the timeline
-        '''
+        # Environment requires ports for all states defined in the timeline
         ports = timeline['ports']
         timeline_process = TimelineProcess({'timeline': timeline['timeline']})
         processes.update({'timeline_process': timeline_process})
@@ -270,17 +276,27 @@ def compartment_in_experiment(compartment, settings={}):
                 for port_id in timeline_process.ports if port_id != 'global'})
 
     if environment is not None:
-        '''
-        environment requires ports for exchange and external
-        '''
-        ports = environment.get('ports',
-            {'external': ('external',), 'exchange': ('exchange',)})
+        # Environment requires ports for external, fields, dimensions,
+        # and global (for location)
+        ports = environment.get(
+            'ports',
+            {
+                'external': ('external',),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+                'global': ('global',),
+            }
+        )
         environment_process = NonSpatialEnvironment(environment)
         processes.update({'environment_process': environment_process})
         topology.update({
             'environment_process': {
                 'external': ports['external'],
-                'exchange': ports['exchange']}})
+                'fields': ports['fields'],
+                'dimensions': ports['dimensions'],
+                'global': ports['global'],
+            },
+        })
 
     return Experiment({
         'processes': processes,

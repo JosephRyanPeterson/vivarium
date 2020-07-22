@@ -119,10 +119,11 @@ class Antibiotics(Generator):
             'antibiotic_transport': {
                 'internal': ('cell',),
                 'external': ('external',),
-                'exchange': ('exchange',),
                 'pump_port': ('cell',),
+                'fields': config['fields_path'],
                 'fluxes': ('fluxes',),
                 'global': ('global',),
+                'dimensions': config['dimensions_path'],
             },
             'growth': {
                 'global': ('global',),

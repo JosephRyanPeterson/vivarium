@@ -28,6 +28,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 
+import numpy as np
 from scipy import constants
 
 from vivarium.core.experiment import schema_for
@@ -150,10 +151,14 @@ class ConvenienceKinetics(Process):
 
      * A ``fluxes`` port is added with variable names equal to
        the IDs of the configured reactions.
-     * An ``exchange`` port is added with the same variables as the
+     * A ``fields`` port is added with the same variables as the
        ``external`` port.
      * A ``global`` port is added with a variable named
-       ``mmol_to_counts``, which is set by a :term:`deriver`.
+       ``mmol_to_counts``, which is set by a :term:`deriver`, and
+       ``location``, which is set by the environment.
+     * A ``dimensions`` port is added with variables from the
+       environment that specify the environment length, width, depth,
+       and number of bins.
 
      Example configuring a process to model the kinetics and reaction
      described above.
@@ -232,7 +237,7 @@ class ConvenienceKinetics(Process):
         self.port_ids = self.or_default(
             initial_parameters, 'port_ids') + [
             'fluxes',
-            'exchange',
+            'fields',
             'global'
         ]
 
@@ -258,13 +263,15 @@ class ConvenienceKinetics(Process):
                     '_default': self.initial_state[port][state_id],
                     '_emit': True}
 
-        # exchange
-        # Note: exchange depends on a port called external
+        # fields
+        # Note: fields depends on a port called external
         if 'external' in schema:
-            schema['exchange'] = {
+            schema['fields'] = {
                 state_id: {
-                    '_default': 0.0}
-                for state_id in schema['external'].keys()}
+                    '_default': np.ones((1, 1)),
+                }
+                for state_id in schema['external'].keys()
+            }
 
         # fluxes
         for state in self.kinetic_rate_laws.reaction_ids:
@@ -275,9 +282,27 @@ class ConvenienceKinetics(Process):
             }
 
         # global
-        schema['global']['mmol_to_counts'] = {
-            '_default': 0.0 * units.L / units.mmol,
-            '_emit': False,
+        schema['global'] = {
+            'mmol_to_counts': {
+                '_default': 0.0 * units.L / units.mmol,
+                '_emit': False,
+            },
+            'location': {
+                '_default': [0.5, 0.5],
+            },
+        }
+
+        # dimiensions
+        schema['dimensions'] = {
+            'bounds': {
+                '_default': [1, 1],
+            },
+            'n_bins': {
+                '_default': [1, 1],
+            },
+            'depth': {
+                '_default': 1,
+            },
         }
 
         return schema
@@ -307,7 +332,7 @@ class ConvenienceKinetics(Process):
         update = {port: {} for port in self.port_ids}
         update.update({'fluxes': fluxes})
 
-        # get exchange
+        # get exchange and update fields
         for reaction_id, flux in fluxes.items():
             stoichiometry = self.reactions[reaction_id]['stoichiometry']
             for port_state_id, coeff in stoichiometry.items():
@@ -319,12 +344,20 @@ class ConvenienceKinetics(Process):
 
                         if port_id == 'external':
                             # convert exchange fluxes to counts with mmol_to_counts
-                            # TODO -- use deriver to get exchanges
-                            delta_counts = int((state_flux * mmol_to_counts).magnitude)
-                            update['exchange'][state_id] = (
-                                update['exchange'].get(state_id, 0)
-                                + delta_counts
-                            )
+                            delta = int((state_flux * mmol_to_counts).magnitude)
+                            existing_delta = update['fields'].get(
+                                state_id, {}).get('_value', 0)
+                            update['fields'][state_id] = {
+                                '_value': existing_delta + delta,
+                                '_updater': {
+                                    'updater': (
+                                        'update_field_with_exchange'),
+                                    'port_mapping': {
+                                        'global': 'global',
+                                        'dimensions': 'dimensions',
+                                    },
+                                },
+                            }
                         else:
                             update[port_id][state_id] = (
                                 update[port_id].get(state_id, 0)
@@ -561,9 +594,7 @@ def test_convenience_kinetics(end_time=2520):
     settings = {
         'environment': {
             'volume': 1e-14 * units.L,
-            'ports': {
-                'external': ('external',),
-                'exchange': ('exchange',)}},
+        },
         'timestep': 1,
         'total_time': end_time}
 

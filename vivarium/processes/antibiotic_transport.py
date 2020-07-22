@@ -81,15 +81,11 @@ class AntibioticTransport(ConvenienceKinetics):
                     parameters['antibiotic_key']: parameters[
                         'initial_external_antibiotic'],
                 },
-                'exchange': {
-                    parameters['antibiotic_key']: 0.0,
-                },
                 'pump_port': {
                     parameters['pump_key']: parameters['initial_pump'],
                 },
             },
-            'port_ids': [
-                'internal', 'external', 'exchange', 'pump_port']
+            'port_ids': ['internal', 'external', 'pump_port']
         }
 
         super(AntibioticTransport, self).__init__(kinetics_parameters)
@@ -101,10 +97,8 @@ def run_antibiotic_transport():
         'total_time': 4000,
         'environment': {
             'volume': 1e-15 * units.L,
-            'ports': {
-                'external': ('external',),
-                'exchange': ('exchange',)
-            }}}
+        },
+    }
     return simulate_process_in_experiment(process, settings)
 
 

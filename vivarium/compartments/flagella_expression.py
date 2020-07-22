@@ -64,7 +64,6 @@ class FlagellaExpressionMetabolism(Generator):
         boundary_path = config['boundary_path']
         agents_path = config['agents_path']
         external_path = boundary_path + ('external',)
-        exchange_path = boundary_path + ('exchange',)
 
         # configure a flagella gene expression compartment, and get its network
         flagella_expression_config = get_flagella_expression_config({})
@@ -105,10 +104,11 @@ class FlagellaExpressionMetabolism(Generator):
         self.topology['metabolism'] = {
                 'internal': ('molecules',),
                 'external': external_path,
+                'fields': ('fields',),
                 'reactions': ('reactions',),
-                'exchange': exchange_path,
                 'flux_bounds': ('flux_bounds',),
-                'global': boundary_path
+                'global': boundary_path,
+                'dimensions': ('dimensions',),
         }
         self.topology['division_condition'] = {
             'global': boundary_path

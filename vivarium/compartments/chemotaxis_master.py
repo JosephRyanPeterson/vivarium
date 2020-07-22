@@ -46,6 +46,8 @@ class ChemotaxisMaster(Generator):
 
     defaults = {
         'boundary_path': ('boundary',),
+        'dimensions_path': ('dimensions',),
+        'fields_path': ('fields',),
         'config': {
             'transport': get_glc_lct_config(),
             'metabolism': metabolism_timestep_config(10),
@@ -68,7 +70,12 @@ class ChemotaxisMaster(Generator):
             if process_id not in self.config:
                 self.config[process_id] = self.defaults['config'][process_id]
 
-        self.boundary_path = config.get('boundary_path', self.defaults['boundary_path'])
+        self.boundary_path = config.get(
+            'boundary_path', self.defaults['boundary_path'])
+        self.dimensions_path = config.get(
+            'dimensions_path', self.defaults['dimensions_path'])
+        self.fields_path = config.get(
+            'fields_path', self.defaults['fields_path'])
 
     def generate_processes(self, config):
         # Transport
@@ -99,35 +106,37 @@ class ChemotaxisMaster(Generator):
         division = DivisionVolume(config['division'])
 
         return {
-            'PMF': PMF,
-            'receptor': receptor,
+            'metabolism': metabolism,
             'transport': transport,
             'transcription': transcription,
             'translation': translation,
             'degradation': degradation,
             'complexation': complexation,
-            'metabolism': metabolism,
+            'receptor': receptor,
             'flagella': flagella,
-            'division': division}
+            'PMF': PMF,
+            'division': division,
+        }
 
     def generate_topology(self, config):
         external_path = self.boundary_path + ('external',)
-        exchange_path = self.boundary_path + ('exchange',)
         return {
             'transport': {
                 'internal': ('internal',),
                 'external': external_path,
-                'exchange': ('null',),  # metabolism's exchange is used
+                'fields': ('null',),  # metabolism's exchange is used
                 'fluxes': ('flux_bounds',),
-                'global': self.boundary_path},
+                'global': self.boundary_path,
+                'dimensions': self.dimensions_path},
 
             'metabolism': {
                 'internal': ('internal',),
                 'external': external_path,
                 'reactions': ('reactions',),
-                'exchange': exchange_path,
+                'fields': self.fields_path,
                 'flux_bounds': ('flux_bounds',),
-                'global': self.boundary_path},
+                'global': self.boundary_path,
+                'dimensions': self.dimensions_path},
 
             'transcription': {
                 'chromosome': ('chromosome',),
@@ -202,7 +211,7 @@ def run_chemotaxis_master(out_dir):
     plot_settings = {
         'max_rows': 40,
         'remove_zeros': True,
-        'skip_ports': ['reactions', 'exchange', 'prior_state', 'null']}
+        'skip_ports': ['reactions', 'prior_state', 'null']}
     plot_simulation_output(timeseries, plot_settings, out_dir)
 
     # gene expression plot
