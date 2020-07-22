@@ -1,5 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
+import numpy as np
+
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units, remove_units
 from vivarium.core.process import Process
@@ -42,19 +44,35 @@ class CellEnvironmentDiffusion(Process):
                 # Porin concentration in mmol/L
                 porin: {
                     '_default': self.parameters['default_default'],
+                    '_emit': True,
                 }
                 for porin in self.parameters['permeability_per_porin']
             },
-            'exchange': {
+            'fields': {
                 # Molecule count in mmol
                 molecule: {
-                    '_default': self.parameters['default_default'],
+                    '_default': np.full(
+                        (1, 1), self.parameters['default_default']),
                 }
                 for molecule in self.parameters['molecules_to_diffuse']
             },
             'global': {
                 'volume': {
                     '_default': self.parameters['default_default'],
+                },
+                'location': {
+                    '_default': [0.5, 0.5],
+                },
+            },
+            'dimensions': {
+                'bounds': {
+                    '_default': [1, 1],
+                },
+                'n_bins': {
+                    '_default': [1, 1],
+                },
+                'depth': {
+                    '_default': 1,
                 },
             },
         }
@@ -84,7 +102,19 @@ class CellEnvironmentDiffusion(Process):
         }
         cell_volume = remove_units(states['global']['volume'])
         update = {
-            'exchange': flux,
+            'fields': {
+                molecule: {
+                    '_value': mol_flux,
+                    '_updater': {
+                        'updater': 'update_field_with_exchange',
+                        'port_mapping': {
+                            'global': 'global',
+                            'dimensions': 'dimensions',
+                        },
+                    },
+                }
+                for molecule, mol_flux in flux.items()
+            },
             'internal': {
                 molecule: - mol_flux / cell_volume
                 for molecule, mol_flux in flux.items()

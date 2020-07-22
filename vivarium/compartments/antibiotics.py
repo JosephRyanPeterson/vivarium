@@ -28,7 +28,7 @@ from vivarium.processes.ode_expression import ODE_expression
 
 NUM_DIVISIONS = 3
 DEFAULT_DIVISION_SECS = 2400  # seconds to divide
-INITIAL_INTERNAL_ANTIBIOTIC = 0
+INITIAL_INTERNAL_ANTIBIOTIC = 0.5
 INITIAL_EXTERNAL_ANTIBIOTIC = 1
 
 
@@ -45,8 +45,10 @@ class Antibiotics(Generator):
                 'AcrAB-TolC': 1.0,
             },
             'degradation_rates': {
-                'AcrAB-TolC': 1.0,
-                'AcrAB-TolC_RNA': 1e-3,
+                # Set for on the order of 100 RNAs at equilibrium
+                'AcrAB-TolC_RNA': 1.0,
+                # Set so exporter concentration reaches equilibrium
+                'AcrAB-TolC': 1e-3,
             },
             'protein_map': {
                 'AcrAB-TolC': 'AcrAB-TolC_RNA'
@@ -56,13 +58,18 @@ class Antibiotics(Generator):
             'initial_pump': 0.0,
             'initial_internal_antibiotic': INITIAL_INTERNAL_ANTIBIOTIC,
             'initial_external_antibiotic': INITIAL_EXTERNAL_ANTIBIOTIC,
+            'pump_kcat': 2e-6,
         },
         'death': {
-            'checkers': {
+            'detectors': {
                 'antibiotic': {
-                    'antibiotic_threshold': 0.09,
+                    'antibiotic_threshold': 0.95,
                 },
             },
+            'targets': [
+                'antibiotic_transport', 'growth', 'expression', 'death',
+                'division',
+            ]
         },
         'growth': {
             # Growth rate calculated so that 2 = exp(DIVISION_TIME *
@@ -74,7 +81,7 @@ class Antibiotics(Generator):
         'diffusion': {
             'default_state': {
                 'membrane': {
-                    'porin': 1,
+                    'porin': 1e-2,
                 },
                 'external': {
                     'antibiotic': INITIAL_EXTERNAL_ANTIBIOTIC,
@@ -85,7 +92,7 @@ class Antibiotics(Generator):
             },
             'molecules_to_diffuse': ['antibiotic'],
             'permeability_per_porin': {
-                'porin': 5e-1,
+                'porin': 5e-3,
             },
         },
     }
@@ -139,13 +146,15 @@ class Antibiotics(Generator):
             },
             'death': {
                 'global': ('global',),
+                'internal': ('cell',),
             },
             'diffusion': {
                 'membrane': ('cell',),
                 'internal': ('cell',),
                 'external': ('external',),
-                'exchange': ('exchange',),
+                'fields': config['fields_path'],
                 'global': ('global',),
+                'dimensions': config['dimensions_path'],
             },
         }
 
@@ -153,30 +162,11 @@ class Antibiotics(Generator):
 def run_antibiotics_composite():
     DIVISION_TIME = DEFAULT_DIVISION_SECS
     sim_settings = {
-        'environment_volume': 1e-5,  # L
         'emit_step': 1,
         'total_time': DIVISION_TIME * NUM_DIVISIONS,
         'environment': {}
     }
-    config = {
-        'ode_expression': {
-            'transcription_rates': {
-                'AcrAB-TolC_RNA': 1e-3,
-            },
-            'degradation_rates': {
-                # Set for on the order of 100 RNAs at equilibrium
-                'AcrAB-TolC_RNA': 1.0,
-                # Set so exporter concentration reaches equilibrium
-                'AcrAB-TolC': 1e-3,
-            },
-            'checkers': {
-                'antibiotic': {
-                    # Set so cell dies after first division
-                    'antibiotic_threshold': 10.0,
-                },
-            },
-        }
-    }
+    config = {}
     compartment = Antibiotics(config)
     return simulate_compartment_in_experiment(compartment, sim_settings)
 
