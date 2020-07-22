@@ -63,7 +63,7 @@ def plot(args):
             with open(args.tags, 'r') as f:
                 reader = csv.reader(f)
                 molecules = [
-                    (store, molecule) for store, molecule in reader
+                    tuple(path) for path in reader
                 ]
             tags_data = {
                 'agents': agents,
