@@ -18,6 +18,9 @@ from vivarium.core.composition import (
 from vivarium.library.dict_utils import deep_merge
 from vivarium.processes.antibiotic_transport import AntibioticTransport
 from vivarium.processes.death import DeathFreezeState
+from vivarium.processes.diffusion_cell_environment import (
+    CellEnvironmentDiffusion,
+)
 from vivarium.processes.division_volume import DivisionVolume
 from vivarium.processes.growth import Growth
 from vivarium.processes.ode_expression import ODE_expression
@@ -25,6 +28,8 @@ from vivarium.processes.ode_expression import ODE_expression
 
 NUM_DIVISIONS = 3
 DEFAULT_DIVISION_SECS = 2400  # seconds to divide
+INITIAL_INTERNAL_ANTIBIOTIC = 0
+INITIAL_EXTERNAL_ANTIBIOTIC = 1
 
 
 class Antibiotics(Generator):
@@ -49,6 +54,8 @@ class Antibiotics(Generator):
         },
         'antibiotic_transport': {
             'initial_pump': 0.0,
+            'initial_internal_antibiotic': INITIAL_INTERNAL_ANTIBIOTIC,
+            'initial_external_antibiotic': INITIAL_EXTERNAL_ANTIBIOTIC,
         },
         'death': {
             'checkers': {
@@ -63,7 +70,24 @@ class Antibiotics(Generator):
             # in size
             'growth_rate': math.log(2) / DEFAULT_DIVISION_SECS
         },
-        'division': {}
+        'division': {},
+        'diffusion': {
+            'default_state': {
+                'membrane': {
+                    'porin': 1,
+                },
+                'external': {
+                    'antibiotic': INITIAL_EXTERNAL_ANTIBIOTIC,
+                },
+                'internal': {
+                    'antibiotic': INITIAL_INTERNAL_ANTIBIOTIC,
+                },
+            },
+            'molecules_to_diffuse': ['antibiotic'],
+            'permeability_per_porin': {
+                'porin': 5e-1,
+            },
+        },
     }
     name = 'antibiotics_compartment'
 
@@ -79,6 +103,7 @@ class Antibiotics(Generator):
         expression = ODE_expression(config['ode_expression'])
         death = DeathFreezeState(config['death'])
         division = DivisionVolume(config['division'])
+        diffusion = CellEnvironmentDiffusion(config['diffusion'])
 
         return {
             'antibiotic_transport': antibiotic_transport,
@@ -86,14 +111,16 @@ class Antibiotics(Generator):
             'expression': expression,
             'death': death,
             'division': division,
+            'diffusion': diffusion,
         }
 
     def generate_topology(self, config):
         return {
             'antibiotic_transport': {
                 'internal': ('cell',),
-                'external': ('environment',),
+                'external': ('external',),
                 'exchange': ('exchange',),
+                'pump_port': ('cell',),
                 'fluxes': ('fluxes',),
                 'global': ('global',),
             },
@@ -103,7 +130,7 @@ class Antibiotics(Generator):
             'expression': {
                 'counts': ('cell_counts',),
                 'internal': ('cell',),
-                'external': ('environment',),
+                'external': ('external',),
                 'global': ('global',),
             },
             'division': {
@@ -112,18 +139,23 @@ class Antibiotics(Generator):
             'death': {
                 'global': ('global',),
             },
+            'diffusion': {
+                'membrane': ('cell',),
+                'internal': ('cell',),
+                'external': ('external',),
+                'exchange': ('exchange',),
+                'global': ('global',),
+            },
         }
-
 
 
 def run_antibiotics_composite():
     DIVISION_TIME = DEFAULT_DIVISION_SECS
     sim_settings = {
-        'environment_port': ('environment',),
-        'exchange_port': ('exchange',),
         'environment_volume': 1e-5,  # L
         'emit_step': 1,
         'total_time': DIVISION_TIME * NUM_DIVISIONS,
+        'environment': {}
     }
     config = {
         'ode_expression': {

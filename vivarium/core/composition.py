@@ -246,8 +246,8 @@ def process_in_experiment(process, settings={}):
 
 def compartment_in_experiment(compartment, settings={}):
     compartment_config = settings.get('compartment', {})
-    timeline = settings.get('timeline', {})
-    environment = settings.get('environment', {})
+    timeline = settings.get('timeline')
+    environment = settings.get('environment')
     outer_path = settings.get('outer_path', tuple())
     emit_step = settings.get('emit_step')
 
@@ -255,7 +255,7 @@ def compartment_in_experiment(compartment, settings={}):
     processes = network['processes']
     topology = network['topology']
 
-    if timeline:
+    if timeline is not None:
         '''
         environment requires ports for all states defined in the timeline
         '''
@@ -269,7 +269,7 @@ def compartment_in_experiment(compartment, settings={}):
                 port_id: ports[port_id]
                 for port_id in timeline_process.ports if port_id != 'global'})
 
-    if environment:
+    if environment is not None:
         '''
         environment requires ports for exchange and external
         '''

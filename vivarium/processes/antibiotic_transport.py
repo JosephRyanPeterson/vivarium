@@ -29,16 +29,12 @@ class AntibioticTransport(ConvenienceKinetics):
 
     name = 'antibiotic_transport'
     defaults = {
-        'porin_kcat': 1e-4,
-        'porin_km': 0.6,
         'pump_kcat': 2e-4,
         'pump_km': 0.6,
         'pump_key': 'AcrAB-TolC',
-        'porin_key': 'porin',
         'antibiotic_key': 'antibiotic',
         'initial_internal_antibiotic': 0,
         'initial_external_antibiotic': 1,
-        'initial_porin': 1,
         'initial_pump': 1,
     }
 
@@ -53,15 +49,6 @@ class AntibioticTransport(ConvenienceKinetics):
 
         kinetics_parameters = {
             'reactions': {
-                'import': {
-                    'stoichiometry': {
-                        ('internal', parameters['antibiotic_key']): 1,
-                        ('external', parameters['antibiotic_key']): -1,
-                    },
-                    'is_reversible': False,
-                    'catalyzed by': [
-                        ('porin_port', parameters['porin_key'])],
-                },
                 'export': {
                     'stoichiometry': {
                         ('internal', parameters['antibiotic_key']): -1,
@@ -73,13 +60,6 @@ class AntibioticTransport(ConvenienceKinetics):
                 },
             },
             'kinetic_parameters': {
-                'import': {
-                    ('porin_port', parameters['porin_key']): {
-                        'kcat_f': parameters['porin_kcat'],
-                        ('external', parameters['antibiotic_key']):
-                            parameters['porin_km'],
-                    },
-                },
                 'export': {
                     ('pump_port', parameters['pump_key']): {
                         'kcat_f': parameters['pump_kcat'],
@@ -107,13 +87,9 @@ class AntibioticTransport(ConvenienceKinetics):
                 'pump_port': {
                     parameters['pump_key']: parameters['initial_pump'],
                 },
-                'porin_port': {
-                    parameters['porin_key']: parameters[
-                        'initial_porin'],
-                },
             },
             'port_ids': [
-                'internal', 'external', 'exchange', 'pump_port', 'porin_port']
+                'internal', 'external', 'exchange', 'pump_port']
         }
 
         super(AntibioticTransport, self).__init__(kinetics_parameters)
