@@ -4,6 +4,7 @@ import os
 import argparse
 import random
 import uuid
+import copy
 import pytest
 
 from vivarium.core.process import Generator
@@ -60,6 +61,24 @@ def default_metabolism_config():
         }})
     return metabolism_config
 
+flagella_schema_override = {
+    'transcription': {
+        'proteins': {
+            'CpxR': {'_divider': 'set'},
+            'CRP': {'_divider': 'set'},
+            'Fnr': {'_divider': 'set'},
+            'endoRNAse': {'_divider': 'set'},
+        }
+    },
+    'translation': {
+        'proteins': {
+            'CpxR': {'_divider': 'set'},
+            'CRP': {'_divider': 'set'},
+            'Fnr': {'_divider': 'set'},
+            'endoRNAse': {'_divider': 'set'},
+        }
+    },
+}
 
 
 class FlagellaExpressionMetabolism(Generator):
@@ -73,25 +92,7 @@ class FlagellaExpressionMetabolism(Generator):
             'initial_mass': 0.0 * units.fg,
             'time_step': COMPARTMENT_TIMESTEP,
         },
-        '_schema':  {
-            'transcription': {
-                'proteins': {
-                    'CpxR': {
-                        # '_default': 10,
-                        '_divider': 'set'},
-                    'CRP': {
-                        # '_default': 10,
-                        '_divider': 'set'},
-                    'Fnr': {
-                        # '_default': 10,
-                        '_divider': 'set'},
-                    'endoRNAse': {
-                        # '_default': 1,
-                        '_divider': 'set'},
-                }
-            },
-            'translation': {},
-        }
+        '_schema': copy.deepcopy(flagella_schema_override)
     }
 
     def __init__(self, config=None):
@@ -223,6 +224,8 @@ def get_flagella_expression_config(config):
             'complex_ids': flagella_data.complexation_complex_ids,
             'stoichiometry': flagella_data.complexation_stoichiometry,
             'rates': flagella_data.complexation_rates},
+
+        '_schema': copy.deepcopy(flagella_schema_override)
     }
 
 

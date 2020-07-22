@@ -108,7 +108,7 @@ class Generator(object):
     def __init__(self, config):
         self.config = copy.deepcopy(self.defaults)
         self.config = deep_merge(self.config, config)
-        self.schema_override = None
+        self.schema_override = {}
         if '_schema' in self.config:
             self.schema_override = self.config.pop('_schema')
 
@@ -203,7 +203,7 @@ class Process(Generator):
         if parameters is None:
              parameters = {}
         self.parameters = copy.deepcopy(self.defaults)
-        self.schema_override = None
+        self.schema_override = {}
         if '_schema' in parameters:
             self.schema_override = parameters.pop('_schema')
         deep_merge(self.parameters, parameters)
