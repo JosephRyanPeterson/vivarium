@@ -3,11 +3,13 @@ from __future__ import absolute_import, division, print_function
 import os
 import math
 import random
+import itertools
 
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.lines as mlines
+from matplotlib.lines import Line2D
 from matplotlib.colors import hsv_to_rgb
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.collections import LineCollection
@@ -34,8 +36,26 @@ def check_plt_backend():
     if plt.get_backend() == 'TkAgg':
         matplotlib.use('Agg')
 
+class LineWidthData(Line2D):
+    def __init__(self, *args, **kwargs):
+        _lw_data = kwargs.pop('linewidth', 1)
+        super().__init__(*args, **kwargs)
+        self._lw_data = _lw_data
 
-def plot_agent(ax, data, color):
+    def _get_lw(self):
+        if self.axes is not None:
+            ppd = 72./self.axes.figure.dpi
+            trans = self.axes.transData.transform
+            return ((trans((1, self._lw_data))-trans((0, 0)))*ppd)[1]
+        else:
+            return 1
+
+    def _set_lw(self, lw):
+        self._lw_data = lw
+
+    _linewidth = property(_get_lw, _set_lw)
+
+def plot_agent(ax, data, color, agent_shape):
     # location, orientation, length
     x_center = data['boundary']['location'][0]
     y_center = data['boundary']['location'][1]
@@ -43,29 +63,62 @@ def plot_agent(ax, data, color):
     length = data['boundary']['length']
     width = data['boundary']['width']
 
-    # get bottom left position
-    x_offset = (width / 2)
-    y_offset = (length / 2)
-    theta_rad = math.radians(theta)
-    dx = x_offset * math.cos(theta_rad) - y_offset * math.sin(theta_rad)
-    dy = x_offset * math.sin(theta_rad) + y_offset * math.cos(theta_rad)
-
-    x = x_center - dx
-    y = y_center - dy
-
     # get color, convert to rgb
     rgb = hsv_to_rgb(color)
 
-    # Create a rectangle
-    rect = patches.Rectangle(
-        (x, y), width, length, angle=theta, linewidth=1,
-        edgecolor='gray', facecolor=rgb
-    )
+    if agent_shape == 'rectangle':
+        # get bottom left position
+        x_offset = (width / 2)
+        y_offset = (length / 2)
+        theta_rad = math.radians(theta)
+        dx = x_offset * math.cos(theta_rad) - y_offset * math.sin(theta_rad)
+        dy = x_offset * math.sin(theta_rad) + y_offset * math.cos(theta_rad)
 
-    ax.add_patch(rect)
+        x = x_center - dx
+        y = y_center - dy
+
+        # Create a rectangle
+        shape = patches.Rectangle(
+            (x, y), width, length,
+            angle=theta,
+            linewidth=2,
+            edgecolor='w',
+            facecolor=rgb
+        )
+        ax.add_patch(shape)
+
+    elif agent_shape == 'segment':
+        membrane_width = 0.1
+        membrane_color = [1, 1, 1]
+        radius = width / 2
+
+        # get the two ends
+        length_offset = (length / 2) - radius
+        theta_rad = math.radians(theta)
+        dx = - length_offset * math.sin(theta_rad)
+        dy = length_offset * math.cos(theta_rad)
+
+        x1 = x_center - dx
+        y1 = y_center - dy
+        x2 = x_center + dx
+        y2 = y_center + dy
+
+        # segment plot
+        membrane = LineWidthData(
+            [x1, x2], [y1, y2],
+            color=membrane_color,
+            linewidth=width,
+            solid_capstyle='round')
+        line = LineWidthData(
+            [x1, x2], [y1, y2],
+            color=rgb,
+            linewidth=width-membrane_width,
+            solid_capstyle='round')
+        ax.add_line(membrane)
+        ax.add_line(line)
 
 
-def plot_agents(ax, agents, agent_colors={}):
+def plot_agents(ax, agents, agent_colors={}, agent_shape='segment'):
     '''
     - ax: the axis for plot
     - agents: a dict with {agent_id: agent_data} and
@@ -74,7 +127,62 @@ def plot_agents(ax, agents, agent_colors={}):
     '''
     for agent_id, agent_data in agents.items():
         color = agent_colors.get(agent_id, [DEFAULT_HUE]+DEFAULT_SV)
-        plot_agent(ax, agent_data, color)
+        plot_agent(ax, agent_data, color, agent_shape)
+
+def mutate_color(baseline_hsv):
+    mutation = 0.1
+    new_hsv = [
+        (n + np.random.uniform(-mutation, mutation))
+        for n in baseline_hsv]
+    # wrap hue around
+    new_hsv[0] = new_hsv[0] % 1
+    # reflect saturation and value
+    if new_hsv[1] > 1:
+        new_hsv[1] = 2 - new_hsv[1]
+    if new_hsv[2] > 1:
+        new_hsv[2] = 2 - new_hsv[2]
+    return new_hsv
+
+def color_phylogeny(ancestor_id, phylogeny, baseline_hsv, phylogeny_colors={}):
+    """
+    get colors for all descendants of the ancestor
+    through recursive calls to each generation
+    """
+    phylogeny_colors.update({ancestor_id: baseline_hsv})
+    daughter_ids = phylogeny.get(ancestor_id)
+    if daughter_ids:
+        for daughter_id in daughter_ids:
+            daughter_color = mutate_color(baseline_hsv)
+            color_phylogeny(daughter_id, phylogeny, daughter_color)
+    return phylogeny_colors
+
+def get_phylogeny_colors_from_names(agent_ids):
+    '''Get agent colors using phlogeny saved in agent_ids
+    This assumes the names use daughter_phylogeny_id() from meta_division
+    '''
+
+    # make phylogeny with {mother_id: [daughter_1_id, daughter_2_id]}
+    phylogeny = {agent_id: [] for agent_id in agent_ids}
+    for agent1, agent2 in itertools.combinations(agent_ids, 2):
+        if agent1 == agent2[0:-1]:
+            phylogeny[agent1].append(agent2)
+        elif agent2 == agent1[0:-1]:
+            phylogeny[agent2].append(agent1)
+
+    # get initial ancestors
+    daughters = list(phylogeny.values())
+    daughters = set([item for sublist in daughters for item in sublist])
+    mothers = set(list(phylogeny.keys()))
+    ancestors = list(mothers - daughters)
+
+    # agent colors based on phylogeny
+    agent_colors = {agent_id: [] for agent_id in agent_ids}
+    for agent_id in ancestors:
+        hue = random.choice(HUES)  # select random initial hue
+        initial_color = [hue] + DEFAULT_SV
+        agent_colors.update(color_phylogeny(agent_id, phylogeny, initial_color))
+
+    return agent_colors
 
 
 def plot_snapshots(data, plot_config):
@@ -105,6 +213,11 @@ def plot_snapshots(data, plot_config):
 
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
+            * **agent_shape** (:py:class:`str`): the shape of the agents.
+              select from **rectangle**, **segment**
+            * **phylogeny_names** (:py:class:`bool`): This selects agent
+              colors based on phylogenies seved in their names using
+              meta_division.py daughter_phylogeny_id()
             * **out_dir** (:py:class:`str`): Output directory, which is
               ``out`` by default.
             * **filename** (:py:class:`str`): Base name of output file.
@@ -115,6 +228,8 @@ def plot_snapshots(data, plot_config):
     n_snapshots = plot_config.get('n_snapshots', 6)
     out_dir = plot_config.get('out_dir', 'out')
     filename = plot_config.get('filename', 'snapshots')
+    agent_shape = plot_config.get('agent_shape', 'segment')
+    phylogeny_names = plot_config.get('phylogeny_names', True)
 
     # get data
     agents = data.get('agents', {})
@@ -157,11 +272,14 @@ def plot_snapshots(data, plot_config):
         agent_ids = list(agent_ids)
 
         # set agent colors
-        agent_colors = {}
-        for agent_id in agent_ids:
-            hue = random.choice(HUES)  # select random initial hue
-            color = [hue] + DEFAULT_SV
-            agent_colors[agent_id] = color
+        if phylogeny_names:
+            agent_colors = get_phylogeny_colors_from_names(agent_ids)
+        else:
+            agent_colors = {}
+            for agent_id in agent_ids:
+                hue = random.choice(HUES)  # select random initial hue
+                color = [hue] + DEFAULT_SV
+                agent_colors[agent_id] = color
 
     # make the figure
     n_rows = max(len(field_ids), 1)
@@ -193,7 +311,7 @@ def plot_snapshots(data, plot_config):
                                 cmap='BuPu')
                 if agents:
                     agents_now = agents[time]
-                    plot_agents(ax, agents_now, agent_colors)
+                    plot_agents(ax, agents_now, agent_colors, agent_shape)
 
                 # colorbar in new column after final snapshot
                 if col_idx == n_snapshots-1 and (vmin != vmax):
@@ -211,7 +329,7 @@ def plot_snapshots(data, plot_config):
             )
             if agents:
                 agents_now = agents[time]
-                plot_agents(ax, agents_now, agent_colors)
+                plot_agents(ax, agents_now, agent_colors, agent_shape)
 
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.1)
@@ -268,12 +386,16 @@ def plot_tags(data, plot_config):
               :py:class:`tuple` of the path in the agent compartment
               to where the molecule's count can be found, with the last
               value being the molecule's count variable.
+            * **background_color** (:py:class:`str`): use matplotlib colors,
+              ``black`` by default
     '''
     check_plt_backend()
 
     n_snapshots = plot_config.get('n_snapshots', 6)
     out_dir = plot_config.get('out_dir', 'out')
     filename = plot_config.get('filename', 'tags')
+    agent_shape = plot_config.get('agent_shape', 'segment')
+    background_color = plot_config.get('background_color', 'black')
     tagged_molecules = plot_config['tagged_molecules']
 
     if tagged_molecules == []:
@@ -333,7 +455,7 @@ def plot_tags(data, plot_config):
                 fig, edge_length_x, edge_length_y, grid,
                 row_idx, col_idx, time, tag_id,
             )
-            ax.set_facecolor('black')  # set background color
+            ax.set_facecolor(background_color)
 
             # update agent colors based on tag_level
             agent_tag_colors = {}
@@ -354,7 +476,7 @@ def plot_tags(data, plot_config):
 
                 agent_tag_colors[agent_id] = agent_color
 
-            plot_agents(ax, agents[time], agent_tag_colors)
+            plot_agents(ax, agents[time], agent_tag_colors, agent_shape)
 
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.1)

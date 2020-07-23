@@ -63,7 +63,7 @@ def plot(args):
             with open(args.tags, 'r') as f:
                 reader = csv.reader(f)
                 molecules = [
-                    (store, molecule) for store, molecule in reader
+                    tuple(path) for path in reader
                 ]
             tags_data = {
                 'agents': agents,
@@ -105,7 +105,7 @@ def run():
             'under each agent boundary where the molecule is reported, '
             'and the second column should contain the name of the '
             'molecule. Setting this parameter causes a plot of the tagged '
-            'molecues to be produced.'
+            'molecules to be produced.'
         ),
     )
     parser.add_argument(

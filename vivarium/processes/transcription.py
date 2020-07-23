@@ -50,7 +50,9 @@ class Transcription(Process):
                 'lead': 0,
                 'lag': 0,
                 'children': []}},
-        'molecule_ids': monomer_ids}
+        'molecule_ids': monomer_ids,
+        'time_step': 1.0,
+    }
 
     def __init__(self, initial_parameters=None):
         '''A stochastic transcription model
@@ -326,23 +328,27 @@ class Transcription(Process):
         schema['molecules'] = {
             molecule: {
                 '_default': 0,
+                '_divider': 'split',
                 '_emit': True}
             for molecule in self.molecule_ids}
 
         schema['factors'] = {
             factor: {
-                '_default': 0.0}
+                '_default': 0.0,
+                '_divider': 'split'}
             for factor in self.transcription_factors}
 
         schema['transcripts'] = {
             protein: {
                 '_default': 0,
+                '_divider': 'split',
                 '_emit': True}
             for protein in self.transcript_ids}
 
         schema['proteins'] = {
             protein: {
                 '_default': 0,
+                '_divider': 'split',
                 '_emit': True}
             for protein in self.protein_ids}
 

@@ -63,6 +63,7 @@ class RnaDegradation(Process):
             }
         },
         'global_deriver_key': 'global_deriver',
+        'time_step': 1.0,
     }
 
     def __init__(self, initial_parameters=None):
