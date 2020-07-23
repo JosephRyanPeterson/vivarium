@@ -143,9 +143,10 @@ def process_in_compartment(process, topology={}):
     """ put a lone process in a compartment"""
     class ProcessCompartment(Generator):
         def __init__(self, config):
-            self.config = config
+            super(ProcessCompartment, self).__init__(config)
+            self.schema_override = {}
             self.topology = topology
-            self.process = process(config)
+            self.process = process(self.config)
 
         def generate_processes(self, config):
             return {'process': self.process}

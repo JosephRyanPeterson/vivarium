@@ -141,6 +141,10 @@ DEFAULT_AGENT_CONFIG = {
     'daughter_path': tuple(),
 }
 
+FAST_TIMESCALE = 0.1
+FAST_TIMESCALE_AGENT_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
+FAST_TIMESCALE_AGENT_CONFIG['time_step'] = FAST_TIMESCALE
+
 def set_agent_config(config={}):
     return deep_merge(dict(DEFAULT_AGENT_CONFIG), config)
 
@@ -150,12 +154,12 @@ agents_library = {
     'motor': {
         'name': 'motor',
         'type': MotorActivityAgent,
-        'config': DEFAULT_AGENT_CONFIG
+        'config': FAST_TIMESCALE_AGENT_CONFIG,
     },
     'minimal': {
         'name': 'minimal',
         'type': ChemotaxisMinimal,
-        'config': DEFAULT_AGENT_CONFIG
+        'config': FAST_TIMESCALE_AGENT_CONFIG,
     },
     'variable': {
         'name': 'variable',
