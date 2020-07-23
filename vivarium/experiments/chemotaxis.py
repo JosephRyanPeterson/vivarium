@@ -55,12 +55,13 @@ from vivarium.plots.multibody_physics import (
 
 
 # make an agent from a lone MotorActivity process
-MotorActivityAgent = process_in_compartment(
-    MotorActivity,
-    topology={
-        'external': ('boundary',),
-        'internal': ('cell',)
-    })
+MotorActivityAgent = MotorActivity
+# MotorActivityAgent = process_in_compartment(
+#     MotorActivity,
+#     topology={
+#         'external': ('boundary',),
+#         'internal': ('cell',)
+#     })
 
 # defaults
 DEFAULT_BOUNDS = [1000, 3000]
@@ -141,7 +142,7 @@ DEFAULT_AGENT_CONFIG = {
     'daughter_path': tuple(),
 }
 
-FAST_TIMESCALE = 0.1
+FAST_TIMESCALE = 0.01
 FAST_TIMESCALE_AGENT_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
 FAST_TIMESCALE_AGENT_CONFIG['time_step'] = FAST_TIMESCALE
 

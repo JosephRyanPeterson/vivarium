@@ -203,6 +203,7 @@ class Process(Generator):
         if parameters is None:
              parameters = {}
         self.parameters = copy.deepcopy(self.defaults)
+        self.config = {}  # config is required for generate
         self.schema_override = {}
         if '_schema' in parameters:
             self.schema_override = parameters.pop('_schema')
