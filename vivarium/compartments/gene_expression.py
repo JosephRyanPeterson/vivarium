@@ -44,11 +44,8 @@ class GeneExpression(Generator):
         'complexation': {},
     }
 
-    def __init__(self, config=None):
-        if config is None:
-            config = {}
-        self.config = copy.deepcopy(self.defaults)
-        self.config = deep_merge(self.config, config)
+    def __init__(self, config):
+        super(GeneExpression, self).__init__(config)
 
     def generate_processes(self, config):
         transcription_config = config['transcription']

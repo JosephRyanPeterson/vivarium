@@ -5,6 +5,7 @@ import copy
 import argparse
 import random
 import uuid
+import copy
 import pytest
 
 from vivarium.core.process import Generator
@@ -61,6 +62,24 @@ def default_metabolism_config():
         }})
     return metabolism_config
 
+flagella_schema_override = {
+    'transcription': {
+        'proteins': {
+            'CpxR': {'_divider': 'set'},
+            'CRP': {'_divider': 'set'},
+            'Fnr': {'_divider': 'set'},
+            'endoRNAse': {'_divider': 'set'},
+        }
+    },
+    'translation': {
+        'proteins': {
+            'CpxR': {'_divider': 'set'},
+            'CRP': {'_divider': 'set'},
+            'Fnr': {'_divider': 'set'},
+            'endoRNAse': {'_divider': 'set'},
+        }
+    },
+}
 
 
 class FlagellaExpressionMetabolism(Generator):
@@ -73,14 +92,12 @@ class FlagellaExpressionMetabolism(Generator):
         'gene_expression': {
             'initial_mass': 0.0 * units.fg,
             'time_step': COMPARTMENT_TIMESTEP,
-        }
+        },
+        '_schema': copy.deepcopy(flagella_schema_override)
     }
 
     def __init__(self, config=None):
-        if not config:
-            config = {}
-        self.config = copy.deepcopy(self.defaults)
-        self.config = deep_merge(self.config, config)
+        super(FlagellaExpressionMetabolism, self).__init__(config)
 
         if 'agent_id' not in self.config:
             self.config['agent_id'] = str(uuid.uuid1())
@@ -212,6 +229,8 @@ def get_flagella_expression_config(config):
             'complex_ids': flagella_data.complexation_complex_ids,
             'stoichiometry': flagella_data.complexation_stoichiometry,
             'rates': flagella_data.complexation_rates},
+
+        '_schema': copy.deepcopy(flagella_schema_override)
     }
 
 

@@ -32,30 +32,25 @@ class Lattice(Generator):
     """
 
     defaults = {
-        'config': {
-            # To exclude a process, from the compartment, set its
-            # configuration dictionary to None, e.g. colony_mass_deriver
-            'multibody': {
-                'bounds': [10, 10],
-                'size': [10, 10],
-                'agents': {}
-            },
-            'diffusion': {
-                'molecules': ['glc'],
-                'n_bins': [10, 10],
-                'size': [10, 10],
-                'depth': 3000.0,
-                'diffusion': 1e-2,
-            },
-            'colony_shape_deriver': None,
-        }
+        # To exclude a process, from the compartment, set its
+        # configuration dictionary to None, e.g. colony_mass_deriver
+        'multibody': {
+            'bounds': [10, 10],
+            'size': [10, 10],
+            'agents': {}
+        },
+        'diffusion': {
+            'molecules': ['glc'],
+            'n_bins': [10, 10],
+            'size': [10, 10],
+            'depth': 3000.0,
+            'diffusion': 1e-2,
+        },
+        'colony_shape_deriver': None,
     }
 
     def __init__(self, config=None):
-        if config is None or not bool(config):
-            config = self.defaults['config']
-        self.config = copy.deepcopy(self.defaults['config'])
-        deep_merge(self.config, config)
+        super(Lattice, self).__init__(config)
 
     def generate_processes(self, config):
         processes = {

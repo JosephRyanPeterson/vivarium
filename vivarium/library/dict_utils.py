@@ -55,6 +55,8 @@ def deep_merge(dct, merge_dct):
     If you want to keep dct you could call it like deep_merge(dict(dct), merge_dct)'''
     if dct is None:
         dct = {}
+    if merge_dct is None:
+        merge_dct = {}
     for k, v in merge_dct.items():
         if (k in dct and isinstance(dct[k], dict)
                 and isinstance(merge_dct[k], collections.Mapping)):
