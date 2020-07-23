@@ -30,21 +30,14 @@ class ChemotaxisMinimal(Generator):
     }
 
     def __init__(self, config):
-        self.config = config
-        self.ligand_id = config.get(
-            'ligand_id',
-            self.defaults['ligand_id'])
-        self.initial_ligand = config.get(
-            'initial_ligand',
-            self.defaults['initial_ligand'])
-        self.boundary_path = self.config.get(
-            'boundary_path',
-            self.defaults['boundary_path'])
+        super(ChemotaxisMinimal, self).__init__(config)
 
     def generate_processes(self, config):
+        ligand_id = config['ligand_id']
+        initial_ligand = config['initial_ligand']
         receptor_parameters = {
-            'ligand_id': self.ligand_id,
-            'initial_ligand': self.initial_ligand}
+            'ligand_id': ligand_id,
+            'initial_ligand': initial_ligand}
 
         # declare the processes
         receptor = ReceptorCluster(receptor_parameters)
@@ -55,13 +48,14 @@ class ChemotaxisMinimal(Generator):
             'motor': motor}
 
     def generate_topology(self, config):
-        external_path = self.boundary_path + ('external',)
+        boundary_path = config['boundary_path']
+        external_path = boundary_path + ('external',)
         return {
             'receptor': {
                 'external': external_path,
                 'internal': ('cell',)},
             'motor': {
-                'external': self.boundary_path,
+                'external': boundary_path,
                 'internal': ('cell',)}}
 
 

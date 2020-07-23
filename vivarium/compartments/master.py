@@ -40,20 +40,12 @@ class Master(Generator):
     defaults = {
         'global_path': ('global',),
         'external_path': ('external',),
-        'config': {
-            'transport': get_glc_lct_config(),
-            'metabolism': default_metabolism_config()
-        }
+        'transport': get_glc_lct_config(),
+        'metabolism': default_metabolism_config()
     }
 
     def __init__(self, config=None):
-        if not config:
-            config = {}
-        self.config = deep_merge(self.defaults['config'], config)
-        self.global_path = self.or_default(
-            config, 'global_path')
-        self.external_path = self.or_default(
-            config, 'external_path')
+        super(Master, self).__init__(config)
 
     def generate_processes(self, config):
 
@@ -93,21 +85,23 @@ class Master(Generator):
             'division': division}
 
     def generate_topology(self, config):
+        global_path = config['global_path']
+        external_path = config['external_path']
         return {
             'transport': {
                 'internal': ('metabolites',),
-                'external': self.external_path,
+                'external': external_path,
                 'exchange': ('null',),  # metabolism's exchange is used
                 'fluxes': ('flux_bounds',),
-                'global': self.global_path},
+                'global': global_path},
 
             'metabolism': {
                 'internal': ('metabolites',),
-                'external': self.external_path,
+                'external': external_path,
                 'reactions': ('reactions',),
                 'exchange': ('exchange',),
                 'flux_bounds': ('flux_bounds',),
-                'global': self.global_path},
+                'global': global_path},
 
             'transcription': {
                 'chromosome': ('chromosome',),
@@ -115,7 +109,7 @@ class Master(Generator):
                 'proteins': ('proteins',),
                 'transcripts': ('transcripts',),
                 'factors': ('concentrations',),
-                'global': self.global_path},
+                'global': global_path},
 
             'translation': {
                 'ribosomes': ('ribosomes',),
@@ -123,21 +117,21 @@ class Master(Generator):
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'concentrations': ('concentrations',),
-                'global': self.global_path},
+                'global': global_path},
 
             'degradation': {
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'molecules': ('metabolites',),
-                'global': self.global_path},
+                'global': global_path},
 
             'complexation': {
                 'monomers': ('proteins',),
                 'complexes': ('proteins',),
-                'global': self.global_path},
+                'global': global_path},
 
             'division': {
-                'global': self.global_path}}
+                'global': global_path}}
 
 
 def run_master(out_dir):

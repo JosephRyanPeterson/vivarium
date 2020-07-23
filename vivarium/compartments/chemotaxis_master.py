@@ -46,29 +46,20 @@ class ChemotaxisMaster(Generator):
 
     defaults = {
         'boundary_path': ('boundary',),
-        'config': {
-            'transport': get_glc_lct_config(),
-            'metabolism': metabolism_timestep_config(10),
-            'transcription': get_flagella_expression_config({})['transcription'],
-            'translation': get_flagella_expression_config({})['translation'],
-            'degradation': get_flagella_expression_config({})['degradation'],
-            'complexation': get_flagella_expression_config({})['complexation'],
-            'receptor': {'ligand': 'MeAsp'},
-            'flagella': {'n_flagella': 5},
-            'PMF': {},
-            'division': {},
-        }
+        'transport': get_glc_lct_config(),
+        'metabolism': metabolism_timestep_config(10),
+        'transcription': get_flagella_expression_config({})['transcription'],
+        'translation': get_flagella_expression_config({})['translation'],
+        'degradation': get_flagella_expression_config({})['degradation'],
+        'complexation': get_flagella_expression_config({})['complexation'],
+        'receptor': {'ligand': 'MeAsp'},
+        'flagella': {'n_flagella': 5},
+        'PMF': {},
+        'division': {},
     }
 
     def __init__(self, config=None):
-        if config is None or not bool(config):
-            config = self.defaults['config']
-        self.config = config
-        for process_id in self.defaults['config'].keys():
-            if process_id not in self.config:
-                self.config[process_id] = self.defaults['config'][process_id]
-
-        self.boundary_path = config.get('boundary_path', self.defaults['boundary_path'])
+        super(ChemotaxisMaster, self).__init__(config)
 
     def generate_processes(self, config):
         # Transport
@@ -111,15 +102,16 @@ class ChemotaxisMaster(Generator):
             'division': division}
 
     def generate_topology(self, config):
-        external_path = self.boundary_path + ('external',)
-        exchange_path = self.boundary_path + ('exchange',)
+        boundary_path = config['boundary_path']
+        external_path = boundary_path + ('external',)
+        exchange_path = boundary_path + ('exchange',)
         return {
             'transport': {
                 'internal': ('internal',),
                 'external': external_path,
                 'exchange': ('null',),  # metabolism's exchange is used
                 'fluxes': ('flux_bounds',),
-                'global': self.boundary_path},
+                'global': boundary_path},
 
             'metabolism': {
                 'internal': ('internal',),
@@ -127,7 +119,7 @@ class ChemotaxisMaster(Generator):
                 'reactions': ('reactions',),
                 'exchange': exchange_path,
                 'flux_bounds': ('flux_bounds',),
-                'global': self.boundary_path},
+                'global': boundary_path},
 
             'transcription': {
                 'chromosome': ('chromosome',),
@@ -135,7 +127,7 @@ class ChemotaxisMaster(Generator):
                 'proteins': ('proteins',),
                 'transcripts': ('transcripts',),
                 'factors': ('concentrations',),
-                'global': self.boundary_path},
+                'global': boundary_path},
 
             'translation': {
                 'ribosomes': ('ribosomes',),
@@ -143,18 +135,18 @@ class ChemotaxisMaster(Generator):
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'concentrations': ('concentrations',),
-                'global': self.boundary_path},
+                'global': boundary_path},
 
             'degradation': {
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'molecules': ('internal',),
-                'global': self.boundary_path},
+                'global': boundary_path},
 
             'complexation': {
                 'monomers': ('proteins',),
                 'complexes': ('proteins',),
-                'global': self.boundary_path},
+                'global': boundary_path},
 
             'receptor': {
                 'external': external_path,
@@ -165,7 +157,7 @@ class ChemotaxisMaster(Generator):
                 'membrane': ('membrane',),
                 'internal_counts': ('proteins',),
                 'flagella': ('flagella',),
-                'boundary': self.boundary_path},
+                'boundary': boundary_path},
 
             'PMF': {
                 'external': external_path,
@@ -173,7 +165,7 @@ class ChemotaxisMaster(Generator):
                 'internal': ('internal',)},
 
             'division': {
-                'global': self.boundary_path}}
+                'global': boundary_path}}
 
 def run_chemotaxis_master(out_dir):
     total_time = 10
