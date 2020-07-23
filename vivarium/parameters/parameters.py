@@ -312,9 +312,10 @@ class TestConvienceKinetics(Generator):
             'process': {
                 'internal': ('internal',),
                 'external': external_path,
-                'exchange': ('exchange',),
+                'fields': ('fields',),
                 'fluxes': ('fluxes',),
                 'global': self.boundary_path,
+                'dimensions': ('dimensions',),
             }
         }
 

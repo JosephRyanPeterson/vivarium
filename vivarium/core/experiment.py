@@ -160,7 +160,7 @@ class Store(object):
         self.subtopology = {}
         self.properties = {}
         self.default = None
-        self.updater = None
+        self.updater_definition = None
         self.value = None
         self.units = None
         self.divider = None
@@ -173,14 +173,27 @@ class Store(object):
         self.apply_config(config, source)
 
     def check_default(self, new_default):
-        if self.default is not None and new_default != self.default:
-            if new_default == 0 and self.default != 0:
+        defaults_equal = False
+        if self.default is not None:
+            self_default_comp = self.default
+            new_default_comp = new_default
+            if isinstance(self_default_comp, np.ndarray):
+                self_default_comp = self.default.tolist()
+            if isinstance(new_default_comp, np.ndarray):
+                new_default_comp = self.default.tolist()
+            defaults_equal = self_default_comp == new_default_comp
+        if defaults_equal:
+            if (
+                not isinstance(new_default, np.ndarray)
+                and not isinstance(self.default, np.ndarray)
+                and new_default == 0
+                and self.default != 0
+            ):
                 log.info('_default schema conflict: {} and {}. selecting {}'.format(
                     self.default, new_default, self.default))
                 return self.default
-            else:
-                log.info('_default schema conflict: {} and {}. selecting {}'.format(
-                    self.default, new_default, new_default))
+            log.info('_default schema conflict: {} and {}. selecting {}'.format(
+                self.default, new_default, new_default))
         return new_default
 
     def check_value(self, new_value):
@@ -273,9 +286,10 @@ class Store(object):
                 if isinstance(self.value, Quantity):
                     self.units = self.value.units
 
-            self.updater = config.get('_updater', self.updater or 'accumulate')
-            if isinstance(self.updater, str):
-                self.updater = updater_registry.access(self.updater)
+            self.updater_definition = config.get(
+                '_updater',
+                self.updater_definition or 'accumulate',
+            )
 
             self.properties = deep_merge(
                 self.properties,
@@ -299,12 +313,19 @@ class Store(object):
                     self.inner[key].apply_config(child, source=source)
 
     def get_updater(self, update):
-        updater = self.updater
-        if '_updater' in update:
-            updater = update['_updater']
-            if isinstance(updater, str):
-                updater = updater_registry.access(updater)
-        return updater
+        updater_definition = self.updater_definition
+        if isinstance(update, dict) and '_updater' in update:
+            updater_definition = update['_updater']
+        port_mapping = None
+        if isinstance(updater_definition, dict):
+            updater = updater_definition['updater']
+            port_mapping = updater_definition['port_mapping']
+        else:
+            updater = updater_definition
+
+        if isinstance(updater, str):
+            updater = updater_registry.access(updater)
+        return updater, port_mapping
 
     def get_config(self, sources=False):
         '''
@@ -337,8 +358,8 @@ class Store(object):
             config.update({
                 '_default': self.default,
                 '_value': self.value})
-            if self.updater:
-                config['_updater'] = self.updater
+            if self.updater_definition:
+                config['_updater'] = self.updater_definition
             if self.units:
                 config['_units'] = self.units
             if self.emit:
@@ -561,7 +582,7 @@ class Store(object):
             if self.value is None:
                 self.value = self.default
 
-    def apply_update(self, update):
+    def apply_update(self, update, process_topology=None, state=None):
         '''
         Given an arbitrary update, map all the values in that update
         to their positions in the tree where they apply, and update
@@ -677,7 +698,8 @@ class Store(object):
             for key, value in update.items():
                 if key in self.inner:
                     child = self.inner[key]
-                    inner_updates = child.apply_update(value)
+                    inner_updates = child.apply_update(
+                        value, process_topology, state)
                     if inner_updates:
                         topology_updates = deep_merge(
                             topology_updates,
@@ -690,20 +712,30 @@ class Store(object):
             return topology_updates
 
         else:
+            updater, port_mapping = self.get_updater(update)
+            state_dict = None
             if isinstance(update, dict) and '_reduce' in update:
+                assert port_mapping is None
                 reduction = update['_reduce']
                 top = self.get_path(reduction.get('from'))
                 update = top.reduce(
                     reduction['reducer'],
                     initial=reduction['initial'])
 
-            updater = self.updater
             if isinstance(update, dict) and self.schema_keys & set(update.keys()):
                 if '_updater' in update:
-                    updater = self.get_updater(update)
                     update = update.get('_value', self.default)
 
-            self.value = updater(self.value, update)
+            value = self.value
+            if port_mapping is not None:
+                updater_topology = {
+                    updater_port: process_topology[proc_port]
+                    for updater_port, proc_port in port_mapping.items()
+                }
+                state_dict = state.outer.topology_state(
+                    updater_topology)
+
+            self.value = updater(self.value, update, state_dict)
 
     def inner_value(self, key):
         '''
@@ -1237,7 +1269,7 @@ class Experiment(object):
             interval,
             ports)
 
-        return update
+        return update, process_topology, state
 
         # # perform the process update with the current states
         # update = process.next_update(interval, ports)
@@ -1248,8 +1280,9 @@ class Experiment(object):
 
         # return absolute
 
-    def apply_update(self, update):
-        topology_updates = self.state.apply_update(update)
+    def apply_update(self, update, process_topology, state):
+        topology_updates = self.state.apply_update(
+            update, process_topology, state)
         if topology_updates:
             self.topology = deep_merge(self.topology, topology_updates)
 
@@ -1258,8 +1291,9 @@ class Experiment(object):
         for path, deriver in derivers.items():
             # timestep shouldn't influence derivers
             if not deriver.deleted:
-                update = self.process_update(path, deriver, 0)
-                self.apply_update(update.get())
+                update, process_topology, state = self.process_update(
+                    path, deriver, 0)
+                self.apply_update(update.get(), process_topology, state)
 
     def emit_data(self):
         data = self.state.emit_data()
@@ -1271,9 +1305,10 @@ class Experiment(object):
         }
         self.emitter.emit(emit_config)
 
-    def send_updates(self, updates, derivers=None):
-        for update in updates:
-            self.apply_update(update.get())
+    def send_updates(self, update_tuples, derivers=None):
+        for update_tuple in update_tuples:
+            update, process_topology, state = update_tuple
+            self.apply_update(update.get(), process_topology, state)
         if derivers is None:
             derivers = {
                 path: state

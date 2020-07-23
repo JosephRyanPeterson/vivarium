@@ -41,8 +41,10 @@ class Master(Generator):
         'global_path': ('global',),
         'external_path': ('external',),
         'transport': get_glc_lct_config(),
-        'metabolism': default_metabolism_config()
-    }
+        'metabolism': default_metabolism_config(),
+        'fields_path': ('fields',),
+        'dimensions_path': ('dimensions',),
+        }
 
     def __init__(self, config=None):
         super(Master, self).__init__(config)
@@ -76,62 +78,69 @@ class Master(Generator):
         division = DivisionVolume(division_config)
 
         return {
+            'metabolism': metabolism,
             'transport': transport,
             'transcription': transcription,
             'translation': translation,
             'degradation': degradation,
             'complexation': complexation,
-            'metabolism': metabolism,
-            'division': division}
+            'division': division,
+        }
 
     def generate_topology(self, config):
         global_path = config['global_path']
         external_path = config['external_path']
+        fields_path = config['fields_path']
+        dimensions_path = config['dimensions_path']
         return {
             'transport': {
                 'internal': ('metabolites',),
                 'external': external_path,
-                'exchange': ('null',),  # metabolism's exchange is used
+                'fields': ('null',),  # metabolism's exchange is used
                 'fluxes': ('flux_bounds',),
-                'global': global_path},
-
+                'global': global_path,
+                'dimensions': dimensions_path,
+            },
             'metabolism': {
                 'internal': ('metabolites',),
                 'external': external_path,
                 'reactions': ('reactions',),
-                'exchange': ('exchange',),
+                'fields': fields_path,
                 'flux_bounds': ('flux_bounds',),
-                'global': global_path},
-
+                'global': global_path,
+                'dimensions': dimensions_path,
+            },
             'transcription': {
                 'chromosome': ('chromosome',),
                 'molecules': ('metabolites',),
                 'proteins': ('proteins',),
                 'transcripts': ('transcripts',),
                 'factors': ('concentrations',),
-                'global': global_path},
-
+                'global': global_path
+            },
             'translation': {
                 'ribosomes': ('ribosomes',),
                 'molecules': ('metabolites',),
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'concentrations': ('concentrations',),
-                'global': global_path},
-
+                'global': global_path
+            },
             'degradation': {
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'molecules': ('metabolites',),
-                'global': global_path},
-
+                'global': global_path
+            },
             'complexation': {
                 'monomers': ('proteins',),
                 'complexes': ('proteins',),
-                'global': global_path},
-
+                'global': global_path
+            },
             'division': {
-                'global': global_path}}
+                'global': global_path
+            }
+        }
 
 
 def run_master(out_dir):
@@ -149,14 +158,13 @@ def run_master(out_dir):
     plot_settings = {
         'max_rows': 20,
         'remove_zeros': True,
-        'skip_ports': ['prior_state', 'null', 'flux_bounds', 'chromosome', 'reactions', 'exchange']}
+        'skip_ports': ['prior_state', 'null', 'flux_bounds', 'chromosome', 'reactions']}
     plot_simulation_output(timeseries, plot_settings, out_dir)
 
 def test_master():
     # load the compartment
     compartment_config = {
         'external_path': ('external',),
-        'exchange_path': ('exchange',),
         'global_path': ('global',),
         'agents_path': ('..', '..', 'cells',),
         'transcription': {

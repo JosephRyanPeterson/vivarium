@@ -137,8 +137,6 @@ class ChemotaxisODEExpressionFlagella(Generator):
             'expression': ODE_expression(config['expression']),
             'growth': GrowthProtein(config['growth']),
             'division': MetaDivision(division_config),
-            'mass_deriver': TreeMass(config['mass_deriver']),
-            'global_deriver': DeriveGlobals(config['global_deriver']),
         }
 
     def generate_topology(self, config):
@@ -147,7 +145,6 @@ class ChemotaxisODEExpressionFlagella(Generator):
         agents_path = config['agents_path']
 
         return {
-
             'receptor': {
                 'external': external_path,
                 'internal': ('cell',)},
@@ -172,12 +169,6 @@ class ChemotaxisODEExpressionFlagella(Generator):
             'division': {
                 'global': boundary_path,
                 'cells': agents_path},
-
-            'mass_deriver': {
-                'global': boundary_path},
-
-            'global_deriver': {
-                'global': boundary_path},
         }
 
 
@@ -367,7 +358,13 @@ def test_ode_expression_chemotaxis(
         'initial_state': initial_state,
         'timeline': {
             'timeline': timeline,
-            'ports': {'external': ('boundary', 'external')}},
+            'ports': {
+                'external': ('boundary', 'external'),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+                'global': ('boundary',),
+            },
+        },
     }
     timeseries = simulate_compartment_in_experiment(
         compartment,

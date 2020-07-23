@@ -70,10 +70,13 @@ class TransportMetabolism(Generator):
         'boundary_path': ('boundary',),
         'agents_path': ('agents',),
         'daughter_path': tuple(),
+        'fields_path': ('fields',),
+        'dimensions_path': ('dimensions',),
         'division': {},
         'transport': get_glc_lct_config(),
         'metabolism': default_metabolism_config(),
-        'expression': default_expression_config()}
+        'expression': default_expression_config(),
+    }
 
     def __init__(self, config=None):
         self.config = copy.deepcopy(config)
@@ -116,23 +119,26 @@ class TransportMetabolism(Generator):
     def generate_topology(self, config):
         boundary_path = config['boundary_path']
         agents_path = config['agents_path']
-        exchange_path = boundary_path + ('exchange',)
+        fields_path = config['fields_path']
+        dimensions_path = config['dimensions_path']
         external_path = boundary_path + ('external',)
         return {
             'transport': {
                 'internal': ('cytoplasm',),
                 'external': external_path,
-                'exchange': ('null',),  # metabolism's exchange is used
+                'fields': ('null',),  # metabolism's exchange is used
                 'fluxes': ('flux_bounds',),
                 'global': boundary_path,
+                'dimensions': dimensions_path,
             },
             'metabolism': {
                 'internal': ('cytoplasm',),
                 'external': external_path,
                 'reactions': ('reactions',),
-                'exchange': exchange_path,
+                'fields': fields_path,
                 'flux_bounds': ('flux_bounds',),
                 'global': boundary_path,
+                'dimensions': dimensions_path,
             },
             'expression': {
                 'counts': ('cytoplasm_counts',),
@@ -153,8 +159,10 @@ def test_txp_mtb_ge():
         'environment': {
             'volume': 1e-12 * units.L,
             'ports': {
-                'exchange': ('boundary', 'exchange',),
+                'fields': ('fields',),
                 'external': ('boundary', 'external'),
+                'dimensions': ('dimensions',),
+                'global': ('boundary',),
             }},
         'timestep': 1,
         'total_time': 10}
@@ -182,8 +190,9 @@ def simulate_txp_mtb_ge(config={}, out_dir='out'):
         'environment': {
             'volume': environment_volume * units.L,
             'ports': {
+                'fields': ('fields',),
                 'external': ('boundary', 'external'),
-                'exchange': ('boundary', 'exchange'),
+                'dimensions': ('dimensions',),
             }},
         'timeline': {
             'timeline': timeline,
@@ -209,7 +218,6 @@ def simulate_txp_mtb_ge(config={}, out_dir='out'):
         'internal_path': ('cytoplasm',),
         'external_path': ('boundary', 'external'),
         'global_path': ('boundary',),
-        'exchange_path': ('boundary', 'exchange'),
         'environment_volume': 1e-13,  # L
         # 'timeline': timeline
     }
@@ -281,8 +289,9 @@ def scan_transport_metabolism():
         'environment': {
             'volume': 1e-14 * units.L,
             'ports': {
+                'fields': ('fields',),
                 'external': ('boundary', 'external'),
-                'exchange': ('boundary', 'exchange'),
+                'dimensions': ('dimensions',),
             }},
         'timeline': {
             'timeline': timeline,

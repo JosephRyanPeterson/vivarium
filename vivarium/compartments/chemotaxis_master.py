@@ -45,6 +45,8 @@ def metabolism_timestep_config(time_step=1):
 class ChemotaxisMaster(Generator):
 
     defaults = {
+        'dimensions_path': ('dimensions',),
+        'fields_path': ('fields',),
         'boundary_path': ('boundary',),
         'transport': get_glc_lct_config(),
         'metabolism': metabolism_timestep_config(10),
@@ -90,82 +92,88 @@ class ChemotaxisMaster(Generator):
         division = DivisionVolume(config['division'])
 
         return {
-            'PMF': PMF,
-            'receptor': receptor,
+            'metabolism': metabolism,
             'transport': transport,
             'transcription': transcription,
             'translation': translation,
             'degradation': degradation,
             'complexation': complexation,
-            'metabolism': metabolism,
+            'receptor': receptor,
             'flagella': flagella,
-            'division': division}
+            'PMF': PMF,
+            'division': division,
+        }
 
     def generate_topology(self, config):
+        dimensions_path = config['dimensions_path']
+        fields_path = config['fields_path']
         boundary_path = config['boundary_path']
         external_path = boundary_path + ('external',)
-        exchange_path = boundary_path + ('exchange',)
         return {
             'transport': {
                 'internal': ('internal',),
                 'external': external_path,
-                'exchange': ('null',),  # metabolism's exchange is used
+                'fields': ('null',),  # metabolism's exchange is used
                 'fluxes': ('flux_bounds',),
-                'global': boundary_path},
-
+                'global': boundary_path,
+                'dimensions': dimensions_path,
+            },
             'metabolism': {
                 'internal': ('internal',),
                 'external': external_path,
                 'reactions': ('reactions',),
-                'exchange': exchange_path,
+                'fields': fields_path,
                 'flux_bounds': ('flux_bounds',),
-                'global': boundary_path},
-
+                'global': boundary_path,
+                'dimensions': dimensions_path
+            },
             'transcription': {
                 'chromosome': ('chromosome',),
                 'molecules': ('internal',),
                 'proteins': ('proteins',),
                 'transcripts': ('transcripts',),
                 'factors': ('concentrations',),
-                'global': boundary_path},
-
+                'global': boundary_path,
+            },
             'translation': {
                 'ribosomes': ('ribosomes',),
                 'molecules': ('internal',),
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'concentrations': ('concentrations',),
-                'global': boundary_path},
-
+                'global': boundary_path,
+            },
             'degradation': {
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'molecules': ('internal',),
-                'global': boundary_path},
-
+                'global': boundary_path,
+            },
             'complexation': {
                 'monomers': ('proteins',),
                 'complexes': ('proteins',),
-                'global': boundary_path},
-
+                'global': boundary_path,
+            },
             'receptor': {
                 'external': external_path,
-                'internal': ('internal',)},
-
+                'internal': ('internal',),
+            },
             'flagella': {
                 'internal': ('internal',),
                 'membrane': ('membrane',),
                 'internal_counts': ('proteins',),
                 'flagella': ('flagella',),
-                'boundary': boundary_path},
-
+                'boundary': boundary_path,
+            },
             'PMF': {
                 'external': external_path,
                 'membrane': ('membrane',),
-                'internal': ('internal',)},
-
+                'internal': ('internal',),
+            },
             'division': {
-                'global': boundary_path}}
+                'global': boundary_path,
+            }
+        }
 
 def run_chemotaxis_master(out_dir):
     total_time = 10
@@ -194,7 +202,7 @@ def run_chemotaxis_master(out_dir):
     plot_settings = {
         'max_rows': 40,
         'remove_zeros': True,
-        'skip_ports': ['reactions', 'exchange', 'prior_state', 'null']}
+        'skip_ports': ['reactions', 'prior_state', 'null']}
     plot_simulation_output(timeseries, plot_settings, out_dir)
 
     # gene expression plot

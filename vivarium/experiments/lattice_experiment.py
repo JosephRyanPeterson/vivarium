@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 import argparse
+import uuid
 
 from vivarium.core.experiment import (
     Experiment
@@ -70,6 +71,8 @@ agents_library = {
         'type': TransportMetabolism,
         'config': {
             'agents_path': ('..', '..', 'agents'),
+            'fields_path': ('..', '..', 'fields'),
+            'dimensions_path': ('..', '..', 'dimensions'),
         }
     },
 }
@@ -147,13 +150,13 @@ def get_experiment_settings(
 
 # plot settings
 def get_plot_settings(
-        skip_paths=[],
-        fields=[],
-        tags=[],
-        n_snapshots=6,
-        background_color='black',
+    skip_paths=[],
+    fields=[],
+    tags=[],
+    n_snapshots=6,
+    background_color='black',
 ):
-    return {
+    settings = {
         'plot_types': {
             'agents': {
                 'skip_paths': skip_paths,
@@ -170,6 +173,15 @@ def get_plot_settings(
             },
         }
     }
+    if fields:
+        settings['plot_types']['snapshots'] = {
+            'fields': fields
+        }
+    if tags:
+        settings['plot_types']['tags'] = {
+            'tag_ids': tags
+        }
+    return settings
 
 def plot_experiment_output(
         data,
@@ -420,7 +432,14 @@ def main():
         make_dir(txp_mtb_out_dir)
         run_workflow(
             agent_type='transport_metabolism',
-            out_dir=txp_mtb_out_dir)
+            out_dir=txp_mtb_out_dir,
+            simulation_settings=get_simulation_settings(
+                total_time=100,
+            ),
+            plot_settings=get_plot_settings(
+                fields=['glc__D_e', 'lcts_e'],
+            ),
+        ),
 
 
 if __name__ == '__main__':

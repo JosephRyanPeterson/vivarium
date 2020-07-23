@@ -71,6 +71,7 @@ class Lattice(Generator):
             'diffusion': {
                 'agents': ('agents',),
                 'fields': ('fields',),
+                'dimensions': ('dimensions',),
             },
             'colony_shape_deriver': {
                 'colony_global': ('colony_global',),
