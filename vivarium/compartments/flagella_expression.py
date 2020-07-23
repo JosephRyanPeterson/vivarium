@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+import copy
 import argparse
 import random
 import uuid
@@ -97,10 +98,14 @@ class FlagellaExpressionMetabolism(Generator):
 
     def __init__(self, config=None):
         super(FlagellaExpressionMetabolism, self).__init__(config)
+
         if 'agent_id' not in self.config:
             self.config['agent_id'] = str(uuid.uuid1())
 
-    def generate_processes(self, config):
+    def generate_processes(self, process_config):
+        config = copy.deepcopy(self.config)
+        config = deep_merge(config, process_config)
+
         daughter_path = config['daughter_path']
         agent_id = config['agent_id']
 
@@ -343,7 +348,7 @@ def run_flagella_compartment(compartment, out_dir='out'):
         out_dir)
 
 
-@pytest.mark.slow
+# @pytest.mark.slow
 def test_flagella_expression():
     flagella_compartment = flagella_expression_compartment({})
 
