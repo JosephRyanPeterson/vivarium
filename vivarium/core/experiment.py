@@ -304,7 +304,7 @@ class Store(object):
             if self.leaf and config:
                 raise Exception('trying to assign create inner for leaf node: {}'.format(self.path_for()))
 
-            self.value = None
+            # self.value = None
 
             for key, child in config.items():
                 if key not in self.inner:
@@ -1001,7 +1001,7 @@ class Store(object):
                     '_serializer': 'process'}, outer=self)
                 self.inner[key] = process_state
 
-                subprocess.schema = subprocess.ports_schema()
+                subprocess.schema = subprocess.get_schema()
                 self.topology_ports(
                     subprocess.schema,
                     subtopology,
@@ -1517,17 +1517,13 @@ class Proton(Process):
         'radius': 0.0}
 
     def __init__(self, parameters=None):
-        if not parameters:
-            parameters = {}
-            self.radius = self.or_default(parameters, 'radius')
-            self.parameters = parameters
-            self.time_step = self.or_default(parameters, 'time_step')
+        super(Proton, self).__init__(parameters)
 
     def ports_schema(self):
         return {
             'radius': {
                 '_updater': 'set',
-                '_default': self.radius},
+                '_default': self.parameters['radius']},
             'quarks': {
                 '_divider': 'split_dict',
                 '*': {
@@ -1574,15 +1570,13 @@ class Electron(Process):
         'spin': electron_spins[0]}
 
     def __init__(self, parameters=None):
-        self.parameters = parameters or {}
-        self.spin = self.or_default(self.parameters, 'spin')
-        self.time_step = self.or_default(self.parameters, 'time_step')
+        super(Electron, self).__init__(parameters)
 
     def ports_schema(self):
         return {
             'spin': {
                 '_updater': 'set',
-                '_default': self.spin},
+                '_default': self.parameters['spin']},
             'proton': {
                 'radius': {
                     '_default': 0.0}}}
@@ -1668,10 +1662,9 @@ def test_topology_ports():
 def test_timescales():
     class Slow(Process):
         name = 'slow'
-        def __init__(self):
-            self.parameters ={'timestep': 3.0}
-            self.ports = {
-                'state': ['base']}
+        defaults = {'timestep': 3.0}
+        def __init__(self, config=None):
+            super(Slow, self).__init__(config)
 
         def ports_schema(self):
             return {
@@ -1691,10 +1684,9 @@ def test_timescales():
 
     class Fast(Process):
         name = 'fast'
-        def __init__(self):
-            self.parameters ={'timestep': 3.0}
-            self.ports = {
-                'state': ['base', 'motion']}
+        defaults = {'timestep': 0.3}
+        def __init__(self, config=None):
+            super(Fast, self).__init__(config)
 
         def ports_schema(self):
             return {

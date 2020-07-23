@@ -338,6 +338,7 @@ def simulate_experiment(experiment, settings={}):
     # run simulation
     experiment.update(total_time)
 
+    # return data from emitter
     if return_raw_data:
         return experiment.emitter.get_data()
     else:
@@ -1159,7 +1160,7 @@ class ToyCompartment(Generator):
 
     '''
     def __init__(self, config):
-        self.config = config
+        super(ToyCompartment, self).__init__(config)
 
     def generate_processes(self, config):
         return {

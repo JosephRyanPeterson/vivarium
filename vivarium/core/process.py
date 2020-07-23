@@ -60,6 +60,14 @@ def assoc_in(d, path, value):
         return value
 
 
+def override_schemas(overrides, processes):
+    for key, override in overrides.items():
+        process = processes[key]
+        if isinstance(process, Process):
+            process.merge_overrides(override)
+        else:
+            override_schemas(override, process)
+
 def generate_derivers(processes, topology):
     deriver_processes = {}
     deriver_topology = {}
@@ -96,8 +104,13 @@ class Generator(object):
 
     All :term:`compartment` classes must inherit from this class.
     """
+    defaults = {}
     def __init__(self, config):
-        self.config = config
+        self.config = copy.deepcopy(self.defaults)
+        self.config = deep_merge(self.config, config)
+        self.schema_override = {}
+        if '_schema' in self.config:
+            self.schema_override = self.config.pop('_schema')
 
     def generate_processes(self, config):
         """Generate processes dictionary
@@ -164,6 +177,8 @@ class Generator(object):
         processes = deep_merge(derivers['processes'], processes)
         topology = deep_merge(derivers['topology'], topology)
 
+        override_schemas(self.schema_override, processes)
+
         return {
             'processes': assoc_in({}, path, processes),
             'topology': assoc_in({}, path, topology)}
@@ -188,6 +203,9 @@ class Process(Generator):
         if parameters is None:
              parameters = {}
         self.parameters = copy.deepcopy(self.defaults)
+        self.schema_override = {}
+        if '_schema' in parameters:
+            self.schema_override = parameters.pop('_schema')
         deep_merge(self.parameters, parameters)
 
         # register process repository
@@ -202,6 +220,15 @@ class Process(Generator):
         return {
             'process': {
                 port: topology.get(port, (port,)) for port in ports_schema().keys()}}
+
+    def get_schema(self, override=None):
+        ports = copy.deepcopy(self.ports_schema())
+        deep_merge(ports, self.schema_override)
+        deep_merge(ports, override)
+        return ports
+
+    def merge_overrides(self, override):
+        deep_merge(self.schema_override, override)
 
     def ports(self):
         ports_schema = self.ports_schema()

@@ -34,7 +34,7 @@ class StaticLattice(Generator):
     }
 
     def __init__(self, config):
-        self.config = config
+        super(StaticLattice, self).__init__(config)
 
     def generate_processes(self, config=None):
         multibody = Multibody(config['multibody'])

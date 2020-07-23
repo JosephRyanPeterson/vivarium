@@ -40,26 +40,14 @@ class Master(Generator):
     defaults = {
         'global_path': ('global',),
         'external_path': ('external',),
+        'transport': get_glc_lct_config(),
+        'metabolism': default_metabolism_config(),
         'fields_path': ('fields',),
         'dimensions_path': ('dimensions',),
-        'config': {
-            'transport': get_glc_lct_config(),
-            'metabolism': default_metabolism_config()
         }
-    }
 
     def __init__(self, config=None):
-        if not config:
-            config = {}
-        self.config = deep_merge(self.defaults['config'], config)
-        self.global_path = self.or_default(
-            config, 'global_path')
-        self.external_path = self.or_default(
-            config, 'external_path')
-        self.fields_path = self.or_default(
-            config, 'fields_path')
-        self.dimensions_path = self.or_default(
-            config, 'dimensions_path')
+        super(Master, self).__init__(config)
 
     def generate_processes(self, config):
 
@@ -100,55 +88,59 @@ class Master(Generator):
         }
 
     def generate_topology(self, config):
+        global_path = config['global_path']
+        external_path = config['external_path']
+        fields_path = config['fields_path']
+        dimensions_path = config['dimensions_path']
         return {
             'transport': {
                 'internal': ('metabolites',),
-                'external': self.external_path,
+                'external': external_path,
                 'fields': ('null',),  # metabolism's exchange is used
                 'fluxes': ('flux_bounds',),
-                'global': self.global_path,
-                'dimensions': self.dimensions_path,
+                'global': global_path,
+                'dimensions': dimensions_path,
             },
-
             'metabolism': {
                 'internal': ('metabolites',),
-                'external': self.external_path,
+                'external': external_path,
                 'reactions': ('reactions',),
-                'fields': self.fields_path,
+                'fields': fields_path,
                 'flux_bounds': ('flux_bounds',),
-                'global': self.global_path,
-                'dimensions': self.dimensions_path,
+                'global': global_path,
+                'dimensions': dimensions_path,
             },
-
             'transcription': {
                 'chromosome': ('chromosome',),
                 'molecules': ('metabolites',),
                 'proteins': ('proteins',),
                 'transcripts': ('transcripts',),
                 'factors': ('concentrations',),
-                'global': self.global_path},
-
+                'global': global_path
+            },
             'translation': {
                 'ribosomes': ('ribosomes',),
                 'molecules': ('metabolites',),
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'concentrations': ('concentrations',),
-                'global': self.global_path},
-
+                'global': global_path
+            },
             'degradation': {
                 'transcripts': ('transcripts',),
                 'proteins': ('proteins',),
                 'molecules': ('metabolites',),
-                'global': self.global_path},
-
+                'global': global_path
+            },
             'complexation': {
                 'monomers': ('proteins',),
                 'complexes': ('proteins',),
-                'global': self.global_path},
-
+                'global': global_path
+            },
             'division': {
-                'global': self.global_path}}
+                'global': global_path
+            }
+        }
 
 
 def run_master(out_dir):
