@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
 import math
 import os
 
@@ -32,8 +33,17 @@ DIVISION_TIME = 2400  # seconds to divide
 
 class Antibiotics(Generator):
 
+    defaults = {
+        'fields_path': ('fields',),
+        'dimensions_path': ('dimensions',),
+    }
+
     def __init__(self, config):
-        self.config = config
+
+        self.config = copy.deepcopy(Antibiotics.defaults)
+        self.config.update(config)
+        # TODO: Use defaults for all configurations
+
         division_time = self.config.get('cell_cycle_division_time', 2400)
 
         # Expression Config
@@ -66,12 +76,11 @@ class Antibiotics(Generator):
         self.config.setdefault('growth_rate', math.log(2) / division_time)
 
     def generate_processes(self, config):
-        # TODO -- use config to update self.config
-        antibiotic_transport = AntibioticTransport(self.config)
-        growth = Growth(self.config)
-        expression = ODE_expression(self.config)
-        death = DeathFreezeState(self.config)
-        division = DivisionVolume(self.config)
+        antibiotic_transport = AntibioticTransport(config)
+        growth = Growth(config)
+        expression = ODE_expression(config)
+        death = DeathFreezeState(config)
+        division = DivisionVolume(config)
 
         return {
             'antibiotic_transport': antibiotic_transport,
@@ -86,9 +95,10 @@ class Antibiotics(Generator):
             'antibiotic_transport': {
                 'internal': ('cell',),
                 'external': ('environment',),
-                'exchange': ('exchange',),
+                'fields': config['fields_path'],
                 'fluxes': ('fluxes',),
                 'global': ('global',),
+                'dimensions': config['dimensions_path'],
             },
             'growth': {
                 'global': ('global',),
@@ -112,7 +122,6 @@ class Antibiotics(Generator):
 def run_antibiotics_composite():
     sim_settings = {
         'environment_port': ('environment',),
-        'exchange_port': ('exchange',),
         'environment_volume': 1e-5,  # L
         'emit_step': 1,
         'total_time': DIVISION_TIME * NUM_DIVISIONS,

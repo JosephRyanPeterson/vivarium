@@ -30,9 +30,6 @@ DEFAULT_INITIAL_STATE = {
     'external': {
         'antibiotic': 1.0,
     },
-    'exchange': {
-        'antibiotic': 0.0,
-    },
 }
 
 #: Default initial flux levels
@@ -106,10 +103,8 @@ def run_antibiotic_transport():
         'total_time': 4000,
         'environment': {
             'volume': 1e-15 * units.L,
-            'ports': {
-                'external': ('external',),
-                'exchange': ('exchange',)
-            }}}
+        },
+    }
     return simulate_process_in_experiment(process, settings)
 
 

@@ -147,9 +147,10 @@ class Transport(Process):
         ports = [
             'internal',
             'external',
-            'exchange',
+            'fields',
             'fluxes',
-            'global'
+            'global',
+            'dimensions',
         ]
         schema = {port: {} for port in ports}
         emitter_keys = {
@@ -183,15 +184,34 @@ class Transport(Process):
                 '_emit': state in emitter_keys['fluxes']
             }
 
-        # exchange
+        # fields
         for state in external.keys():
-            schema['exchange'][state] = {
-                '_default': 0.0,
-                '_updater': 'accumulate'
+            schema['fields'][state] = {
+                '_default': np.ones((1, 1)),
             }
 
         # global
-        schema['global']['volume'] = {'_default': 1}
+        schema['global'] = {
+            'volume': {
+                '_default': 1,
+            },
+            'location': {
+                '_default': [0.5, 0.5],
+            },
+        }
+
+        # dimensions
+        schema['dimensions'] = {
+            'bounds': {
+                '_default': [1, 1],
+            },
+            'n_bins': {
+                '_default': [1, 1],
+            },
+            'depth': {
+                '_default': 1,
+            },
+        }
 
         return schema
 
@@ -389,9 +409,22 @@ class Transport(Process):
                 internal_update[state_id] = solution[-1, state_idx]
 
         return {
-            'exchange': external_update,
+            'fields': {
+                molecule: {
+                    '_value': exchange,
+                    '_updater': {
+                        'updater': 'update_field_with_exchange',
+                        'port_mapping': {
+                            'global': 'global',
+                            'dimensions': 'dimensions',
+                        },
+                    },
+                }
+                for molecule, exchange in external_update.items()
+            },
             'internal': internal_update,
-            'fluxes': fluxes}
+            'fluxes': fluxes,
+        }
 
 # test and analysis of process
 def test_transport(sim_time = 10):
