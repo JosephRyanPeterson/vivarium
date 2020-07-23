@@ -90,17 +90,17 @@ class MembranePotential(Process):
 
         ## internal
         # internal ions and charge (c_in)
-        for state in list(self.parameters['initial_state']['internal'].keys()):
-            schema['internal'][state] = {
-                '_default': self.parameters['initial_state']['internal'].get(state, 0.0),
+        for state_id, value in self.parameters['initial_state']['internal'].items():
+            schema['internal'][state_id] = {
+                '_default': value,
                 '_emit': True,
             }
 
         ## external
         # external ions, charge (c_out) and temperature (T)
-        for state in list(self.parameters['initial_state']['external'].keys()) + ['T']:
-            schema['external'][state] = {
-                '_default': self.parameters['initial_state']['external'].get(state, 0.0),
+        for state_id, value in self.parameters['initial_state']['external'].items():
+            schema['external'][state_id] = {
+                '_default': value,
                 '_emit': True,
             }
 
@@ -172,11 +172,15 @@ def test_mem_potential():
     mp = MembranePotential(parameters)
     timeline = [
         (0, {('external', 'Na'): 1}),
-        (100, {('external', 'Na'): 2}),
-        (500, {})]
+        (50, {('external', 'Na'): 10}),
+        (100, {})]
 
     settings = {'timeline': {'timeline': timeline}}
-    return simulate_process_in_experiment(mp, settings)
+    timeseries = simulate_process_in_experiment(mp, settings)
+
+    PMF_timeseries = timeseries['membrane']['PMF']
+    assert PMF_timeseries[-1] > PMF_timeseries[2]
+    return timeseries
 
 
 if __name__ == '__main__':
