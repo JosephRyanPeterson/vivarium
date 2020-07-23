@@ -1476,6 +1476,7 @@ electron_orbitals = [
 
 
 class Proton(Process):
+    name = 'proton'
     defaults = {
         'time_step': 1.0,
         'radius': 0.0}
@@ -1532,6 +1533,7 @@ class Proton(Process):
         return update
 
 class Electron(Process):
+    name = 'electron'
     defaults = {
         'time_step': 1.0,
         'spin': electron_spins[0]}
