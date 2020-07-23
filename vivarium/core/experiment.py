@@ -189,10 +189,10 @@ class Store(object):
                 and new_default == 0
                 and self.default != 0
             ):
-                log.info('_default schema conflict: {} and {}. selecting {}'.format(
+                log.debug('_default schema conflict: {} and {}. selecting {}'.format(
                     self.default, new_default, self.default))
                 return self.default
-            log.info('_default schema conflict: {} and {}. selecting {}'.format(
+            log.debug('_default schema conflict: {} and {}. selecting {}'.format(
                 self.default, new_default, new_default))
         return new_default
 
