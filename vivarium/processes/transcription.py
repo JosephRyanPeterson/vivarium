@@ -124,7 +124,7 @@ class Transcription(Process):
                   >>> from vivarium.data.nucleotides import nucleotides
                   >>> monomer_ids = nucleotides.values()
                   >>> print(list(monomer_ids))
-                  ['rATP', 'rGTP', 'rUTP', 'rCTP']
+                  ['ATP', 'GTP', 'UTP', 'CTP']
 
                   Note that we only included the ``list()``
                   transformation to make the output prettier. The
