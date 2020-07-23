@@ -606,7 +606,14 @@ def test_convenience_kinetics_correlated_to_reference():
     flattened = flatten_timeseries(timeseries)
     reference_timeseries = load_timeseries(
         os.path.join(REFERENCE_DATA_DIR, NAME + '.csv'))
-    assert_timeseries_close(flattened, reference_timeseries)
+    assert_timeseries_close(
+        flattened, reference_timeseries,
+        tolerances={
+            'internal_pyr_c': 9,
+            'internal_pep_c': 9,
+            'internal_g6p_c': 9,
+        }
+    )
 
 
 if __name__ == '__main__':
