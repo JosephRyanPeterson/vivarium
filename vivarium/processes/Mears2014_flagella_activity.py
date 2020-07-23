@@ -111,6 +111,7 @@ class FlagellaActivity(Process):
         # internal_counts
         schema['internal_counts']['flagella'] = {
             '_value': self.parameters['n_flagella'],
+            '_default': self.parameters['n_flagella'],
             '_emit': True}
 
         # flagella
