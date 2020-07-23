@@ -85,6 +85,7 @@ flagella_schema_override = {
 class FlagellaExpressionMetabolism(Generator):
     defaults = {
         'boundary_path': ('boundary',),
+        'dimensions_path': ('dimensions',),
         'agents_path': ('agents',),  # ('..', '..', 'agents',),
         'daughter_path': tuple(),
         'transport': get_glc_lct_config(),
@@ -111,6 +112,7 @@ class FlagellaExpressionMetabolism(Generator):
 
         # get paths
         boundary_path = config['boundary_path']
+        dimensions_path = config['dimensions_path']
         agents_path = config['agents_path']
         external_path = boundary_path + ('external',)
 
@@ -120,7 +122,7 @@ class FlagellaExpressionMetabolism(Generator):
         flagella_expression_config.update(config['gene_expression'])
         gene_expression = GeneExpression(flagella_expression_config)
         gene_expression_network = gene_expression.generate()
-        processes = gene_expression_network['processes']
+        gene_expression_processes = gene_expression_network['processes']
         self.topology = gene_expression_network['topology']
 
         # Transport
@@ -143,19 +145,25 @@ class FlagellaExpressionMetabolism(Generator):
             compartment=self)
         meta_division = MetaDivision(meta_division_config)
 
-        # combine processes
-        processes['transport'] = transport
-        processes['metabolism'] = metabolism
-        processes['division_condition'] = division_condition
-        processes['meta_division'] = meta_division
+        # combine processes in order
+        processes = {
+            'metabolism': metabolism,
+            'transport': transport}
+        processes.update(gene_expression_processes)
+        back_processes = {
+            'division_condition': division_condition,
+            'meta_division': meta_division,
+        }
+        processes.update(back_processes)
 
         # save the topology for generate_topology
         self.topology['transport'] = {
             'internal': ('metabolites',),
             'external': external_path,
-            'exchange': ('null',),  # metabolism's exchange is used
+            'fields': ('null',),  # metabolism's exchange is used
             'fluxes': ('flux_bounds',),
-            'global': boundary_path
+            'global': boundary_path,
+            'dimensions': dimensions_path,
         }
         self.topology['metabolism'] = {
                 'internal': ('molecules',),
@@ -164,7 +172,7 @@ class FlagellaExpressionMetabolism(Generator):
                 'reactions': ('reactions',),
                 'flux_bounds': ('flux_bounds',),
                 'global': boundary_path,
-                'dimensions': ('dimensions',),
+                'dimensions': dimensions_path,
         }
         self.topology['division_condition'] = {
             'global': boundary_path
