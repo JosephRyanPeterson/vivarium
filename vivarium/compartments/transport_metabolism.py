@@ -79,10 +79,7 @@ class TransportMetabolism(Generator):
     }
 
     def __init__(self, config=None):
-        self.config = copy.deepcopy(config)
-        for key, value in self.defaults.items():
-            if key not in self.config:
-                self.config[key] = value
+        super(TransportMetabolism, self).__init__(config)
 
     def generate_processes(self, config):
         daughter_path = config['daughter_path']

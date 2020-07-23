@@ -1511,22 +1511,19 @@ electron_orbitals = [
 
 
 class Proton(Process):
+    name = 'proton'
     defaults = {
         'time_step': 1.0,
         'radius': 0.0}
 
     def __init__(self, parameters=None):
-        if not parameters:
-            parameters = {}
-            self.radius = self.or_default(parameters, 'radius')
-            self.parameters = parameters
-            self.time_step = self.or_default(parameters, 'time_step')
+        super(Proton, self).__init__(parameters)
 
     def ports_schema(self):
         return {
             'radius': {
                 '_updater': 'set',
-                '_default': self.radius},
+                '_default': self.parameters['radius']},
             'quarks': {
                 '_divider': 'split_dict',
                 '*': {
@@ -1567,20 +1564,19 @@ class Proton(Process):
         return update
 
 class Electron(Process):
+    name = 'electron'
     defaults = {
         'time_step': 1.0,
         'spin': electron_spins[0]}
 
     def __init__(self, parameters=None):
-        self.parameters = parameters or {}
-        self.spin = self.or_default(self.parameters, 'spin')
-        self.time_step = self.or_default(self.parameters, 'time_step')
+        super(Electron, self).__init__(parameters)
 
     def ports_schema(self):
         return {
             'spin': {
                 '_updater': 'set',
-                '_default': self.spin},
+                '_default': self.parameters['spin']},
             'proton': {
                 'radius': {
                     '_default': 0.0}}}
@@ -1665,10 +1661,10 @@ def test_topology_ports():
 
 def test_timescales():
     class Slow(Process):
-        def __init__(self):
-            self.parameters ={'timestep': 3.0}
-            self.ports = {
-                'state': ['base']}
+        name = 'slow'
+        defaults = {'timestep': 3.0}
+        def __init__(self, config=None):
+            super(Slow, self).__init__(config)
 
         def ports_schema(self):
             return {
@@ -1687,10 +1683,10 @@ def test_timescales():
                 'state': {'base': next_base}}
 
     class Fast(Process):
-        def __init__(self):
-            self.parameters ={'timestep': 3.0}
-            self.ports = {
-                'state': ['base', 'motion']}
+        name = 'fast'
+        defaults = {'timestep': 0.3}
+        def __init__(self, config=None):
+            super(Fast, self).__init__(config)
 
         def ports_schema(self):
             return {

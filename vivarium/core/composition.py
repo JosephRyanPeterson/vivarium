@@ -1160,7 +1160,7 @@ class ToyCompartment(Generator):
 
     '''
     def __init__(self, config):
-        self.config = config
+        super(ToyCompartment, self).__init__(config)
 
     def generate_processes(self, config):
         return {
