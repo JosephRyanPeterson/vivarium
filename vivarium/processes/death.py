@@ -210,7 +210,8 @@ class DeathFreezeState(Process):
 
 
 class ToyAntibioticInjector(Process):
-
+    name = 'toy_antibiotic_injector'
+    
     def __init__(self, initial_parameters=None):
         if initial_parameters is None:
             initial_parameters = {}
