@@ -312,7 +312,7 @@ class Translation(Process):
 
         self.monomer_ids = self.parameters['monomer_ids']
         self.molecule_ids = self.parameters['molecule_ids']
-        self.molecule_ids.append('ATP')
+        self.molecule_ids.extend(['ATP', 'ADP'])
 
         self.protein_ids = self.parameters['protein_ids']
         self.symbol_to_monomer = self.parameters['symbol_to_monomer']
@@ -551,8 +551,10 @@ class Translation(Process):
 
         # ATP hydrolysis cost is 2 per amino acid elongation
         molecules['ATP'] = 0
+        molecules['ADP'] = 0
         for count in elongation.monomers.values():
             molecules['ATP'] -= 2 * count
+            molecules['ADP'] += 2 * count
 
         ribosome_updates = {
             id: ribosomes[id]
