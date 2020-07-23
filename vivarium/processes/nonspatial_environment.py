@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 
 import copy
 
+import numpy as np
+
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge
 from vivarium.core.process import Deriver
@@ -14,7 +16,8 @@ class NonSpatialEnvironment(Deriver):
 
     name = 'nonspatial_environment'
     defaults = {
-        'volume': 1e-12 * units.L}
+        'volume': 1e-12 * units.L,
+    }
 
     def __init__(self, initial_parameters=None):
         if initial_parameters is None:
@@ -23,34 +26,62 @@ class NonSpatialEnvironment(Deriver):
         volume = initial_parameters.get('volume', self.defaults['volume'])
         self.mmol_to_counts = (AVOGADRO.to('1/mmol') * volume).to('L/mmol')
 
-        parameters = initial_parameters
+        parameters = copy.deepcopy(NonSpatialEnvironment.defaults)
+        parameters.update(initial_parameters)
         super(NonSpatialEnvironment, self).__init__(parameters)
 
     def ports_schema(self):
+        bin_x = 1 * units.um
+        bin_y = 1 * units.um
+        depth = self.parameters['volume'] / bin_x / bin_y
+        n_bin_x = 1
+        n_bin_y = 1
         return {
             'external': {
                 '*': {
-                    '_default': 0.0}},
-            'exchange': {
+                    '_value': 0,
+                },
+            },
+            'fields': {
                 '*': {
-                    '_default': 0}}}
+                    '_value': np.ones((1, 1)),
+                },
+            },
+            'dimensions': {
+                'depth': {
+                    '_value': depth.to(units.um).magnitude,
+                },
+                'n_bins': {
+                    '_value': [n_bin_x, n_bin_y],
+                },
+                'bounds': {
+                    '_value': [
+                        n_bin_x * bin_x.to(units.um).magnitude,
+                        n_bin_y * bin_y.to(units.um).magnitude,
+                    ],
+                },
+            },
+            'global': {
+                'location': {
+                    '_value': [0.5, 0.5],
+                },
+                'volume': {
+                    '_value': self.parameters['volume'],
+                }
+            },
+        }
 
     def next_update(self, timestep, states):
-        exchange = states['exchange']
+        fields = states['fields']
 
-        # get counts, convert to concentration change
         update = {
-            'external': {},
-            'exchange': {}}
-
-        for mol_id, delta_count in exchange.items():
-            delta_concs = delta_count / self.mmol_to_counts
-            if delta_concs != 0:
-                update['external'][mol_id] = delta_concs.magnitude  # TODO -- remove magnitude
-
-                # reset exchange
-                update['exchange'][mol_id] = {
-                    '_value': 0.0,
-                    '_updater': 'set'}
+            'external': {
+                mol_id: {
+                    '_updater': 'set',
+                    '_value': field[0][0],
+                }
+                for mol_id, field in fields.items()
+            },
+        }
 
         return update

@@ -40,6 +40,8 @@ class Master(Generator):
     defaults = {
         'global_path': ('global',),
         'external_path': ('external',),
+        'fields_path': ('fields',),
+        'dimensions_path': ('dimensions',),
         'config': {
             'transport': get_glc_lct_config(),
             'metabolism': default_metabolism_config()
@@ -54,6 +56,10 @@ class Master(Generator):
             config, 'global_path')
         self.external_path = self.or_default(
             config, 'external_path')
+        self.fields_path = self.or_default(
+            config, 'fields_path')
+        self.dimensions_path = self.or_default(
+            config, 'dimensions_path')
 
     def generate_processes(self, config):
 
@@ -84,30 +90,35 @@ class Master(Generator):
         division = DivisionVolume(division_config)
 
         return {
+            'metabolism': metabolism,
             'transport': transport,
             'transcription': transcription,
             'translation': translation,
             'degradation': degradation,
             'complexation': complexation,
-            'metabolism': metabolism,
-            'division': division}
+            'division': division,
+        }
 
     def generate_topology(self, config):
         return {
             'transport': {
                 'internal': ('metabolites',),
                 'external': self.external_path,
-                'exchange': ('null',),  # metabolism's exchange is used
+                'fields': ('null',),  # metabolism's exchange is used
                 'fluxes': ('flux_bounds',),
-                'global': self.global_path},
+                'global': self.global_path,
+                'dimensions': self.dimensions_path,
+            },
 
             'metabolism': {
                 'internal': ('metabolites',),
                 'external': self.external_path,
                 'reactions': ('reactions',),
-                'exchange': ('exchange',),
+                'fields': self.fields_path,
                 'flux_bounds': ('flux_bounds',),
-                'global': self.global_path},
+                'global': self.global_path,
+                'dimensions': self.dimensions_path,
+            },
 
             'transcription': {
                 'chromosome': ('chromosome',),
@@ -155,14 +166,13 @@ def run_master(out_dir):
     plot_settings = {
         'max_rows': 20,
         'remove_zeros': True,
-        'skip_ports': ['prior_state', 'null', 'flux_bounds', 'chromosome', 'reactions', 'exchange']}
+        'skip_ports': ['prior_state', 'null', 'flux_bounds', 'chromosome', 'reactions']}
     plot_simulation_output(timeseries, plot_settings, out_dir)
 
 def test_master():
     # load the compartment
     compartment_config = {
         'external_path': ('external',),
-        'exchange_path': ('exchange',),
         'global_path': ('global',),
         'agents_path': ('..', '..', 'cells',),
         'transcription': {

@@ -1,6 +1,8 @@
 from __future__ import absolute_import, division, print_function
 
 import os
+
+import numpy as np
 from scipy import constants
 
 from vivarium.core.process import Process
@@ -87,7 +89,12 @@ class TransportLookup(Process):
         schema = {
             'global': {
                 'volume': {
-                    '_default': 1}},
+                    '_default': 1 * units.fL,
+                },
+                'location': {
+                    '_default': [0.5, 0.5],
+                },
+            },
             'external': {
                 state_id: {
                     '_default': value,
@@ -97,11 +104,22 @@ class TransportLookup(Process):
                 state_id: {
                     '_default': 0.0}
                 for state_id in self.internal_molecule_ids},
-            'exchange': {
+            'fields': {
                 state_id: {
-                    '_default': 0.0,
+                    '_default': np.ones((1, 1)),
                     '_emit': True}
                 for state_id in self.external_molecule_ids},
+            'dimensions': {
+                'bounds': {
+                    '_default': [1, 1],
+                },
+                'n_bins': {
+                    '_default': [1, 1],
+                },
+                'depth': {
+                    '_default': 1,
+                },
+            },
         }
 
         return schema
@@ -110,7 +128,7 @@ class TransportLookup(Process):
     def next_update(self, timestep, states):
         external = states['external'] # TODO -- use external state? if concentrations near 0, cut off flux?
 
-        volume = states['global']['volume'] * units.fL
+        volume = states['global']['volume']
         mmol_to_counts = self.nAvogadro.to('1/mmol') * volume.to('L')
 
         # get transport fluxes
@@ -134,7 +152,21 @@ class TransportLookup(Process):
                 external_molecule_id = self.molecule_to_external_map[molecule_id]
                 environment_deltas[external_molecule_id] = delta_counts[molecule_id]
 
-        return {'exchange': environment_deltas}
+        return {
+            'fields': {
+                molecule: {
+                    '_value': exchange,
+                    '_updater': {
+                        'updater': 'update_field_with_exchange',
+                        'port_mapping': {
+                            'global': 'global',
+                            'dimensions': 'dimensions',
+                        },
+                    },
+                }
+                for molecule, exchange in environment_deltas.items()
+            },
+        }
 
     # TODO (Eran) -- make this a util
     def flux_to_counts(self, fluxes, conversion):
@@ -194,10 +226,10 @@ if __name__ == '__main__':
     process = TransportLookup({})
     settings = {
         'environment': {
-            'volume': 5e-14,
+            'volume': 5e-14 * units.fL,
             'states': process.external_molecule_ids,
             'environment_port': 'external',
-            'exchange_port': 'exchange'},
+        },
         'timestep': 1,
         'total_time': 60}
     timeseries =  simulate_process_in_experiment(process, settings)
