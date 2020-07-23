@@ -209,7 +209,8 @@ class Metabolism(Process):
         # internal
         for state in list(self.objective_composition.keys()):
             schema['internal'][state] = {
-                '_default': self.initial_state['internal'].get(state, 0),
+                '_value': self.initial_state['internal'].get(state, 0),
+                '_default': 0.0,
                 '_emit': True,
                 '_properties': {
                     'mw': self.fba.molecular_weights[state] * units.g / units.mol},

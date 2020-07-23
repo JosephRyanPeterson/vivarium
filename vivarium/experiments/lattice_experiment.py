@@ -32,7 +32,7 @@ from vivarium.compartments.growth_division_minimal import GrowthDivisionMinimal
 from vivarium.compartments.transport_metabolism import TransportMetabolism
 from vivarium.compartments.flagella_expression import (
     FlagellaExpressionMetabolism,
-    get_flagella_initial_state,
+    get_flagella_metabolism_initial_state,
 )
 
 
@@ -406,7 +406,7 @@ def main():
         run_workflow(
             agent_type='flagella_metabolism',
             environment_type='iAF1260b',
-            initial_agent_state=get_flagella_initial_state(),
+            initial_agent_state=get_flagella_metabolism_initial_state(),
             experiment_settings=get_experiment_settings(
                 emit_step=120,
                 emitter='database',
