@@ -108,10 +108,10 @@ class MembranePotential(Process):
         # proton motive force (PMF), electrical difference (d_V), pH difference (d_pH)
         for state in ['PMF', 'd_V', 'd_pH']:
             schema['membrane'][state] = {
+                '_default': 0.0,
                 '_updater': 'set',
                 '_emit': True,
             }
-
         return schema
 
     def next_update(self, timestep, states):
