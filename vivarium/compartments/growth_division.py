@@ -43,10 +43,7 @@ class GrowthDivision(Generator):
     }
 
     def __init__(self, config):
-        self.config = copy.deepcopy(config)
-        for key, value in self.defaults.items():
-            if key not in self.config:
-                self.config[key] = value
+        super(GrowthDivision, self).__init__(config)
 
         # transport configs
         boundary_path = self.config['boundary_path']

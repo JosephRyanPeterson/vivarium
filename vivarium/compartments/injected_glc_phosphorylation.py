@@ -30,8 +30,7 @@ class InjectedGlcPhosphorylation(Generator):
     }
 
     def __init__(self, config):
-        self.config = self.defaults
-        self.config.update(config)
+        super(InjectedGlcPhosphorylation, self).__init__(config)
 
     def generate_processes(self, config):
         injector = Injector(self.config['injector'])
