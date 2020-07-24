@@ -109,7 +109,10 @@ class TumorProcess(Process):
                 },  # membrane protein, promotes Tumor death
             },
             'neighbors': {
-                'PD1': {},
+                'PD1': {
+                    '_default': 0,
+                    '_emit': True,
+                },
                 #TODO - @Eran - like the t_cell process, I am still a little uncertain how to connect
                 #   where the 2 processes interact. Is this where the IFNg and cytotoxic packets
                 #   from the t_cell process would come in?
@@ -252,10 +255,30 @@ class TumorCompartment(Generator):
             }
 
 
+def get_PD1_timeline():
+    timeline = [
+        (0, {('neighbors', 'PD1'): 0.0}),
+        (10, {('neighbors', 'PD1'): 1.0}),
+        (20, {('neighbors', 'PD1'): 0.0}),
+        (30, {}),
+    ]
+    return timeline
 
-def test_single_Tumor(total_time=20, out_dir='out'):
+def test_single_Tumor(
+        total_time=20,
+        timeline=None,
+        out_dir='out'):
+
     Tumor_process = TumorProcess({})
-    settings = {'total_time': total_time}
+
+    if timeline is not None:
+        settings = {
+            'timeline': {
+                'timeline': timeline}}
+    else:
+        settings = {'total_time': total_time}
+
+    # run experiment
     timeseries = simulate_process_in_experiment(Tumor_process, settings)
 
     # plot
@@ -274,6 +297,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='tumor cells')
     parser.add_argument('--single', '-s', action='store_true', default=False)
+    parser.add_argument('--timeline', '-t', action='store_true', default=False)
     parser.add_argument('--batch', '-b', action='store_true', default=False)
     args = parser.parse_args()
     no_args = (len(sys.argv) == 1)
@@ -281,10 +305,16 @@ if __name__ == '__main__':
     total_time = 1000
     if args.single or no_args:
         test_single_Tumor(
-            total_time,
-            out_dir)
+            total_time=total_time,
+            out_dir=out_dir)
+
+    if args.timeline:
+        timeline = get_PD1_timeline()
+        test_single_Tumor(
+            timeline=timeline,
+            out_dir=out_dir)
 
     if args.batch:
         run_batch_Tumor(
-            out_dir,
-            total_time)
+            out_dir=out_dir,
+            total_time=total_time)
