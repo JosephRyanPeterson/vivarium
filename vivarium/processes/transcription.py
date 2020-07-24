@@ -124,7 +124,7 @@ class Transcription(Process):
                   >>> from vivarium.data.nucleotides import nucleotides
                   >>> monomer_ids = nucleotides.values()
                   >>> print(list(monomer_ids))
-                  ['rATP', 'rGTP', 'rUTP', 'rCTP']
+                  ['ATP', 'GTP', 'UTP', 'CTP']
 
                   Note that we only included the ``list()``
                   transformation to make the output prettier. The
@@ -218,7 +218,7 @@ class Transcription(Process):
 
         self.transcription_factors = self.parameters['transcription_factors']
         self.molecule_ids = self.parameters['molecule_ids']
-        self.molecule_ids.append('ATP')
+        self.molecule_ids.extend(['ATP', 'ADP'])
         self.monomer_ids = self.parameters['monomer_ids']
         self.transcript_ids = self.parameters['transcript_ids']
         self.elongation = 0
@@ -510,8 +510,10 @@ class Transcription(Process):
 
         # 1 ATP hydrolysis cost per nucleotide elongation
         molecules['ATP'] = 0
+        molecules['ADP'] = 0
         for count in elongation.monomers.values():
             molecules['ATP'] -= count
+            molecules['ADP'] += count
 
         chromosome_dict = chromosome.to_dict()
         rnaps = chromosome_dict['rnaps']

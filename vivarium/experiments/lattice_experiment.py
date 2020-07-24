@@ -32,7 +32,7 @@ from vivarium.compartments.growth_division_minimal import GrowthDivisionMinimal
 from vivarium.compartments.transport_metabolism import TransportMetabolism
 from vivarium.compartments.flagella_expression import (
     FlagellaExpressionMetabolism,
-    get_flagella_initial_state,
+    get_flagella_metabolism_initial_state,
 )
 
 
@@ -82,7 +82,7 @@ agents_library = {
 def get_lattice_config(
     bounds=[20, 20],
     n_bins=[10, 10],
-    jitter_force=1e-3,
+    jitter_force=1e-4,
     depth=3000.0,
     diffusion=1e-2,
     molecules=['glc__D_e', 'lcts_e'],
@@ -138,12 +138,14 @@ def get_experiment_settings(
         total_time=4000,
         emit_step=10,
         emitter='timeseries',
+        agent_names=False,
         return_raw_data=True,
 ):
     return {
         'total_time': total_time,
         'emit_step': emit_step,
         'emitter': emitter,
+        'agent_names': agent_names,
         'return_raw_data': return_raw_data
     }
 
@@ -162,24 +164,18 @@ def get_plot_settings(
                 'skip_paths': skip_paths,
                 'remove_zeros': True,
             },
-            'snapshots': {
-                'fields': fields,
-                'n_snapshots': n_snapshots,
-            },
-            'tags': {
-                'tagged_molecules': tags,
-                'n_snapshots': n_snapshots,
-                'background_color': background_color,
-            },
         }
     }
     if fields:
         settings['plot_types']['snapshots'] = {
-            'fields': fields
+            'fields': fields,
+            'n_snapshots': n_snapshots,
         }
     if tags:
         settings['plot_types']['tags'] = {
-            'tag_ids': tags
+            'tagged_molecules': tags,
+            'n_snapshots': n_snapshots,
+            'background_color': background_color,
         }
     return settings
 
@@ -283,12 +279,16 @@ def run_workflow(
         agent_type='growth_division_minimal',
         n_agents=1,
         environment_type='glc_lcts',
-        initial_state={},
-        initial_agent_state={},
+        initial_state=None,
+        initial_agent_state=None,
         out_dir='out',
         experiment_settings=get_experiment_settings(),
         plot_settings=get_plot_settings()
 ):
+    if initial_state is None:
+        initial_state = {}
+    if initial_agent_state is None:
+        initial_agent_state = {}
     # agent configuration
     agent_config = agents_library[agent_type]
     agent_config['number'] = n_agents
@@ -406,9 +406,10 @@ def main():
         run_workflow(
             agent_type='flagella_metabolism',
             environment_type='iAF1260b',
-            initial_agent_state=get_flagella_initial_state(),
+            initial_agent_state=get_flagella_metabolism_initial_state(),
             experiment_settings=get_experiment_settings(
                 emit_step=120,
+                agent_names=True,
                 emitter='database',
                 total_time=11000,
             ),
