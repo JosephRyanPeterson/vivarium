@@ -4,6 +4,7 @@ import os
 import sys
 import copy
 import random
+import argparse
 
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge
@@ -166,8 +167,7 @@ class TumorProcess(Process):
             #       am not really interested right now in that level of detail (maybe someday :))
             #TODO - @Eran - How do I reference the environment - i.e. the number of IFNg molecules present
             #   directly overlapping with the cancer cell to make this change?
-
-
+            pass
         elif cell_state == 'PDL1p':
             pass
 
@@ -182,11 +182,12 @@ class TumorProcess(Process):
             #TODO - if cytotoxic packets >128 then cell is dead - 120 minute delay
             # @Eran - If I reference cytotoxic packets above, then can I reference them here?
             # See other comments about referencing parameters from other processes
-
+            pass
         elif new_cell_state == 'PDL1p':
             #TODO - if cytotoxic packets >128 then cell is dead - 120 minute delay
             # @Eran - if this parameter of death is the same for both states, do I need to
             # specify both like this?
+            pass
 
         return {
             'internal': {
@@ -271,7 +272,7 @@ if __name__ == '__main__':
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    parser = argparse.ArgumentParser(description='ODE expression')
+    parser = argparse.ArgumentParser(description='tumor cells')
     parser.add_argument('--single', '-s', action='store_true', default=False)
     parser.add_argument('--batch', '-b', action='store_true', default=False)
     args = parser.parse_args()
