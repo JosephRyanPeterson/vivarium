@@ -81,7 +81,7 @@ class RnaDegradation(Process):
         self.transcript_order = self.parameters['transcript_order']
         self.protein_order = self.parameters['protein_order']
         self.molecule_order = list(nucleotides.values())
-        self.molecule_order.append('ATP')
+        self.molecule_order.extend(['ATP', 'ADP'])
 
         self.partial_transcripts = {
             transcript: 0
@@ -175,6 +175,7 @@ class RnaDegradation(Process):
                 delta_molecules[nucleotides[base]] -= count
                 # ATP hydrolysis cost is 1 per nucleotide degraded
                 delta_molecules['ATP'] -= count
+                delta_molecules['ADP'] += count
 
         return {
             'transcripts': transcript_counts,

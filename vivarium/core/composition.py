@@ -28,11 +28,10 @@ from vivarium.library.dict_utils import (
 )
 from vivarium.library.units import units
 
-# import classes for registration
-
 # processes
 from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.nonspatial_environment import NonSpatialEnvironment
+from vivarium.processes.agent_names import AgentNames
 
 # derivers
 import vivarium.processes.derive_globals
@@ -75,10 +74,20 @@ def agent_environment_experiment(
         agents_config=None,
         environment_config=None,
         initial_state=None,
-        settings=None,
         initial_agent_state=None,
-        invoke=None
+        settings=None,
+        invoke=None,
 ):
+    """ Make an experiment with agents placed in an environment under an `agents` store.
+     Arguments:
+        * **agents_config**: the configuration for the agents
+        * **environment_config**: the configuration for the environment
+        * **initial_state**: the initial state for the hierarchy, with environment at the
+          top level.
+        * **initial_agent_state**: the initial_state for agents, set under each agent_id.
+        * **settings**: settings include **emitter** and **agent_names**.
+        * **invoke**: is the invoke object for calling updates.
+    """
     if settings is None:
         settings = {}
 
@@ -128,6 +137,15 @@ def agent_environment_experiment(
     topology = network['topology']
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
+
+    if settings['agent_names'] is True:
+        # add an AgentNames processes, which saves the current agent names
+        # to as store at the top level of the hierarchy
+        processes['agent_names'] = AgentNames({})
+        topology['agent_names'] = {
+            'agents': ('agents',),
+            'names': ('names',)
+        }
 
     experiment_config = {
         'processes': processes,

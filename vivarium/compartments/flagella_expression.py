@@ -33,12 +33,15 @@ from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units
 
 # processes
-from vivarium.processes.transcription import UNBOUND_RNAP_KEY
-from vivarium.processes.translation import UNBOUND_RIBOSOME_KEY
+from vivarium.processes.transcription import Transcription, UNBOUND_RNAP_KEY
+from vivarium.processes.translation import Translation, UNBOUND_RIBOSOME_KEY
+from vivarium.processes.degradation import RnaDegradation
+from vivarium.processes.complexation import Complexation
 from vivarium.processes.convenience_kinetics import ConvenienceKinetics, get_glc_lct_config
 from vivarium.processes.metabolism import Metabolism, get_iAF1260b_config
 from vivarium.processes.division_volume import DivisionVolume
 from vivarium.processes.meta_division import MetaDivision
+from vivarium.processes.tree_mass import TreeMass
 
 # compartments
 from vivarium.compartments.gene_expression import (
@@ -80,119 +83,6 @@ flagella_schema_override = {
         }
     },
 }
-
-
-class FlagellaExpressionMetabolism(Generator):
-    defaults = {
-        'boundary_path': ('boundary',),
-        'dimensions_path': ('dimensions',),
-        'agents_path': ('agents',),  # ('..', '..', 'agents',),
-        'daughter_path': tuple(),
-        'transport': get_glc_lct_config(),
-        'metabolism': default_metabolism_config(),
-        'gene_expression': {
-            'initial_mass': 0.0 * units.fg,
-            'time_step': COMPARTMENT_TIMESTEP,
-        },
-        '_schema': copy.deepcopy(flagella_schema_override)
-    }
-
-    def __init__(self, config=None):
-        super(FlagellaExpressionMetabolism, self).__init__(config)
-
-        if 'agent_id' not in self.config:
-            self.config['agent_id'] = str(uuid.uuid1())
-
-    def generate_processes(self, process_config):
-        config = copy.deepcopy(self.config)
-        config = deep_merge(config, process_config)
-
-        daughter_path = config['daughter_path']
-        agent_id = config['agent_id']
-
-        # get paths
-        boundary_path = config['boundary_path']
-        dimensions_path = config['dimensions_path']
-        agents_path = config['agents_path']
-        external_path = boundary_path + ('external',)
-
-        # configure a flagella gene expression compartment, and get its network
-        flagella_expression_config = get_flagella_expression_config({})
-        flagella_expression_config['global_path'] = boundary_path
-        flagella_expression_config.update(config['gene_expression'])
-        gene_expression = GeneExpression(flagella_expression_config)
-        gene_expression_network = gene_expression.generate()
-        gene_expression_processes = gene_expression_network['processes']
-        self.topology = gene_expression_network['topology']
-
-        # Transport
-        transport = ConvenienceKinetics(config['transport'])
-        target_fluxes = transport.kinetic_rate_laws.reaction_ids
-
-        # Metabolism
-        # add target fluxes from transport
-        metabolism_config = config.get('metabolism')
-        metabolism_config.update({'constrained_reaction_ids': target_fluxes})
-        metabolism = Metabolism(metabolism_config)
-
-        # Division
-        # configure division condition and meta-division processes
-        division_condition = DivisionVolume({})
-        meta_division_config = dict(
-            {},
-            daughter_path=daughter_path,
-            agent_id=agent_id,
-            compartment=self)
-        meta_division = MetaDivision(meta_division_config)
-
-        # combine processes in order
-        processes = {
-            'metabolism': metabolism,
-            'transport': transport}
-        processes.update(gene_expression_processes)
-        back_processes = {
-            'division_condition': division_condition,
-            'meta_division': meta_division,
-        }
-        processes.update(back_processes)
-
-        # save the topology for generate_topology
-        self.topology['transport'] = {
-            'internal': ('metabolites',),
-            'external': external_path,
-            'fields': ('null',),  # metabolism's exchange is used
-            'fluxes': ('flux_bounds',),
-            'global': boundary_path,
-            'dimensions': dimensions_path,
-        }
-        self.topology['metabolism'] = {
-                'internal': ('molecules',),
-                'external': external_path,
-                'fields': ('fields',),
-                'reactions': ('reactions',),
-                'flux_bounds': ('flux_bounds',),
-                'global': boundary_path,
-                'dimensions': dimensions_path,
-        }
-        self.topology['division_condition'] = {
-            'global': boundary_path
-        }
-        self.topology['meta_division'] = {
-            'global': boundary_path,
-            'cells': agents_path
-        }
-
-        return processes
-
-    def generate_topology(self, config):
-        return self.topology
-
-
-
-
-def flagella_expression_compartment(config):
-    flagella_expression_config = get_flagella_expression_config(config)
-    return GeneExpression(flagella_expression_config)
 
 
 def get_flagella_expression_config(config):
@@ -241,6 +131,173 @@ def get_flagella_expression_config(config):
         '_schema': copy.deepcopy(flagella_schema_override)
     }
 
+
+class FlagellaExpressionMetabolism(Generator):
+    defaults = get_flagella_expression_config({})
+    defaults.update({
+        'boundary_path': ('boundary',),
+        'dimensions_path': ('dimensions',),
+        'agents_path': ('agents',),  # ('..', '..', 'agents',),
+        'daughter_path': tuple(),
+        'transport': get_glc_lct_config(),
+        'metabolism': default_metabolism_config(),
+        'initial_mass': 0.0 * units.fg,
+        'time_step': COMPARTMENT_TIMESTEP,
+    })
+
+    def __init__(self, config=None):
+        super(FlagellaExpressionMetabolism, self).__init__(config)
+        if 'agent_id' not in self.config:
+            self.config['agent_id'] = str(uuid.uuid1())
+
+    def generate_processes(self, config):
+        daughter_path = config['daughter_path']
+        agent_id = config['agent_id']
+
+        # get the configs
+        transcription_config = config['transcription']
+        translation_config = config['translation']
+        degradation_config = config['degradation']
+        complexation_config = config['complexation']
+
+        # update expression timestep
+        transcription_config.update({'time_step': config['time_step']})
+        translation_config.update({'time_step': config['time_step']})
+        degradation_config.update({'time_step': config['time_step']})
+        complexation_config.update({'time_step': config['time_step']})
+
+        # make the expression processes
+        transcription = Transcription(transcription_config)
+        translation = Translation(translation_config)
+        degradation = RnaDegradation(degradation_config)
+        complexation = Complexation(complexation_config)
+        mass_deriver = TreeMass(config.get('mass_deriver', {
+            'initial_mass': config['initial_mass']}))
+
+        # Transport
+        transport = ConvenienceKinetics(config['transport'])
+        target_fluxes = transport.kinetic_rate_laws.reaction_ids
+
+        # Metabolism
+        # add target fluxes from transport
+        metabolism_config = config.get('metabolism')
+        metabolism_config.update({'constrained_reaction_ids': target_fluxes})
+        metabolism = Metabolism(metabolism_config)
+
+        # Division
+        # configure division condition and meta-division processes
+        division_condition = DivisionVolume({})
+        meta_division_config = dict(
+            {},
+            daughter_path=daughter_path,
+            agent_id=agent_id,
+            compartment=self)
+        meta_division = MetaDivision(meta_division_config)
+
+        return {
+            'metabolism': metabolism,
+            'transport': transport,
+            'mass_deriver': mass_deriver,
+            'transcription': transcription,
+            'translation': translation,
+            'degradation': degradation,
+            'complexation': complexation,
+            'division': division_condition,
+            'meta_division': meta_division,
+        }
+
+    def generate_topology(self, config):
+        boundary_path = config['boundary_path']
+        dimensions_path = config['dimensions_path']
+        agents_path = config['agents_path']
+        external_path = boundary_path + ('external',)
+
+        return {
+            'mass_deriver': {
+                'global': boundary_path,
+            },
+            'transcription': {
+                'chromosome': ('chromosome',),
+                'molecules': ('molecules',),
+                'proteins': ('proteins',),
+                'transcripts': ('transcripts',),
+                'factors': ('concentrations',),
+                'global': boundary_path,
+            },
+            'translation': {
+                'ribosomes': ('ribosomes',),
+                'molecules': ('molecules',),
+                'transcripts': ('transcripts',),
+                'proteins': ('proteins',),
+                'concentrations': ('concentrations',),
+                'global': boundary_path,
+            },
+            'degradation': {
+                'transcripts': ('transcripts',),
+                'proteins': ('proteins',),
+                'molecules': ('molecules',),
+                'global': boundary_path,
+            },
+            'complexation': {
+                'monomers': ('proteins',),
+                'complexes': ('proteins',),
+                'global': boundary_path,
+            },
+            'transport': {
+                'internal': ('molecules',),
+                'external': external_path,
+                'fields': ('null',),  # metabolism's exchange is used
+                'fluxes': ('flux_bounds',),
+                'global': boundary_path,
+                'dimensions': dimensions_path,
+            },
+            'metabolism': {
+                'internal': ('molecules',),
+                'external': external_path,
+                'fields': ('fields',),
+                'reactions': ('reactions',),
+                'flux_bounds': ('flux_bounds',),
+                'global': boundary_path,
+                'dimensions': dimensions_path,
+            },
+            'division': {
+                'global': boundary_path,
+            },
+            'meta_division': {
+                'global': boundary_path,
+                'cells': agents_path,
+            }
+        }
+
+
+def flagella_expression_compartment(config):
+    flagella_expression_config = get_flagella_expression_config(config)
+    return GeneExpression(flagella_expression_config)
+
+
+def get_flagella_metabolism_initial_state(ports={}):
+    flagella_data = FlagellaChromosome()
+    chromosome_config = flagella_data.chromosome_config
+     # molecules are set by metabolism
+    return {
+        ports.get(
+            'transcripts',
+            'transcripts'): {
+                gene: 0
+                for gene in chromosome_config['genes'].keys()
+        },
+        ports.get(
+            'proteins',
+            'proteins'): {
+                'CpxR': 10,
+                'CRP': 10,
+                'Fnr': 10,
+                'endoRNAse': 1,
+                'flagella': 8,
+                UNBOUND_RIBOSOME_KEY: 100,  # e. coli has ~ 20000 ribosomes
+                UNBOUND_RNAP_KEY: 100
+            }
+    }
 
 def get_flagella_initial_state(ports={}):
     flagella_data = FlagellaChromosome()
@@ -300,13 +357,15 @@ def make_flagella_network(out_dir='out'):
     gene_network_plot(data, out_dir)
 
 
-def run_flagella_compartment(compartment, out_dir='out'):
+def run_flagella_compartment(
+        compartment,
+        initial_state=None,
+        out_dir='out'):
 
     # get flagella data
     flagella_data = FlagellaChromosome()
 
     # run simulation
-    initial_state = get_flagella_initial_state()
     settings = {
         # a cell cycle of 2520 sec is expected to express 8 flagella.
         # 2 flagella expected in approximately 630 seconds.
@@ -457,8 +516,8 @@ if __name__ == '__main__':
             os.makedirs(mtb_out_dir)
         compartment = FlagellaExpressionMetabolism({})
         make_compartment_topology(compartment, mtb_out_dir)
-        run_flagella_compartment(compartment, mtb_out_dir)
+        run_flagella_compartment(compartment, get_flagella_metabolism_initial_state(), mtb_out_dir)
     else:
         compartment = flagella_expression_compartment({})
-        run_flagella_compartment(compartment, out_dir)
+        run_flagella_compartment(compartment, get_flagella_initial_state(), out_dir)
 
