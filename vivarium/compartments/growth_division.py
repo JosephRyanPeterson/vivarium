@@ -43,10 +43,7 @@ class GrowthDivision(Generator):
     }
 
     def __init__(self, config):
-        self.config = copy.deepcopy(config)
-        for key, value in self.defaults.items():
-            if key not in self.config:
-                self.config[key] = value
+        super(GrowthDivision, self).__init__(config)
 
         # transport configs
         boundary_path = self.config['boundary_path']
@@ -65,7 +62,7 @@ class GrowthDivision(Generator):
         growth = GrowthProtein(config['growth'])
         transport = ConvenienceKinetics(config['transport'])
         expression = MinimalExpression(config['expression'])
-        mass = TreeMass(config['mass'])
+        mass_deriver = TreeMass(config['mass'])
 
         # configure division
         division_config = dict(
@@ -79,7 +76,7 @@ class GrowthDivision(Generator):
             'transport': transport,
             'growth': growth,
             'expression': expression,
-            'mass': mass,
+            'mass_deriver': mass_deriver,
             'division': division,
         }
 
@@ -87,15 +84,15 @@ class GrowthDivision(Generator):
         boundary_path = config['boundary_path']
         agents_path = config['agents_path']
         external_path = boundary_path + ('external',)
-        exchange_path = boundary_path + ('exchange',)
 
         return {
             'transport': {
                 'internal': ('internal',),
                 'external': external_path,
-                'exchange': exchange_path,
+                'fields': ('fields',),
                 'fluxes': ('fluxes',),
-                'global': boundary_path
+                'global': boundary_path,
+                'dimensions': ('dimensions',),
             },
 
             'growth': {
@@ -103,7 +100,7 @@ class GrowthDivision(Generator):
                 'global': boundary_path
             },
 
-            'mass': {
+            'mass_deriver': {
                 'global': boundary_path
             },
 
@@ -135,8 +132,11 @@ if __name__ == '__main__':
         'environment': {
             'volume': 1e-6 * units.L,  # L
             'ports': {
-                'exchange': ('boundary', 'exchange',),
-                'external': ('boundary', 'external',)}
+                'fields': ('fields',),
+                'external': ('boundary', 'external',),
+                'global': ('boundary',),
+                'dimensions': ('dimensions',),
+            },
         },
         'outer_path': ('agents', agent_id),  # TODO -- need to set the agent_id through here?
         'return_raw_data': True,

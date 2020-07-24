@@ -28,11 +28,10 @@ from vivarium.library.dict_utils import (
 )
 from vivarium.library.units import units
 
-# import classes for registration
-
 # processes
 from vivarium.processes.timeline import TimelineProcess
 from vivarium.processes.nonspatial_environment import NonSpatialEnvironment
+from vivarium.processes.agent_names import AgentNames
 
 # derivers
 import vivarium.processes.derive_globals
@@ -75,8 +74,20 @@ def agent_environment_experiment(
         agents_config=None,
         environment_config=None,
         initial_state=None,
-        settings=None
+        initial_agent_state=None,
+        settings=None,
+        invoke=None,
 ):
+    """ Make an experiment with agents placed in an environment under an `agents` store.
+     Arguments:
+        * **agents_config**: the configuration for the agents
+        * **environment_config**: the configuration for the environment
+        * **initial_state**: the initial state for the hierarchy, with environment at the
+          top level.
+        * **initial_agent_state**: the initial_state for agents, set under each agent_id.
+        * **settings**: settings include **emitter** and **agent_names**.
+        * **invoke**: is the invoke object for calling updates.
+    """
     if settings is None:
         settings = {}
 
@@ -90,6 +101,12 @@ def agent_environment_experiment(
         agent_ids = agents_config['ids']
         agent_compartment = agent_type(agents_config['config'])
         agents = make_agents(agent_ids, agent_compartment, agents_config['config'])
+
+        if initial_agent_state:
+            initial_state['agents'] = {
+                agent_id: initial_agent_state
+                for agent_id in agent_ids}
+
     elif isinstance(agents_config, list):
         # list with multiple agent configurations
         agents = {
@@ -103,22 +120,42 @@ def agent_environment_experiment(
             deep_merge(agents['processes'], new_agents['processes'])
             deep_merge(agents['topology'], new_agents['topology'])
 
+            if initial_agent_state:
+                if 'agents' not in initial_state:
+                    initial_state['agents'] = {}
+                initial_state['agents'].update({
+                    agent_id: initial_agent_state
+                    for agent_id in agent_ids})
+
     # initialize the environment
     environment_type = environment_config['type']
     environment_compartment = environment_type(environment_config['config'])
 
     # combine processes and topologies
-    network = environment_compartment.generate({})
+    network = environment_compartment.generate()
     processes = network['processes']
     topology = network['topology']
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
 
-    return Experiment({
+    if settings['agent_names'] is True:
+        # add an AgentNames processes, which saves the current agent names
+        # to as store at the top level of the hierarchy
+        processes['agent_names'] = AgentNames({})
+        topology['agent_names'] = {
+            'agents': ('agents',),
+            'names': ('names',)
+        }
+
+    experiment_config = {
         'processes': processes,
         'topology': topology,
         'emitter': emitter,
-        'initial_state': initial_state})
+        'initial_state': initial_state,
+    }
+    if invoke:
+        experiment_config['invoke'] = invoke
+    return Experiment(experiment_config)
 
 def process_in_compartment(process, topology={}):
     """ put a lone process in a compartment"""
@@ -191,9 +228,7 @@ def process_in_experiment(process, settings={}):
             port: paths.get(port, (port,)) for port in process.ports_schema().keys()}}
 
     if timeline:
-        '''
-        adding a timeline to a process requires only the timeline
-        '''
+        # Adding a timeline to a process requires only the timeline
         timeline_process = TimelineProcess({'timeline': timeline['timeline']})
         processes.update({'timeline_process': timeline_process})
         topology.update({
@@ -201,17 +236,27 @@ def process_in_experiment(process, settings={}):
                 port: (port,) for port in timeline_process.ports}})
 
     if environment:
-        '''
-        environment requires ports for exchange and external
-        '''
-        ports = environment.get('ports',
-            {'external': ('external',), 'exchange': ('exchange',)})
+        # Environment requires ports for external, fields, dimensions,
+        # and global (for location)
+        ports = environment.get(
+            'ports',
+            {
+                'external': ('external',),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+                'global': ('global',),
+            }
+        )
         environment_process = NonSpatialEnvironment(environment)
         processes.update({'environment_process': environment_process})
         topology.update({
             'environment_process': {
                 'external': ports['external'],
-                'exchange': ports['exchange']}})
+                'fields': ports['fields'],
+                'dimensions': ports['dimensions'],
+                'global': ports['global'],
+            },
+        })
 
     # add derivers
     derivers = generate_derivers(processes, topology)
@@ -227,8 +272,8 @@ def process_in_experiment(process, settings={}):
 
 def compartment_in_experiment(compartment, settings={}):
     compartment_config = settings.get('compartment', {})
-    timeline = settings.get('timeline', {})
-    environment = settings.get('environment', {})
+    timeline = settings.get('timeline')
+    environment = settings.get('environment')
     outer_path = settings.get('outer_path', tuple())
     emit_step = settings.get('emit_step')
 
@@ -236,10 +281,8 @@ def compartment_in_experiment(compartment, settings={}):
     processes = network['processes']
     topology = network['topology']
 
-    if timeline:
-        '''
-        environment requires ports for all states defined in the timeline
-        '''
+    if timeline is not None:
+        # Environment requires ports for all states defined in the timeline
         ports = timeline['ports']
         timeline_process = TimelineProcess({'timeline': timeline['timeline']})
         processes.update({'timeline_process': timeline_process})
@@ -248,20 +291,30 @@ def compartment_in_experiment(compartment, settings={}):
         })
         topology['timeline_process'].update({
                 port_id: ports[port_id]
-                for port_id in timeline_process.ports if port_id is not 'global'})
+                for port_id in timeline_process.ports if port_id != 'global'})
 
-    if environment:
-        '''
-        environment requires ports for exchange and external
-        '''
-        ports = environment.get('ports',
-            {'external': ('external',), 'exchange': ('exchange',)})
+    if environment is not None:
+        # Environment requires ports for external, fields, dimensions,
+        # and global (for location)
+        ports = environment.get(
+            'ports',
+            {
+                'external': ('external',),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+                'global': ('global',),
+            }
+        )
         environment_process = NonSpatialEnvironment(environment)
         processes.update({'environment_process': environment_process})
         topology.update({
             'environment_process': {
                 'external': ports['external'],
-                'exchange': ports['exchange']}})
+                'fields': ports['fields'],
+                'dimensions': ports['dimensions'],
+                'global': ports['global'],
+            },
+        })
 
     return Experiment({
         'processes': processes,
@@ -303,6 +356,7 @@ def simulate_experiment(experiment, settings={}):
     # run simulation
     experiment.update(total_time)
 
+    # return data from emitter
     if return_raw_data:
         return experiment.emitter.get_data()
     else:
@@ -557,25 +611,61 @@ def order_list_of_paths(path_list):
 
 def plot_agents_multigen(data, settings={}, out_dir='out', filename='agents'):
     '''
-    Make a plot of all agent data
-    TODO -- add agent color
+    Plot multi-agent simulation output, with all agents data combined for every
+    corresponding path in their stores.
+    Arguments::
+        data (dict): This is raw_data obtained from simulation output
+        settings (dict): Accepts the following keys:
+
+            * **max_rows** (:py:class:`int`): ports with more states
+              than this number of states get wrapped into a new column
+            * **remove_zeros** (:py:class:`bool`): if True, timeseries
+              with all zeros get removed
+            * **remove_flat** (:py:class:`bool`): if True, timeseries
+              with all the same value get removed
+            * **skip_paths** (:py:class:`list`): entire path, including subpaths
+              that won't be plotted
+
+    TODO -- add legend with agent color
     '''
+
     agents_key = settings.get('agents_key', 'agents')
     max_rows = settings.get('max_rows', 25)
+    remove_zeros = settings.get('remove_zeros', False)
+    remove_flat = settings.get('remove_flat', False)
     skip_paths = settings.get('skip_paths', [])
     title_size = settings.get('title_size', 16)
     tick_label_size = settings.get('tick_label_size', 12)
     time_vec = list(data.keys())
     timeseries = path_timeseries_from_data(data)
 
-    # get the agents' port_schema in a list of paths
+    # get the agents' port_schema in a set of paths.
+    # this assumes that the initial agent's schema and behavior
+    # is representative of later agents
     initial_agents = data[time_vec[0]][agents_key]
+    # make the set of paths
     port_schema_paths = set()
     for agent_id, agent_data in initial_agents.items():
         path_list = get_path_list_from_dict(agent_data)
         port_schema_paths.update(path_list)
-    # remove skipped paths
-    port_schema_paths = [path for path in port_schema_paths if path not in skip_paths]
+    # make set of paths to remove
+    remove_paths = set()
+    for path, series in timeseries.items():
+        if path[0] == agents_key and path[1] in list(initial_agents.keys()):
+            agent_path = path[2:]
+            if remove_flat:
+                if series.count(series[0]) == len(series):
+                    remove_paths.add(agent_path)
+            elif remove_zeros:
+                if all(v == 0 for v in series):
+                    remove_paths.add(agent_path)
+    # get paths and subpaths from skip_paths to remove
+    for path in port_schema_paths:
+        for remove in skip_paths:
+            if set(path) >= set(remove):
+                remove_paths.add(path)
+    # remove the paths
+    port_schema_paths = [path for path in port_schema_paths if path not in remove_paths]
     top_ports = set([path[0] for path in port_schema_paths])
 
     # get port columns, assign subplot locations
@@ -634,7 +724,9 @@ def plot_agents_multigen(data, settings={}, out_dir='out', filename='agents'):
             ax.set_xlim([time_vec[0], time_vec[-1]])
 
             # if last state in this port, add time ticks
-            if row_idx >= max_rows or path_idx >= len(ordered_paths[port_id]):
+            if (row_idx >= highest_row
+                or path_idx >= len(ordered_paths[port_id]) - 1
+            ):
                 set_axes(ax, True)
                 ax.set_xlabel('time (s)')
             else:
@@ -1086,7 +1178,7 @@ class ToyCompartment(Generator):
 
     '''
     def __init__(self, config):
-        self.config = config
+        super(ToyCompartment, self).__init__(config)
 
     def generate_processes(self, config):
         return {

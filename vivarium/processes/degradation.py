@@ -63,6 +63,7 @@ class RnaDegradation(Process):
             }
         },
         'global_deriver_key': 'global_deriver',
+        'time_step': 1.0,
     }
 
     def __init__(self, initial_parameters=None):
@@ -80,6 +81,7 @@ class RnaDegradation(Process):
         self.transcript_order = self.parameters['transcript_order']
         self.protein_order = self.parameters['protein_order']
         self.molecule_order = list(nucleotides.values())
+        self.molecule_order.extend(['ATP', 'ADP'])
 
         self.partial_transcripts = {
             transcript: 0
@@ -171,6 +173,9 @@ class RnaDegradation(Process):
             sequence = self.sequences[transcript]
             for base in sequence:
                 delta_molecules[nucleotides[base]] -= count
+                # ATP hydrolysis cost is 1 per nucleotide degraded
+                delta_molecules['ATP'] -= count
+                delta_molecules['ADP'] += count
 
         return {
             'transcripts': transcript_counts,
@@ -187,6 +192,7 @@ def test_rna_degradation(end_time=10):
     molecules = {
         molecule: 10
         for molecule in rna_degradation.molecule_order}
+    molecules['ATP'] = 100000
     transcripts = {
         transcript: 10
         for transcript in rna_degradation.transcript_order}

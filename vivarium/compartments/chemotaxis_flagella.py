@@ -50,32 +50,21 @@ DEFAULT_INITIAL_LIGAND = 1e-2
 
 
 class ChemotaxisVariableFlagella(Generator):
-
+    n_flagella = 5
+    ligand_id = 'MeAsp'
+    initial_ligand = 0.1
     defaults = {
-        'n_flagella': 5,
-        'ligand_id': 'MeAsp',
-        'initial_ligand': 0.1,
+        'receptor': {
+            'ligand_id': ligand_id,
+            'initial_ligand': initial_ligand
+        },
+        'flagella': {
+            'n_flagella': n_flagella
+        },
     }
 
     def __init__(self, config):
-        self.config = config
-
-        n_flagella = config.get(
-            'n_flagella',
-            self.defaults['n_flagella'])
-        ligand_id = config.get(
-            'ligand_id',
-            self.defaults['ligand_id'])
-        initial_ligand = config.get(
-            'initial_ligand',
-            self.defaults['initial_ligand'])
-
-        self.config['receptor'] = {
-            'ligand_id': ligand_id,
-            'initial_ligand': initial_ligand}
-
-        self.config['flagella'] = {
-            'n_flagella': n_flagella}
+        super(ChemotaxisVariableFlagella, self).__init__(config)
 
     def generate_processes(self, config):
         receptor = ReceptorCluster(config['receptor'])
@@ -102,13 +91,26 @@ class ChemotaxisVariableFlagella(Generator):
 
 
 class ChemotaxisODEExpressionFlagella(Generator):
+    ligand_id = 'MeAsp'
+    initial_ligand = DEFAULT_INITIAL_LIGAND
+    n_flagella = 5
+    initial_mass = 1339.0 * units.fg
+    growth_rate = 0.000275
     defaults = {
-        'n_flagella': 5,
-        'ligand_id': 'MeAsp',
-        'initial_ligand': DEFAULT_INITIAL_LIGAND,
-        'initial_mass': 1339.0 * units.fg,
-        'growth_rate': 0.000275,
         'expression': get_flagella_expression(),
+        'receptor': {
+            'ligand_id': ligand_id,
+            'initial_ligand': initial_ligand
+        },
+        'flagella': {
+            'n_flagella': n_flagella
+        },
+        'growth': {
+            'initial_mass': initial_mass,
+            'growth_rate': growth_rate
+        },
+        'mass_deriver': {},
+        'global_deriver': {},
         'boundary_path': ('boundary',),
         'external_path': ('boundary', 'external',),
         'agents_path': ('..', '..', 'agents',),
@@ -117,41 +119,7 @@ class ChemotaxisODEExpressionFlagella(Generator):
     }
 
     def __init__(self, config=None):
-        if config is None:
-            config = {}
-        self.config = copy.deepcopy(self.defaults)
-        deep_merge(self.config, config)
-
-        # parameters
-        n_flagella = config.get(
-            'n_flagella',
-            self.defaults['n_flagella'])
-        ligand_id = config.get(
-            'ligand_id',
-            self.defaults['ligand_id'])
-        initial_ligand = config.get(
-            'initial_ligand',
-            self.defaults['initial_ligand'])
-        initial_mass = config.get(
-            'initial_mass',
-            self.defaults['initial_mass'])
-        growth_rate = config.get(
-            'growth_rate',
-            self.defaults['growth_rate'])
-
-        # receptor and flagella config
-        self.config['receptor'] = {
-            'ligand_id': ligand_id,
-            'initial_ligand': initial_ligand}
-        self.config['flagella'] = {
-            'n_flagella': n_flagella}
-
-        # growth and division config
-        self.config['growth'] = {
-            'initial_mass': initial_mass,
-            'growth_rate': growth_rate}
-        self.config['mass_deriver'] = {}
-        self.config['global_deriver'] = {}
+        super(ChemotaxisODEExpressionFlagella, self).__init__(config)
 
     def generate_processes(self, config):
         # division config
@@ -169,8 +137,6 @@ class ChemotaxisODEExpressionFlagella(Generator):
             'expression': ODE_expression(config['expression']),
             'growth': GrowthProtein(config['growth']),
             'division': MetaDivision(division_config),
-            'mass_deriver': TreeMass(config['mass_deriver']),
-            'global_deriver': DeriveGlobals(config['global_deriver']),
         }
 
     def generate_topology(self, config):
@@ -179,7 +145,6 @@ class ChemotaxisODEExpressionFlagella(Generator):
         agents_path = config['agents_path']
 
         return {
-
             'receptor': {
                 'external': external_path,
                 'internal': ('cell',)},
@@ -204,27 +169,33 @@ class ChemotaxisODEExpressionFlagella(Generator):
             'division': {
                 'global': boundary_path,
                 'cells': agents_path},
-
-            'mass_deriver': {
-                'global': boundary_path},
-
-            'global_deriver': {
-                'global': boundary_path},
         }
 
 
 class ChemotaxisExpressionFlagella(Generator):
-
+    ligand_id = 'MeAsp'
+    initial_ligand = 0.1
+    n_flagella = 5
+    initial_mass = 1339.0 * units.fg
+    growth_rate = 0.000275
     defaults = {
-        'n_flagella': 5,
-        'ligand_id': 'MeAsp',
-        'initial_ligand': 0.1,
-        'initial_mass': 1339.0 * units.fg,
-        'growth_rate': 0.000275,
         'transcription': get_flagella_expression_config({})['transcription'],
         'translation': get_flagella_expression_config({})['translation'],
         'degradation': get_flagella_expression_config({})['degradation'],
         'complexation': get_flagella_expression_config({})['complexation'],
+        'receptor': {
+            'ligand_id': ligand_id,
+            'initial_ligand': initial_ligand
+        },
+        'flagella': {
+            'n_flagella': n_flagella
+        },
+        'growth': {
+            'initial_mass': initial_mass,
+            'growth_rate': growth_rate
+        },
+        'mass_deriver': {},
+        'global_deriver': {},
         'boundary_path': ('boundary',),
         'external_path': ('boundary', 'external',),
         'agents_path': ('..', '..', 'agents',),
@@ -233,41 +204,7 @@ class ChemotaxisExpressionFlagella(Generator):
     }
 
     def __init__(self, config=None):
-        if config is None:
-            config = {}
-        self.config = copy.deepcopy(self.defaults)
-        deep_merge(self.config, config)
-
-        # parameters
-        n_flagella = config.get(
-            'n_flagella',
-            self.defaults['n_flagella'])
-        ligand_id = config.get(
-            'ligand_id',
-            self.defaults['ligand_id'])
-        initial_ligand = config.get(
-            'initial_ligand',
-            self.defaults['initial_ligand'])
-        initial_mass = config.get(
-            'initial_mass',
-            self.defaults['initial_mass'])
-        growth_rate = config.get(
-            'growth_rate',
-            self.defaults['growth_rate'])
-
-        # receptor and flagella config
-        self.config['receptor'] = {
-            'ligand_id': ligand_id,
-            'initial_ligand': initial_ligand}
-        self.config['flagella'] = {
-            'n_flagella': n_flagella}
-
-        # growth and division config
-        self.config['growth'] = {
-            'initial_mass': initial_mass,
-            'growth_rate': growth_rate}
-        self.config['mass_deriver'] = {}
-        self.config['global_deriver'] = {}
+        super(ChemotaxisExpressionFlagella, self).__init__(config)
 
     def generate_processes(self, config):
         # division config
@@ -421,7 +358,13 @@ def test_ode_expression_chemotaxis(
         'initial_state': initial_state,
         'timeline': {
             'timeline': timeline,
-            'ports': {'external': ('boundary', 'external')}},
+            'ports': {
+                'external': ('boundary', 'external'),
+                'fields': ('fields',),
+                'dimensions': ('dimensions',),
+                'global': ('boundary',),
+            },
+        },
     }
     timeseries = simulate_compartment_in_experiment(
         compartment,

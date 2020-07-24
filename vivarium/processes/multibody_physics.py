@@ -273,12 +273,12 @@ class Multibody(Process):
             x = x_center - dx
             y = y_center - dy
 
-            if self.agent_shape is 'rectangle' or self.agent_shape is 'segment':
+            if self.agent_shape == 'rectangle' or self.agent_shape == 'segment':
                 # Create a rectangle
                 rect = patches.Rectangle((x, y), width, length, angle=angle, linewidth=1, edgecolor='b')
                 self.ax.add_patch(rect)
 
-            elif self.agent_shape is 'circle':
+            elif self.agent_shape == 'circle':
                 # Create a circle
                 circle = patches.Circle((x, y), width, linewidth=1, edgecolor='b')
                 self.ax.add_patch(circle)

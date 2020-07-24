@@ -12,7 +12,7 @@ from arrow import StochasticSystem
 
 from vivarium.library.units import units
 from vivarium.library.dict_utils import deep_merge, keys_list
-from vivarium.core.experiment import pp
+from vivarium.core.experiment import pp, pf
 from vivarium.core.process import Process
 from vivarium.core.composition import process_in_experiment
 from vivarium.states.chromosome import Chromosome, Rnap, Promoter, frequencies, add_merge, toy_chromosome_config
@@ -50,7 +50,9 @@ class Transcription(Process):
                 'lead': 0,
                 'lag': 0,
                 'children': []}},
-        'molecule_ids': monomer_ids}
+        'molecule_ids': monomer_ids,
+        'time_step': 1.0,
+    }
 
     def __init__(self, initial_parameters=None):
         '''A stochastic transcription model
@@ -122,7 +124,7 @@ class Transcription(Process):
                   >>> from vivarium.data.nucleotides import nucleotides
                   >>> monomer_ids = nucleotides.values()
                   >>> print(list(monomer_ids))
-                  ['rATP', 'rGTP', 'rUTP', 'rCTP']
+                  ['ATP', 'GTP', 'UTP', 'CTP']
 
                   Note that we only included the ``list()``
                   transformation to make the output prettier. The
@@ -185,7 +187,7 @@ class Transcription(Process):
         ... }
         >>> update = transcription_process.next_update(1.0, state)
         >>> print(update['chromosome'])
-        {'rnaps': {2: <class 'vivarium.states.chromosome.Rnap'>: {'id': 2, 'template': 'pA', 'template_index': 0, 'terminator': 1, 'domain': 0, 'state': 'polymerizing', 'position': 7}, 3: <class 'vivarium.states.chromosome.Rnap'>: {'id': 3, 'template': 'pB', 'template_index': 1, 'terminator': 0, 'domain': 0, 'state': 'occluding', 'position': 3}, 4: <class 'vivarium.states.chromosome.Rnap'>: {'id': 4, 'template': 'pA', 'template_index': 0, 'terminator': 0, 'domain': 0, 'state': 'occluding', 'position': 0}, '_delete': []}, 'rnap_id': 4, 'domains': {0: <class 'vivarium.states.chromosome.Domain'>: {'id': 0, 'lead': 0, 'lag': 0, 'children': []}}, 'root_domain': 0}
+        {'rnaps': {'_add': [{'path': (2,), 'state': <class 'vivarium.states.chromosome.Rnap'>: {'id': 2, 'template': 'pA', 'template_index': 0, 'terminator': 1, 'domain': 0, 'state': 'polymerizing', 'position': 7}}, {'path': (3,), 'state': <class 'vivarium.states.chromosome.Rnap'>: {'id': 3, 'template': 'pB', 'template_index': 1, 'terminator': 0, 'domain': 0, 'state': 'occluding', 'position': 3}}, {'path': (4,), 'state': <class 'vivarium.states.chromosome.Rnap'>: {'id': 4, 'template': 'pA', 'template_index': 0, 'terminator': 0, 'domain': 0, 'state': 'occluding', 'position': 0}}], '_delete': []}, 'rnap_id': 4, 'domains': {0: <class 'vivarium.states.chromosome.Domain'>: {'id': 0, 'lead': 0, 'lag': 0, 'children': []}}, 'root_domain': 0}
         '''
 
         if not initial_parameters:
@@ -216,6 +218,7 @@ class Transcription(Process):
 
         self.transcription_factors = self.parameters['transcription_factors']
         self.molecule_ids = self.parameters['molecule_ids']
+        self.molecule_ids.extend(['ATP', 'ADP'])
         self.monomer_ids = self.parameters['monomer_ids']
         self.transcript_ids = self.parameters['transcript_ids']
         self.elongation = 0
@@ -325,23 +328,27 @@ class Transcription(Process):
         schema['molecules'] = {
             molecule: {
                 '_default': 0,
+                '_divider': 'split',
                 '_emit': True}
             for molecule in self.molecule_ids}
 
         schema['factors'] = {
             factor: {
-                '_default': 0.0}
+                '_default': 0.0,
+                '_divider': 'split'}
             for factor in self.transcription_factors}
 
         schema['transcripts'] = {
             protein: {
                 '_default': 0,
+                '_divider': 'split',
                 '_emit': True}
             for protein in self.transcript_ids}
 
         schema['proteins'] = {
             protein: {
                 '_default': 0,
+                '_divider': 'split',
                 '_emit': True}
             for protein in self.protein_ids}
 
@@ -501,18 +508,35 @@ class Transcription(Process):
             key: count * -1
             for key, count in elongation.monomers.items()}
 
+        # 1 ATP hydrolysis cost per nucleotide elongation
+        molecules['ATP'] = 0
+        molecules['ADP'] = 0
+        for count in elongation.monomers.values():
+            molecules['ATP'] -= count
+            molecules['ADP'] += count
+
         chromosome_dict = chromosome.to_dict()
         rnaps = chromosome_dict['rnaps']
 
-        completed_rnaps = set(original_rnap_keys) - set(rnaps.keys())
+        original = set(original_rnap_keys)
+        current = set(rnaps.keys())
+        bound_rnaps = current - original
+        completed_rnaps = original - current
+        continuing_rnaps = original - completed_rnaps
+
         rnap_updates = {
-            rnap_id: rnap
-            for rnap_id, rnap in rnaps.items()
-            if rnap_id not in completed_rnaps}
+            rnap_id: rnaps[rnap_id]
+            for rnap_id in continuing_rnaps}
+
+        add_rnaps = [
+            {'path': (bound,), 'state': rnaps[bound]}
+            for bound in bound_rnaps]
+
         delete_rnaps = [
             (completed,)
             for completed in completed_rnaps]
 
+        rnap_updates['_add'] = add_rnaps
         rnap_updates['_delete'] = delete_rnaps
         chromosome_dict['rnaps'] = rnap_updates
 
@@ -541,12 +565,15 @@ def test_transcription():
     chromosome = Chromosome(toy_chromosome_config)
     transcription = Transcription(parameters)
 
+    initial_molecules = {
+                nucleotide: 10
+                for nucleotide in transcription.monomer_ids}
+    initial_molecules['ATP'] = 100000
+
     experiment = process_in_experiment(transcription, {
         'initial_state': {
             'chromosome': chromosome.to_dict(),
-            'molecules': {
-                nucleotide: 10
-                for nucleotide in transcription.monomer_ids},
+            'molecules': initial_molecules,
             'proteins': {UNBOUND_RNAP_KEY: 10},
             'factors': {'tfA': 0.2, 'tfB': 0.7}}})
 

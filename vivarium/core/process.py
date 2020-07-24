@@ -17,27 +17,39 @@ from vivarium.library.dict_utils import deep_merge
 DEFAULT_TIME_STEP = 1.0
 
 
+def serialize_value(value):
+    if isinstance(value, dict):
+        return serialize_dictionary(value)
+    elif isinstance(value, list):
+        return serialize_list(value)
+    elif isinstance(value, np.ndarray):
+        return serializer_registry.access('numpy').serialize(value)
+    elif isinstance(value, Quantity):
+        return serializer_registry.access('units').serialize(value)
+    elif callable(value):
+        return serializer_registry.access('function').serialize(value)
+    elif isinstance(value, Process):
+        return serialize_dictionary(serializer_registry.access('process').serialize(value))
+    elif isinstance(value, Generator):
+        return serialize_dictionary(
+            serializer_registry.access('compartment').serialize(value))
+    elif isinstance(value, (np.integer, np.floating)):
+        return serializer_registry.access('numpy_scalar').serialize(value)
+    else:
+        return value
+
+def serialize_list(lst):
+    serialized = []
+    for value in lst:
+        serialized.append(serialize_value(value))
+    return serialized
 
 def serialize_dictionary(d):
     serialized = {}
     for key, value in d.items():
-        if isinstance(key, tuple):
+        if not isinstance(key, str):
             key = str(key)
-
-        if isinstance(value, dict):
-            serialized[key] = serialize_dictionary(value)
-        elif isinstance(value, np.ndarray):
-            serialized[key] = serializer_registry.access('numpy').serialize(value)
-        elif isinstance(value, Quantity):
-            serialized[key] = serializer_registry.access('units').serialize(value)
-        elif callable(value):
-            serialized[key] = serializer_registry.access('function').serialize(value)
-        elif isinstance(value, Process):
-            serialized[key] = serialize_dictionary(serializer_registry.access('process').serialize(value))
-        elif isinstance(value, Generator):
-            serialized[key] = serialize_dictionary(serializer_registry.access('compartment').serialize(value))
-        else:
-            serialized[key] = value
+        serialized[key] = serialize_value(value)
     return serialized
 
 
@@ -47,6 +59,14 @@ def assoc_in(d, path, value):
     else:
         return value
 
+
+def override_schemas(overrides, processes):
+    for key, override in overrides.items():
+        process = processes[key]
+        if isinstance(process, Process):
+            process.merge_overrides(override)
+        else:
+            override_schemas(override, process)
 
 def generate_derivers(processes, topology):
     deriver_processes = {}
@@ -84,8 +104,13 @@ class Generator(object):
 
     All :term:`compartment` classes must inherit from this class.
     """
+    defaults = {}
     def __init__(self, config):
-        self.config = config
+        self.config = copy.deepcopy(self.defaults)
+        self.config = deep_merge(self.config, config)
+        self.schema_override = {}
+        if '_schema' in self.config:
+            self.schema_override = self.config.pop('_schema')
 
     def generate_processes(self, config):
         """Generate processes dictionary
@@ -152,6 +177,8 @@ class Generator(object):
         processes = deep_merge(derivers['processes'], processes)
         topology = deep_merge(derivers['topology'], topology)
 
+        override_schemas(self.schema_override, processes)
+
         return {
             'processes': assoc_in({}, path, processes),
             'topology': assoc_in({}, path, topology)}
@@ -176,6 +203,9 @@ class Process(Generator):
         if parameters is None:
              parameters = {}
         self.parameters = copy.deepcopy(self.defaults)
+        self.schema_override = {}
+        if '_schema' in parameters:
+            self.schema_override = parameters.pop('_schema')
         deep_merge(self.parameters, parameters)
 
         # register process repository
@@ -190,6 +220,15 @@ class Process(Generator):
         return {
             'process': {
                 port: topology.get(port, (port,)) for port in ports_schema().keys()}}
+
+    def get_schema(self, override=None):
+        ports = copy.deepcopy(self.ports_schema())
+        deep_merge(ports, self.schema_override)
+        deep_merge(ports, override)
+        return ports
+
+    def merge_overrides(self, override):
+        deep_merge(self.schema_override, override)
 
     def ports(self):
         ports_schema = self.ports_schema()

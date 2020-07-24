@@ -28,10 +28,7 @@ class GrowthDivisionMinimal(Generator):
         'daughter_path': tuple()}
 
     def __init__(self, config):
-        self.config = config
-        for key, value in self.defaults.items():
-            if key not in self.config:
-                self.config[key] = value
+        super(GrowthDivisionMinimal, self).__init__(config)
 
     def generate_processes(self, config):
         # division config

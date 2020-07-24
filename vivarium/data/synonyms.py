@@ -6,15 +6,16 @@ def invert_index(mapping):
     return inverse
 
 synonyms = {
-    'ATP': ['atp_c'],
+    # 'ATP': ['atp_c'],
+    'ADP': ['adp_c'],
     'GTP': ['gtp_c'],
     'NAD(H)': ['nad_c'],
     'NADP(H)': ['nadp_c'],
     'FAD(H2)': ['fad_c'],
-    'rATP': ['A', 'ATP', 'datp_c'],
-    'rGTP': ['G', 'GTP', 'dgtp_c'],
-    'rUTP': ['U', 'UTP', 'dutp_c'],
-    'rCTP': ['C', 'CTP', 'dctp_c'],
+    'ATP': ['A', 'ATP', 'atp_c'],  # ATP name conflicts with the energy carrier
+    'GTP': ['G', 'GTP', 'gtp_c'],
+    'UTP': ['U', 'UTP', 'utp_c'],
+    'CTP': ['C', 'CTP', 'ctp_c'],
     'Alanine': ['ala__L_c'],
     'Arginine': ['arg__L_c'],
     'Asparagine': ['asn__L_c'],

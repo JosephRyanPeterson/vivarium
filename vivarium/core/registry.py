@@ -28,11 +28,13 @@ Updater API
 ===========
 
 An updater function MUST have a name that begins with ``update_``. The
-function MUST accept exactly two positional arguments: the first MUST be
-the current value of the variable (i.e. before applying the update), and
-the second MUST be the value associated with the variable in the update.
-The function SHOULD not accept any other parameters. The function MUST
-return the updated value of the variable only.
+function MUST accept exactly three positional arguments: the first MUST
+be the current value of the variable (i.e. before applying the update),
+the second MUST be the value associated with the variable in the update,
+and the third MUST be either a dictionary of states from the simulation
+hierarchy or None if no ``port_mapping`` key was specified in the
+updater definition. The function SHOULD not accept any other parameters.
+The function MUST return the updated value of the variable only.
 
 --------
 Dividers
@@ -78,15 +80,17 @@ that deriver.
 
 from __future__ import absolute_import, division, print_function
 
-import copy
 import random
 
 import numpy as np
 
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import Quantity
-
-
+from vivarium.library.lattice_utils import (
+    get_bin_site,
+    get_bin_volume,
+    count_to_concentration,
+)
 
 
 class Registry(object):
@@ -110,12 +114,8 @@ process_registry = Registry()
 
 ## updater functions
 
-def update_merge(current_value, new_value):
+def update_merge(current_value, new_value, states):
     """Merge Updater
-
-    Arguments:
-        current_value (dict):
-        new_value (dict):
 
     Returns:
         dict: The merger of ``current_value`` and ``new_value``. For any
@@ -130,7 +130,7 @@ def update_merge(current_value, new_value):
             update[k] = new
     return update
 
-def update_set(current_value, new_value):
+def update_set(current_value, new_value, states):
     """Set Updater
 
     Returns:
@@ -138,7 +138,7 @@ def update_set(current_value, new_value):
     """
     return new_value
 
-def update_accumulate(current_value, new_value):
+def update_accumulate(current_value, new_value, states):
     """Accumulate Updater
 
     Returns:
@@ -146,11 +146,48 @@ def update_accumulate(current_value, new_value):
     """
     return current_value + new_value
 
+def update_field_with_exchange(current_value, new_value, states):
+    '''Update environment with agent exchange
+
+    Arguments:
+        states: Dictionary with the following keys that specify the
+            pre-update simulation state:
+
+            * **global** (:py:class:`dict`): Contains the agent location
+              under the ``location`` key.
+            * **dimensions** (:py:class:`dict`): The contents of the
+              environment's dimensions :term:`store` with the
+              ``bounds``, ``n_bins``, and ``depth`` keys.
+
+        new_value: Count of molecules to exchange with the environment
+        current_value (numpy ndarray): The pre-update value of
+            the field to update.
+
+    Returns:
+        The updated field.
+    '''
+    location = states['global']['location']
+    n_bins = states['dimensions']['n_bins']
+    bounds = states['dimensions']['bounds']
+    depth = states['dimensions']['depth']
+    delta_field = np.zeros(
+        (n_bins[0], n_bins[1]), dtype=np.float64)
+    bin_site = get_bin_site(
+        location, n_bins, bounds)
+    bin_volume = get_bin_volume(
+        n_bins, bounds, depth)
+    concentration = count_to_concentration(new_value, bin_volume)
+    delta_field[bin_site[0], bin_site[1]] += concentration
+    return current_value + delta_field
+
+
 #: Maps updater names to updater functions
 updater_registry = Registry()
 updater_registry.register('accumulate', update_accumulate)
 updater_registry.register('set', update_set)
 updater_registry.register('merge', update_merge)
+updater_registry.register(
+    'update_field_with_exchange', update_field_with_exchange)
 
 
 
@@ -179,7 +216,7 @@ def divide_split(state):
     Raises:
         Exception: if ``state`` is of an unrecognized type.
     """
-    if isinstance(state, int):
+    if isinstance(state, (int, np.integer)):
         remainder = state % 2
         half = int(state / 2)
         if random.choice([True, False]):
@@ -256,6 +293,29 @@ class NumpySerializer(Serializer):
     def deserialize(self, data):
         return np.array(data)
 
+class NumpyScalarSerializer(Serializer):
+    def serialize(self, data):
+        if isinstance(data, np.integer):
+            return int(data)
+        if isinstance(data, np.floating):
+            return float(data)
+        raise ValueError(
+            'Cannot serialize numpy scalar {} of type {}.'.format(
+                data, type(data)
+            )
+        )
+
+    def deserialize(self, data):
+        if isinstance(data, int):
+            return np.int64(data)
+        if isinstance(data, float):
+            return np.float64(data)
+        raise ValueError(
+            'Cannot deserialize scalar {} of type {}.'.format(
+                data, type(data)
+            )
+        )
+
 class UnitsSerializer(Serializer):
     def serialize(self, data):
         return data.magnitude
@@ -275,6 +335,7 @@ class FunctionSerializer(Serializer):
 # register serializers in the serializer_registry
 serializer_registry = Registry()
 serializer_registry.register('numpy', NumpySerializer())
+serializer_registry.register('numpy_scalar', NumpyScalarSerializer())
 serializer_registry.register('units', UnitsSerializer())
 serializer_registry.register('process', ProcessSerializer())
 serializer_registry.register('compartment', GeneratorSerializer())

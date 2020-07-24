@@ -20,6 +20,11 @@ from vivarium.core.composition import (
     simulate_process,
     PROCESS_OUT_DIR
 )
+from vivarium.library.lattice_utils import (
+    count_to_concentration,
+    get_bin_site,
+    get_bin_volume,
+)
 
 from vivarium.plots.multibody_physics import plot_snapshots
 
@@ -35,6 +40,22 @@ def gaussian(deviation, distance):
 
 def make_gradient(gradient, n_bins, size):
     '''Create a gradient from a configuration
+
+    **Uniform**
+
+    A uniform gradient fills the field evenly with each molecule, at
+    the concentrations specified.
+
+    Example configuration:
+
+    .. code-block:: python
+
+        'gradient': {
+            'type': 'uniform',
+            'molecules': {
+                'mol_id1': 1.0,
+                'mol_id2': 2.0
+            }},
 
     **Gaussian**
 
@@ -176,6 +197,11 @@ def make_gradient(gradient, n_bins, size):
                     distance = np.sqrt(dx ** 2 + dy ** 2)
                     field[x_bin][y_bin] = scale * base ** (distance/1000)
             fields[molecule_id] = field
+
+    elif gradient.get('type') == 'uniform':
+        for molecule_id, fill_value in gradient['molecules'].items():
+            fields[molecule_id] = np.full((bins_x, bins_y), fill_value, dtype=np.float64)
+
     return fields
 
 
@@ -233,8 +259,7 @@ class DiffusionField(Process):
         # self.diffusion_dt = 0.5 * dx ** 2 * dy ** 2 / (2 * self.diffusion * (dx ** 2 + dy ** 2))
 
         # volume, to convert between counts and concentration
-        total_volume = (depth * length_x * length_y) * 1e-15 # (L)
-        self.bin_volume = total_volume / (length_x * length_y)
+        self.bin_volume = get_bin_volume(self.n_bins, self.bounds, depth)
 
         # initialize gradient fields
         gradient = initial_parameters.get('gradient', self.defaults['gradient'])
@@ -260,44 +285,60 @@ class DiffusionField(Process):
         schema = {'agents': {}}
         for agent_id, states in self.initial_agents.items():
             location = states['boundary'].get('location', [])
-            exchange = states['boundary'].get('exchange', {})
             schema['agents'][agent_id] = {
                 'boundary': {
                     'location': {
                         '_value': location},
-                    'exchange': {
-                        mol_id: {
-                            '_value': value}
-                        for mol_id, value in exchange.items()}}}
+                }
+            }
         glob_schema = {
             '*': {
                 'boundary': {
                     'location': {
                         '_default': [0.5 * bound for bound in self.bounds],
                         '_updater': 'set'},
-                    'exchange': local_concentration_schema,
                     'external': local_concentration_schema}}}
         schema['agents'].update(glob_schema)
 
         # fields
         fields_schema = {
-             'fields': {
-                 field: {
-                     '_default': self.initial_state.get(field, self.ones_field()),
-                     '_updater': 'accumulate',
-                     '_emit': True}
-                 for field in self.molecule_ids}}
+            'fields': {
+                field: {
+                    '_value': self.initial_state.get(field, self.ones_field()),
+                    '_updater': 'accumulate',
+                    '_emit': True,
+                }
+                for field in self.molecule_ids
+            },
+        }
         schema.update(fields_schema)
+
+        # dimensions
+        dimensions_schema = {
+            'dimensions': {
+                'bounds': {
+                    '_value': self.parameters['bounds'],
+                    '_updater': 'set',
+                    '_emit': True,
+                },
+                'n_bins': {
+                    '_value': self.parameters['n_bins'],
+                    '_updater': 'set',
+                    '_emit': True,
+                },
+                'depth': {
+                    '_value': self.parameters['depth'],
+                    '_updater': 'set',
+                    '_emit': True,
+                }
+            },
+        }
+        schema.update(dimensions_schema)
         return schema
 
     def next_update(self, timestep, states):
-        fields = states['fields'].copy()
+        fields = states['fields']
         agents = states['agents']
-
-        # uptake/secretion from agents
-        delta_exchanges = self.apply_exchanges(agents)
-        for field_id, delta in delta_exchanges.items():
-            fields[field_id] += delta
 
         # diffuse field
         delta_fields = self.diffuse(fields, timestep)
@@ -312,14 +353,10 @@ class DiffusionField(Process):
         return update
 
     def count_to_concentration(self, count):
-        return count / (self.bin_volume * AVOGADRO)
+        return count_to_concentration(count, self.bin_volume)
 
     def get_bin_site(self, location):
-        bin = np.array([
-            location[0] * self.n_bins[0] / self.bounds[0],
-            location[1] * self.n_bins[1] / self.bounds[1]])
-        bin_site = tuple(np.floor(bin).astype(int) % self.n_bins)
-        return bin_site
+        return get_bin_site(location, self.n_bins, self.bounds)
 
     def get_single_local_environments(self, specs, fields):
         bin_site = self.get_bin_site(specs['location'])
@@ -337,32 +374,8 @@ class DiffusionField(Process):
                     self.get_single_local_environments(specs['boundary'], fields)
         return local_environments
 
-    def apply_single_exchange(self, delta_fields, specs):
-        exchange = specs.get('exchange', {})
-        bin_site = self.get_bin_site(specs['location'])
-        for mol_id, count in exchange.items():
-            if count != 0:
-                concentration = self.count_to_concentration(count)
-                delta_fields[mol_id][bin_site[0], bin_site[1]] += concentration
-
-    def empty_field(self):
-        return np.zeros((self.n_bins[0], self.n_bins[1]), dtype=np.float64)
-
     def ones_field(self):
         return np.ones((self.n_bins[0], self.n_bins[1]), dtype=np.float64)
-
-    def apply_exchanges(self, agents):
-        # initialize delta_fields with zero array
-        delta_fields = {
-            mol_id: self.empty_field()
-            for mol_id in self.molecule_ids}
-
-        if agents:
-            # apply exchanges to delta_fields
-            for agent_id, specs in agents.items():
-                self.apply_single_exchange(delta_fields, specs['boundary'])
-
-        return delta_fields
 
     # diffusion functions
     def diffusion_delta(self, field, timestep):
@@ -458,8 +471,6 @@ def get_secretion_agent_config(config={}):
                 'location': [
                         np.random.uniform(0, bounds[0]),
                         np.random.uniform(0, bounds[1])],
-                'exchange': {
-                    mol_id: 1e3 for mol_id in molecules},
                 'external': {
                     mol_id: 0 for mol_id in molecules}}}
     return {

@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
+import copy
 import math
 import os
 
@@ -14,64 +15,102 @@ from vivarium.core.composition import (
     COMPARTMENT_OUT_DIR,
     assert_timeseries_close,
 )
+from vivarium.library.dict_utils import deep_merge
 from vivarium.processes.antibiotic_transport import AntibioticTransport
-from vivarium.processes.antibiotic_transport import (
-    DEFAULT_INITIAL_STATE as ANTIBIOTIC_DEFAULT_INITIAL_STATE,
-)
 from vivarium.processes.death import DeathFreezeState
+from vivarium.processes.diffusion_cell_environment import (
+    CellEnvironmentDiffusion,
+)
 from vivarium.processes.division_volume import DivisionVolume
 from vivarium.processes.growth import Growth
 from vivarium.processes.ode_expression import ODE_expression
 
 
-NAME = 'antibiotics_composite'
 NUM_DIVISIONS = 3
-DIVISION_TIME = 2400  # seconds to divide
-
+DEFAULT_DIVISION_SECS = 2400  # seconds to divide
+INITIAL_INTERNAL_ANTIBIOTIC = 0.5
+INITIAL_EXTERNAL_ANTIBIOTIC = 1
 
 
 class Antibiotics(Generator):
 
+    defaults = {
+        'fields_path': ('fields',),
+        'dimensions_path': ('dimensions',),
+        'ode_expression': {
+            'transcription_rates': {
+                'AcrAB-TolC_RNA': 1e-3,
+            },
+            'translation_rates': {
+                'AcrAB-TolC': 1.0,
+            },
+            'degradation_rates': {
+                # Set for on the order of 100 RNAs at equilibrium
+                'AcrAB-TolC_RNA': 1.0,
+                # Set so exporter concentration reaches equilibrium
+                'AcrAB-TolC': 1e-3,
+            },
+            'protein_map': {
+                'AcrAB-TolC': 'AcrAB-TolC_RNA'
+            },
+        },
+        'antibiotic_transport': {
+            'initial_pump': 0.0,
+            'initial_internal_antibiotic': INITIAL_INTERNAL_ANTIBIOTIC,
+            'initial_external_antibiotic': INITIAL_EXTERNAL_ANTIBIOTIC,
+            'pump_kcat': 2e-6,
+        },
+        'death': {
+            'detectors': {
+                'antibiotic': {
+                    'antibiotic_threshold': 0.95,
+                },
+            },
+            'targets': [
+                'antibiotic_transport', 'growth', 'expression', 'death',
+                'division',
+            ]
+        },
+        'growth': {
+            # Growth rate calculated so that 2 = exp(DIVISION_TIME *
+            # rate) because division process divides once cell doubles
+            # in size
+            'growth_rate': math.log(2) / DEFAULT_DIVISION_SECS
+        },
+        'division': {},
+        'diffusion': {
+            'default_state': {
+                'membrane': {
+                    'porin': 1e-2,
+                },
+                'external': {
+                    'antibiotic': INITIAL_EXTERNAL_ANTIBIOTIC,
+                },
+                'internal': {
+                    'antibiotic': INITIAL_INTERNAL_ANTIBIOTIC,
+                },
+            },
+            'molecules_to_diffuse': ['antibiotic'],
+            'permeability_per_porin': {
+                'porin': 5e-3,
+            },
+        },
+    }
+    name = 'antibiotics_compartment'
+
     def __init__(self, config):
-        self.config = config
-        division_time = self.config.get('cell_cycle_division_time', 2400)
-
-        # Expression Config
-        transcription_config = self.config.setdefault('transcription_rates', {})
-        transcription_config.setdefault('AcrAB-TolC_RNA', 1e-3)
-        translation_config = self.config.setdefault('translation_rates', {})
-        translation_config.setdefault('AcrAB-TolC', 1.0)
-        degradation_config = self.config.setdefault('degradation_rates', {})
-        degradation_config.setdefault('AcrAB-TolC', 1.0)
-        degradation_config.setdefault('AcrAB-TolC_RNA', 1e-3)
-        protein_map = self.config.setdefault('protein_map', {})
-        protein_map.setdefault(
-            'AcrAB-TolC', 'AcrAB-TolC_RNA')
-
-        initial_state_config = self.config.setdefault(
-            'initial_state', ANTIBIOTIC_DEFAULT_INITIAL_STATE)
-        internal_initial_config = initial_state_config.setdefault(
-            'internal', {})
-        internal_initial_config['AcrAB-TolC'] = 0.0
-
-        # Death Config
-        checkers_config = self.config.setdefault('checkers', {})
-        antibiotic_checker_config = checkers_config.setdefault(
-            'antibiotic', {})
-        antibiotic_checker_config.setdefault('antibiotic_threshold', 0.09)
-
-        # Growth Config
-        # Growth rate calculated so that 2 = exp(DIVISION_TIME * rate)
-        # because division process divides once cell doubles in size
-        self.config.setdefault('growth_rate', math.log(2) / division_time)
+        merged_config = copy.deepcopy(Antibiotics.defaults)
+        deep_merge(merged_config, config)
+        super(Antibiotics, self).__init__(merged_config)
 
     def generate_processes(self, config):
-        # TODO -- use config to update self.config
-        antibiotic_transport = AntibioticTransport(self.config)
-        growth = Growth(self.config)
-        expression = ODE_expression(self.config)
-        death = DeathFreezeState(self.config)
-        division = DivisionVolume(self.config)
+        antibiotic_transport = AntibioticTransport(
+            config['antibiotic_transport'])
+        growth = Growth(config['growth'])
+        expression = ODE_expression(config['ode_expression'])
+        death = DeathFreezeState(config['death'])
+        division = DivisionVolume(config['division'])
+        diffusion = CellEnvironmentDiffusion(config['diffusion'])
 
         return {
             'antibiotic_transport': antibiotic_transport,
@@ -79,16 +118,19 @@ class Antibiotics(Generator):
             'expression': expression,
             'death': death,
             'division': division,
+            'diffusion': diffusion,
         }
 
     def generate_topology(self, config):
         return {
             'antibiotic_transport': {
                 'internal': ('cell',),
-                'external': ('environment',),
-                'exchange': ('exchange',),
+                'external': ('external',),
+                'pump_port': ('cell',),
+                'fields': config['fields_path'],
                 'fluxes': ('fluxes',),
                 'global': ('global',),
+                'dimensions': config['dimensions_path'],
             },
             'growth': {
                 'global': ('global',),
@@ -96,7 +138,7 @@ class Antibiotics(Generator):
             'expression': {
                 'counts': ('cell_counts',),
                 'internal': ('cell',),
-                'external': ('environment',),
+                'external': ('external',),
                 'global': ('global',),
             },
             'division': {
@@ -104,36 +146,27 @@ class Antibiotics(Generator):
             },
             'death': {
                 'global': ('global',),
+                'internal': ('cell',),
+            },
+            'diffusion': {
+                'membrane': ('cell',),
+                'internal': ('cell',),
+                'external': ('external',),
+                'fields': config['fields_path'],
+                'global': ('global',),
+                'dimensions': config['dimensions_path'],
             },
         }
 
 
-
 def run_antibiotics_composite():
+    DIVISION_TIME = DEFAULT_DIVISION_SECS
     sim_settings = {
-        'environment_port': ('environment',),
-        'exchange_port': ('exchange',),
-        'environment_volume': 1e-5,  # L
         'emit_step': 1,
         'total_time': DIVISION_TIME * NUM_DIVISIONS,
+        'environment': {}
     }
-    config = {
-        'transcription_rates': {
-            'AcrAB-TolC_RNA': 1e-3,
-        },
-        'degradation_rates': {
-            # Set for on the order of 100 RNAs at equilibrium
-            'AcrAB-TolC_RNA': 1.0,
-            # Set so exporter concentration reaches equilibrium
-            'AcrAB-TolC': 1e-3,
-        },
-        'checkers': {
-            'antibiotic': {
-                # Set so cell dies after first division
-                'antibiotic_threshold': 10.0,
-            },
-        },
-    }
+    config = {}
     compartment = Antibiotics(config)
     return simulate_compartment_in_experiment(compartment, sim_settings)
 
@@ -141,7 +174,7 @@ def test_antibiotics_composite_similar_to_reference():
     timeseries = run_antibiotics_composite()
     flattened = flatten_timeseries(timeseries)
     reference = load_timeseries(
-        os.path.join(REFERENCE_DATA_DIR, NAME + '.csv'))
+        os.path.join(REFERENCE_DATA_DIR, Antibiotics.name + '.csv'))
     assert_timeseries_close(
         flattened, reference,
         tolerances={
@@ -154,7 +187,7 @@ def test_antibiotics_composite_similar_to_reference():
 
 
 def main():
-    out_dir = os.path.join(COMPARTMENT_OUT_DIR, NAME)
+    out_dir = os.path.join(COMPARTMENT_OUT_DIR, Antibiotics.name)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 

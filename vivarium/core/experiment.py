@@ -160,7 +160,7 @@ class Store(object):
         self.subtopology = {}
         self.properties = {}
         self.default = None
-        self.updater = None
+        self.updater_definition = None
         self.value = None
         self.units = None
         self.divider = None
@@ -173,14 +173,27 @@ class Store(object):
         self.apply_config(config, source)
 
     def check_default(self, new_default):
-        if self.default is not None and new_default != self.default:
-            if new_default == 0 and self.default != 0:
-                log.info('_default schema conflict: {} and {}. selecting {}'.format(
+        defaults_equal = False
+        if self.default is not None:
+            self_default_comp = self.default
+            new_default_comp = new_default
+            if isinstance(self_default_comp, np.ndarray):
+                self_default_comp = self.default.tolist()
+            if isinstance(new_default_comp, np.ndarray):
+                new_default_comp = self.default.tolist()
+            defaults_equal = self_default_comp == new_default_comp
+        if defaults_equal:
+            if (
+                not isinstance(new_default, np.ndarray)
+                and not isinstance(self.default, np.ndarray)
+                and new_default == 0
+                and self.default != 0
+            ):
+                log.debug('_default schema conflict: {} and {}. selecting {}'.format(
                     self.default, new_default, self.default))
                 return self.default
-            else:
-                log.info('_default schema conflict: {} and {}. selecting {}'.format(
-                    self.default, new_default, new_default))
+            log.debug('_default schema conflict: {} and {}. selecting {}'.format(
+                self.default, new_default, new_default))
         return new_default
 
     def check_value(self, new_value):
@@ -273,9 +286,10 @@ class Store(object):
                 if isinstance(self.value, Quantity):
                     self.units = self.value.units
 
-            self.updater = config.get('_updater', self.updater or 'accumulate')
-            if isinstance(self.updater, str):
-                self.updater = updater_registry.access(self.updater)
+            self.updater_definition = config.get(
+                '_updater',
+                self.updater_definition or 'accumulate',
+            )
 
             self.properties = deep_merge(
                 self.properties,
@@ -290,7 +304,7 @@ class Store(object):
             if self.leaf and config:
                 raise Exception('trying to assign create inner for leaf node: {}'.format(self.path_for()))
 
-            self.value = None
+            # self.value = None
 
             for key, child in config.items():
                 if key not in self.inner:
@@ -299,12 +313,19 @@ class Store(object):
                     self.inner[key].apply_config(child, source=source)
 
     def get_updater(self, update):
-        updater = self.updater
-        if '_updater' in update:
-            updater = update['_updater']
-            if isinstance(updater, str):
-                updater = updater_registry.access(updater)
-        return updater
+        updater_definition = self.updater_definition
+        if isinstance(update, dict) and '_updater' in update:
+            updater_definition = update['_updater']
+        port_mapping = None
+        if isinstance(updater_definition, dict):
+            updater = updater_definition['updater']
+            port_mapping = updater_definition['port_mapping']
+        else:
+            updater = updater_definition
+
+        if isinstance(updater, str):
+            updater = updater_registry.access(updater)
+        return updater, port_mapping
 
     def get_config(self, sources=False):
         '''
@@ -337,8 +358,8 @@ class Store(object):
             config.update({
                 '_default': self.default,
                 '_value': self.value})
-            if self.updater:
-                config['_updater'] = self.updater
+            if self.updater_definition:
+                config['_updater'] = self.updater_definition
             if self.units:
                 config['_units'] = self.units
             if self.emit:
@@ -561,7 +582,7 @@ class Store(object):
             if self.value is None:
                 self.value = self.default
 
-    def apply_update(self, update):
+    def apply_update(self, update, process_topology=None, state=None):
         '''
         Given an arbitrary update, map all the values in that update
         to their positions in the tree where they apply, and update
@@ -572,6 +593,9 @@ class Store(object):
         * `_updater` - Override the default updater with any updater you want.
         * `_delete` - The value here is a list of paths to delete from
             the tree.
+        * `_add` - Adds a state into the subtree:
+            * path - Path to the added state key.
+            * state - The value of the added state.
         * `_generate` - The value has four keys, which are essentially
             the arguments to the `generate()` function:
             * path - Path into the tree to generate this subtree.
@@ -613,9 +637,9 @@ class Store(object):
                     path = added['path']
                     state = added['state']
                     target = self.establish_path(path, {})
+                    self.apply_subschemas()
+                    self.apply_defaults()
                     target.set_value(state)
-                self.apply_subschemas()
-                self.apply_defaults()
 
                 update = dissoc(update, ['_add'])
 
@@ -674,33 +698,44 @@ class Store(object):
             for key, value in update.items():
                 if key in self.inner:
                     child = self.inner[key]
-                    inner_updates = child.apply_update(value)
+                    inner_updates = child.apply_update(
+                        value, process_topology, state)
                     if inner_updates:
                         topology_updates = deep_merge(
                             topology_updates,
                             {key: inner_updates})
-                elif self.subschema:
-                    self.inner[key] = Store(self.subschema, self)
-                    self.inner[key].set_value(value)
-                    self.inner[key].apply_defaults()
+                # elif self.subschema:
+                #     self.inner[key] = Store(self.subschema, self)
+                #     self.inner[key].set_value(value)
+                #     self.inner[key].apply_defaults()
 
             return topology_updates
 
         else:
+            updater, port_mapping = self.get_updater(update)
+            state_dict = None
             if isinstance(update, dict) and '_reduce' in update:
+                assert port_mapping is None
                 reduction = update['_reduce']
                 top = self.get_path(reduction.get('from'))
                 update = top.reduce(
                     reduction['reducer'],
                     initial=reduction['initial'])
 
-            updater = self.updater
             if isinstance(update, dict) and self.schema_keys & set(update.keys()):
                 if '_updater' in update:
-                    updater = self.get_updater(update)
                     update = update.get('_value', self.default)
 
-            self.value = updater(self.value, update)
+            value = self.value
+            if port_mapping is not None:
+                updater_topology = {
+                    updater_port: process_topology[proc_port]
+                    for updater_port, proc_port in port_mapping.items()
+                }
+                state_dict = state.outer.topology_state(
+                    updater_topology)
+
+            self.value = updater(self.value, update, state_dict)
 
     def inner_value(self, key):
         '''
@@ -920,7 +955,7 @@ class Store(object):
                     'topology at path {} and source {} has keys that are not in the schema: {}'.format(
                         self.path_for(), source, mismatch_topology))
             if mismatch_schema:
-                log.info('{} schema has keys not in topology: {}'.format(
+                log.debug('{} schema has keys not in topology: {}'.format(
                     source, mismatch_schema))
             for port, subschema in schema.items():
                 path = topology.get(port, (port,))
@@ -966,7 +1001,7 @@ class Store(object):
                     '_serializer': 'process'}, outer=self)
                 self.inner[key] = process_state
 
-                subprocess.schema = subprocess.ports_schema()
+                subprocess.schema = subprocess.get_schema()
                 self.topology_ports(
                     subprocess.schema,
                     subtopology,
@@ -1177,6 +1212,8 @@ class Experiment(object):
             self.initial_state)
 
         emitter_config = config.get('emitter', {})
+        if isinstance(emitter_config, str):
+            emitter_config = {'type': emitter_config}
         emitter_config['experiment_id'] = self.experiment_id
         self.emitter = get_emitter(emitter_config)
 
@@ -1232,7 +1269,7 @@ class Experiment(object):
             interval,
             ports)
 
-        return update
+        return update, process_topology, state
 
         # # perform the process update with the current states
         # update = process.next_update(interval, ports)
@@ -1243,8 +1280,9 @@ class Experiment(object):
 
         # return absolute
 
-    def apply_update(self, update):
-        topology_updates = self.state.apply_update(update)
+    def apply_update(self, update, process_topology, state):
+        topology_updates = self.state.apply_update(
+            update, process_topology, state)
         if topology_updates:
             self.topology = deep_merge(self.topology, topology_updates)
 
@@ -1253,8 +1291,9 @@ class Experiment(object):
         for path, deriver in derivers.items():
             # timestep shouldn't influence derivers
             if not deriver.deleted:
-                update = self.process_update(path, deriver, 0)
-                self.apply_update(update.get())
+                update, process_topology, state = self.process_update(
+                    path, deriver, 0)
+                self.apply_update(update.get(), process_topology, state)
 
     def emit_data(self):
         data = self.state.emit_data()
@@ -1262,12 +1301,14 @@ class Experiment(object):
             'time': self.local_time})
         emit_config = {
             'table': 'history',
-            'data': data}
+            'data': serialize_dictionary(data),
+        }
         self.emitter.emit(emit_config)
 
-    def send_updates(self, updates, derivers=None):
-        for update in updates:
-            self.apply_update(update.get())
+    def send_updates(self, update_tuples, derivers=None):
+        for update_tuple in update_tuples:
+            update, process_topology, state = update_tuple
+            self.apply_update(update.get(), process_topology, state)
         if derivers is None:
             derivers = {
                 path: state
@@ -1358,6 +1399,7 @@ class Experiment(object):
 
                 time = future
                 self.local_time += full_step
+                log.info('time: {}'.format(self.local_time))
 
                 if self.emit_step is None:
                     self.emit_data()
@@ -1469,22 +1511,19 @@ electron_orbitals = [
 
 
 class Proton(Process):
+    name = 'proton'
     defaults = {
         'time_step': 1.0,
         'radius': 0.0}
 
     def __init__(self, parameters=None):
-        if not parameters:
-            parameters = {}
-            self.radius = self.or_default(parameters, 'radius')
-            self.parameters = parameters
-            self.time_step = self.or_default(parameters, 'time_step')
+        super(Proton, self).__init__(parameters)
 
     def ports_schema(self):
         return {
             'radius': {
                 '_updater': 'set',
-                '_default': self.radius},
+                '_default': self.parameters['radius']},
             'quarks': {
                 '_divider': 'split_dict',
                 '*': {
@@ -1525,20 +1564,19 @@ class Proton(Process):
         return update
 
 class Electron(Process):
+    name = 'electron'
     defaults = {
         'time_step': 1.0,
         'spin': electron_spins[0]}
 
     def __init__(self, parameters=None):
-        self.parameters = parameters or {}
-        self.spin = self.or_default(self.parameters, 'spin')
-        self.time_step = self.or_default(self.parameters, 'time_step')
+        super(Electron, self).__init__(parameters)
 
     def ports_schema(self):
         return {
             'spin': {
                 '_updater': 'set',
-                '_default': self.spin},
+                '_default': self.parameters['spin']},
             'proton': {
                 'radius': {
                     '_default': 0.0}}}
@@ -1623,10 +1661,10 @@ def test_topology_ports():
 
 def test_timescales():
     class Slow(Process):
-        def __init__(self):
-            self.parameters ={'timestep': 3.0}
-            self.ports = {
-                'state': ['base']}
+        name = 'slow'
+        defaults = {'timestep': 3.0}
+        def __init__(self, config=None):
+            super(Slow, self).__init__(config)
 
         def ports_schema(self):
             return {
@@ -1645,10 +1683,10 @@ def test_timescales():
                 'state': {'base': next_base}}
 
     class Fast(Process):
-        def __init__(self):
-            self.parameters ={'timestep': 3.0}
-            self.ports = {
-                'state': ['base', 'motion']}
+        name = 'fast'
+        defaults = {'timestep': 0.3}
+        def __init__(self, config=None):
+            super(Fast, self).__init__(config)
 
         def ports_schema(self):
             return {

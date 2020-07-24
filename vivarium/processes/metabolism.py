@@ -78,8 +78,9 @@ class Metabolism(Process):
     * **reactions**: Holds the IDs of the modeled metabolic reactions.
       The linked :term:`store` does not need to be shared with any other
       processes.
-    * **exchange**: The :term:`boundary store` between the compartment
-      this process is running in and its parent.
+    * **fields**: The environmental fields that will be updated with
+      cell intake and uptake.
+    * **dimensions**: Holds the dimensions of the environment.
     * **flux_bounds**: The bounds on the FBA, which are imposed by the
       availability of metabolites. For example, for the metabolism of a
       cell, the bounds represent the limits of transmembrane transport.
@@ -118,7 +119,9 @@ class Metabolism(Process):
         'time_step': 1,
     }
 
-    def __init__(self, initial_parameters={}):
+    def __init__(self, initial_parameters=None):
+        if initial_parameters == None:
+            initial_parameters = {}
         self.nAvogadro = AVOGADRO
 
         time_step = self.or_default(
@@ -194,10 +197,11 @@ class Metabolism(Process):
         ports = [
             'internal',
             'external',
-            'exchange',
+            'fields',
             'reactions',
             'flux_bounds',
             'global',
+            'dimensions',
         ]
 
         schema = {port: {} for port in ports}
@@ -205,7 +209,8 @@ class Metabolism(Process):
         # internal
         for state in list(self.objective_composition.keys()):
             schema['internal'][state] = {
-                '_default': self.initial_state['internal'].get(state, 0),
+                '_value': self.initial_state['internal'].get(state, 0),
+                '_default': 0.0,
                 '_emit': True,
                 '_properties': {
                     'mw': self.fba.molecular_weights[state] * units.g / units.mol},
@@ -218,10 +223,10 @@ class Metabolism(Process):
                 '_emit': True,
             }
 
-        # exchange
+        # fields
         for state in self.fba.external_molecules:
-            schema['exchange'][state] = {
-                '_default': 0.0,
+            schema['fields'][state] = {
+                '_default': np.zeros((1, 1)),
             }
 
         # reactions
@@ -241,30 +246,55 @@ class Metabolism(Process):
 
         # globals
         schema['global']['mass'] = {
-            '_default': 0.0 * units.fg,
+            '_default': self.initial_mass,
             '_emit': True}
-        schema['global']['mmol_to_counts'] = {
-            '_default': 0.0 * units.L / units.mmol,
-            '_emit': True}
+        schema['global'] = {
+            'mmol_to_counts': {
+                '_default': 0.0 * units.L / units.mmol,
+                '_emit': True,
+            },
+            'location': {
+                '_default': [0.5, 0.5],
+            }
+        }
+
+        # dimensions
+        schema['dimensions'] = {
+            'bounds': {
+                '_default': [1, 1],
+            },
+            'n_bins': {
+                '_default': [1, 1],
+            },
+            'depth': {
+                '_default': 1,
+            },
+        }
 
         return schema
 
     def derivers(self):
         return {
-            self.global_deriver_key: {
-                'deriver': 'globals_deriver',
-                'port_mapping': {
-                    'global': 'global'},
-                'config': {
-                    'initial_mass': self.initial_mass
-                }},
             self.mass_deriver_key: {
                 'deriver': 'mass_deriver',
                 'port_mapping': {
-                    'global': 'global'},
+                    'global': 'global',
+                },
                 'config': {
                     'from_path': ('..', '..'),
-                }}}
+                    'initial_mass': self.initial_mass,
+                },
+            },
+            self.global_deriver_key: {
+                'deriver': 'globals_deriver',
+                'port_mapping': {
+                    'global': 'global',
+                },
+                'config': {
+                    'initial_mass': self.initial_mass,
+                },
+            }
+        }
 
     def next_update(self, timestep, states):
         ## get the state
@@ -316,17 +346,26 @@ class Metabolism(Process):
                     internal_state_update[mol_id] = added_count
 
         # convert exchange fluxes to counts
-        # TODO -- use derive_counts for exchange
-        exchange_deltas = {
-            reaction: int((flux * mmol_to_counts).magnitude)
-            for reaction, flux in exchange_fluxes.items()}
+        field_updates = {
+            reaction: {
+                '_value': int((flux * mmol_to_counts).magnitude),
+                '_updater': {
+                    'updater': 'update_field_with_exchange',
+                    'port_mapping': {
+                        'global': 'global',
+                        'dimensions': 'dimensions',
+                    },
+                },
+            }
+            for reaction, flux in exchange_fluxes.items()
+        }
 
         all_fluxes = {}
         all_fluxes.update(internal_fluxes)
         all_fluxes.update(exchange_reactions)
 
         return {
-            'exchange': exchange_deltas,
+            'fields': field_updates,
             'internal': internal_state_update,
             'reactions': all_fluxes,
         }
@@ -507,9 +546,7 @@ def test_toy_metabolism():
     settings = {
         'environment': {
             'volume': 1e-8 * units.L,
-            'ports': {
-                'external': ('external',),
-                'exchange': ('exchange',)}},
+        },
         'timestep': 1.0,
         'timeline': {
             'timeline': timeline}}
@@ -522,10 +559,7 @@ def test_BiGG_metabolism(config=get_iAF1260b_config(), settings={}):
 reference_sim_settings = {
     'environment': {
         'volume': 1e-5 * units.L,
-        'ports': {
-            'exchange': ('exchange',),
-            'external': ('external',),
-        }},
+    },
     'timestep': 1,
     'total_time': 10}
 
@@ -557,10 +591,7 @@ if __name__ == '__main__':
         sim_settings = {
             'environment': {
                 'volume': 1e-5 * units.L,
-                'ports': {
-                    'exchange': ('exchange',),
-                    'external': ('external',),
-                }},
+            },
             # 'timestep': 1,
             'total_time': 20,  # 2520 sec (42 min) is the expected doubling time in minimal media
         }
