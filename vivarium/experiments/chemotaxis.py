@@ -142,9 +142,21 @@ DEFAULT_AGENT_CONFIG = {
     'daughter_path': tuple(),
 }
 
+# configs with faster timescales, to support close agent/environment coupling
 FAST_TIMESCALE = 0.01
+# fast timescale minimal agents
 FAST_TIMESCALE_AGENT_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
-FAST_TIMESCALE_AGENT_CONFIG['time_step'] = FAST_TIMESCALE
+FAST_TIMESCALE_AGENT_CONFIG.update({
+    'receptor': {
+        'time_step': FAST_TIMESCALE},
+    'motor': {
+        'time_step': FAST_TIMESCALE},
+    })
+# fast timescale environment
+FAST_TIMESCALE_ENVIRONMENT_CONFIG = copy.deepcopy(DEFAULT_ENVIRONMENT_CONFIG)
+FAST_TIMESCALE_ENVIRONMENT_CONFIG['config']['multibody']['time_step'] = FAST_TIMESCALE
+FAST_TIMESCALE_ENVIRONMENT_CONFIG['config']['field']['time_step'] = FAST_TIMESCALE
+
 
 def set_agent_config(config={}):
     return deep_merge(dict(DEFAULT_AGENT_CONFIG), config)
@@ -259,19 +271,19 @@ preset_experiments = {
                 'type': ChemotaxisMinimal,
                 'name': 'motor_receptor',
                 'number': 1,
-                'config': DEFAULT_AGENT_CONFIG
+                'config': FAST_TIMESCALE_AGENT_CONFIG,
             },
             {
                 'type': MotorActivityAgent,
                 'name': 'motor',
                 'number': 1,
-                'config': DEFAULT_AGENT_CONFIG
+                'config': FAST_TIMESCALE_AGENT_CONFIG,
             }
         ],
-        'environment_config': DEFAULT_ENVIRONMENT_CONFIG,
+        'environment_config': FAST_TIMESCALE_ENVIRONMENT_CONFIG,
         'simulation_settings': {
-            'total_time': 720,
-            'emit_step': 0.1,
+            'total_time': 60,
+            'emit_step': FAST_TIMESCALE * 2,
         },
     },
 }

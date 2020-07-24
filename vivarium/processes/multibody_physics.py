@@ -222,6 +222,9 @@ class Multibody(Process):
         # update multibody with new agents
         self.physics.update_bodies(remove_units(agents))
 
+
+        print('timestep: {}'.format(timestep))
+
         # run simulation
         self.physics.run(timestep)
 

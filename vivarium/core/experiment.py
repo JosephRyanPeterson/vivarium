@@ -1365,6 +1365,8 @@ class Experiment(object):
                     future = min(process_time + process.local_timestep(), interval)
                     timestep = future - process_time
 
+                    print('experiment timestep {}'.format(timestep))
+
                     # calculate the update for this process
                     update = self.process_update(path, state, timestep)
 
