@@ -138,7 +138,7 @@ def agent_environment_experiment(
     processes['agents'] = agents['processes']
     topology['agents'] = agents['topology']
 
-    if settings['agent_names'] is True:
+    if settings.get('agent_names') is True:
         # add an AgentNames processes, which saves the current agent names
         # to as store at the top level of the hierarchy
         processes['agent_names'] = AgentNames({})
