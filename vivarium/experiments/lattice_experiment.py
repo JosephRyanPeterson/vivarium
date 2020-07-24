@@ -138,12 +138,14 @@ def get_experiment_settings(
         total_time=4000,
         emit_step=10,
         emitter='timeseries',
+        agent_names=False,
         return_raw_data=True,
 ):
     return {
         'total_time': total_time,
         'emit_step': emit_step,
         'emitter': emitter,
+        'agent_names': agent_names,
         'return_raw_data': return_raw_data
     }
 
@@ -283,12 +285,16 @@ def run_workflow(
         agent_type='growth_division_minimal',
         n_agents=1,
         environment_type='glc_lcts',
-        initial_state={},
-        initial_agent_state={},
+        initial_state=None,
+        initial_agent_state=None,
         out_dir='out',
         experiment_settings=get_experiment_settings(),
         plot_settings=get_plot_settings()
 ):
+    if initial_state is None:
+        initial_state = {}
+    if initial_agent_state is None:
+        initial_agent_state = {}
     # agent configuration
     agent_config = agents_library[agent_type]
     agent_config['number'] = n_agents
@@ -409,6 +415,7 @@ def main():
             initial_agent_state=get_flagella_metabolism_initial_state(),
             experiment_settings=get_experiment_settings(
                 emit_step=120,
+                agent_names=True,
                 emitter='database',
                 total_time=11000,
             ),
