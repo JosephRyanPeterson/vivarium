@@ -82,7 +82,7 @@ agents_library = {
 def get_lattice_config(
     bounds=[20, 20],
     n_bins=[10, 10],
-    jitter_force=1e-3,
+    jitter_force=1e-4,
     depth=3000.0,
     diffusion=1e-2,
     molecules=['glc__D_e', 'lcts_e'],
@@ -164,24 +164,18 @@ def get_plot_settings(
                 'skip_paths': skip_paths,
                 'remove_zeros': True,
             },
-            'snapshots': {
-                'fields': fields,
-                'n_snapshots': n_snapshots,
-            },
-            'tags': {
-                'tagged_molecules': tags,
-                'n_snapshots': n_snapshots,
-                'background_color': background_color,
-            },
         }
     }
     if fields:
         settings['plot_types']['snapshots'] = {
-            'fields': fields
+            'fields': fields,
+            'n_snapshots': n_snapshots,
         }
     if tags:
         settings['plot_types']['tags'] = {
-            'tag_ids': tags
+            'tagged_molecules': tags,
+            'n_snapshots': n_snapshots,
+            'background_color': background_color,
         }
     return settings
 
