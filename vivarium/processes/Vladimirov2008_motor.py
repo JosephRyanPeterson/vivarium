@@ -194,12 +194,12 @@ def test_variable_receptor():
     motor = MotorActivity()
     state = motor.default_state()
     timestep = 1
-    receptor_activities = linspace(0.0, 1.0, 501).tolist()
+    chemoreceptor_activity = linspace(0.0, 1.0, 501).tolist()
     CheY_P_vec = []
     ccw_motor_bias_vec = []
     ccw_to_cw_vec = []
     motor_state_vec = []
-    for activity in receptor_activities:
+    for activity in chemoreceptor_activity:
         state['internal']['chemoreceptor_activity'] = activity
         update = motor.next_update(timestep, state)
         CheY_P = update['internal']['CheY_P']
@@ -216,11 +216,11 @@ def test_variable_receptor():
     assert all(i < j for i, j in zip(ccw_to_cw_vec, ccw_to_cw_vec[1:]))
 
     return {
-        'receptor_activities': receptor_activities,
-        'CheY_P_vec': CheY_P_vec,
-        'ccw_motor_bias_vec': ccw_motor_bias_vec,
-        'ccw_to_cw_vec': ccw_to_cw_vec,
-        'motor_state_vec': motor_state_vec}
+        'chemoreceptor_activity': chemoreceptor_activity,
+        'CheY_P': CheY_P_vec,
+        'ccw_motor_bias': ccw_motor_bias_vec,
+        'ccw_to_cw': ccw_to_cw_vec,
+        'motor_state': motor_state_vec}
 
 
 if __name__ == '__main__':

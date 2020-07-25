@@ -55,6 +55,7 @@ from vivarium.plots.multibody_physics import (
     plot_agent_trajectory,
     plot_motility,
 )
+from vivarium.plots.Vladimirov2008_motor import plot_variable_receptor
 
 # make an agent from a lone MotorActivity process
 # MotorActivityAgent = MotorActivity
@@ -146,21 +147,23 @@ DEFAULT_AGENT_CONFIG = {
 
 # configs with faster timescales, to support close agent/environment coupling
 FAST_TIMESCALE = 0.001
-cw_to_ccw = 4.0
+# cw_to_ccw = 4.0
 tumble_jitter = 4000
+adapt_rate = 2  # 2 receptor adaptation rate
 # fast timescale minimal agents
 FAST_MOTOR_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
 FAST_MOTOR_CONFIG.update({
-        'cw_to_ccw': cw_to_ccw,
+        # 'cw_to_ccw': cw_to_ccw,
         'tumble_jitter': tumble_jitter,
         'time_step': FAST_TIMESCALE,
     })
 FAST_MINIMAL_CHEMOTAXIS_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
 FAST_MINIMAL_CHEMOTAXIS_CONFIG.update({
     'receptor': {
+        # 'adapt_rate': adapt_rate,
         'time_step': FAST_TIMESCALE},
     'motor': {
-        'cw_to_ccw': cw_to_ccw,
+        # 'cw_to_ccw': cw_to_ccw,
         'tumble_jitter': tumble_jitter,
         'time_step': FAST_TIMESCALE},
     })
@@ -304,7 +307,7 @@ preset_experiments = {
         ],
         'environment_config': FAST_TIMESCALE_ENVIRONMENT_CONFIG,
         'simulation_settings': {
-            'total_time': 120,
+            'total_time': 60,
             'emit_step': FAST_TIMESCALE,
         },
     },
@@ -403,22 +406,27 @@ def plot_chemotaxis_experiment(
     plot_agents_multigen(data, plot_settings, out_dir, 'agents')
 
     # trajectory and motility
-    agents_timeseries = time_indexed_timeseries_from_data(data)
+    indexed_timeseries = time_indexed_timeseries_from_data(data)
     field = make_field(field_config)
     trajectory_config = {
         'bounds': field_config['bounds'],
         'field': field,
         'rotate_90': True}
 
-    plot_temporal_trajectory(copy.deepcopy(agents_timeseries), trajectory_config, out_dir, filename + 'temporal')
-    plot_agent_trajectory(copy.deepcopy(agents_timeseries), trajectory_config, out_dir, filename + 'trajectory')
+    plot_temporal_trajectory(copy.deepcopy(indexed_timeseries), trajectory_config, out_dir, filename + 'temporal')
+    plot_agent_trajectory(copy.deepcopy(indexed_timeseries), trajectory_config, out_dir, filename + 'trajectory')
 
-    agent_embdedded_timeseries = timeseries_from_data(data)
-    plot_motility(agent_embdedded_timeseries, out_dir, filename + 'motility_analysis')
-    # try:
-    #     plot_motility(agent_embdedded_timeseries, out_dir, filename + 'motility_analysis')
-    # except:
-    #     print('plot_motility failed')
+    embdedded_timeseries = timeseries_from_data(data)
+    plot_motility(embdedded_timeseries, out_dir, filename + 'motility_analysis')
+
+    # plot for each agent individually
+    agents_timeseries = embdedded_timeseries['agents']
+    for agent_id, s_timeseries in agents_timeseries.items():
+        cell_timeseries = s_timeseries['cell']
+        try:
+            plot_variable_receptor(cell_timeseries, out_dir, filename + '_motor_response_' + str(agent_id))
+        except:
+            print('plot_variable_receptor failed')
 
 
 # parsing expression grammar for agents
