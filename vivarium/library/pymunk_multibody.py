@@ -180,7 +180,10 @@ class PymunkMultibody(object):
         scaled_jitter_force = [
             force * self.force_scaling
             for force in jitter_force]
-        body.apply_force_at_local_point(
+        # body.apply_force_at_local_point(
+        #     scaled_jitter_force,
+        #     jitter_location)
+        body.apply_impulse_at_local_point(
             scaled_jitter_force,
             jitter_location)
 

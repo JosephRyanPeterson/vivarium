@@ -378,10 +378,11 @@ def plot_chemotaxis_experiment(
     plot_agent_trajectory(copy.deepcopy(agents_timeseries), trajectory_config, out_dir, filename + 'trajectory')
 
     agent_embdedded_timeseries = timeseries_from_data(data)
-    try:
-        plot_motility(agent_embdedded_timeseries, out_dir, filename + 'motility_analysis')
-    except:
-        print('plot_motility failed')
+    plot_motility(agent_embdedded_timeseries, out_dir, filename + 'motility_analysis')
+    # try:
+    #     plot_motility(agent_embdedded_timeseries, out_dir, filename + 'motility_analysis')
+    # except:
+    #     print('plot_motility failed')
 
 
 # parsing expression grammar for agents
