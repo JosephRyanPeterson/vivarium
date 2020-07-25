@@ -146,17 +146,23 @@ DEFAULT_AGENT_CONFIG = {
 
 # configs with faster timescales, to support close agent/environment coupling
 FAST_TIMESCALE = 0.001
+cw_to_ccw = 4.0
+tumble_jitter = 4000
 # fast timescale minimal agents
+FAST_MOTOR_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
+FAST_MOTOR_CONFIG.update({
+        'cw_to_ccw': cw_to_ccw,
+        'tumble_jitter': tumble_jitter,
+        'time_step': FAST_TIMESCALE,
+    })
 FAST_MINIMAL_CHEMOTAXIS_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
 FAST_MINIMAL_CHEMOTAXIS_CONFIG.update({
     'receptor': {
         'time_step': FAST_TIMESCALE},
     'motor': {
+        'cw_to_ccw': cw_to_ccw,
+        'tumble_jitter': tumble_jitter,
         'time_step': FAST_TIMESCALE},
-    })
-FAST_MOTOR_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
-FAST_MOTOR_CONFIG.update({
-        'time_step': FAST_TIMESCALE,
     })
 
 # fast timescale environment
@@ -270,6 +276,21 @@ preset_experiments = {
         'simulation_settings': {
             'total_time': 720,
             'emit_step': 0.1,
+        },
+    },
+    'motor': {
+        'agents_config': [
+            {
+                'type': MotorActivityAgent,
+                'name': 'motor',
+                'number': 1,
+                'config': FAST_MOTOR_CONFIG,
+            }
+        ],
+        'environment_config': FAST_TIMESCALE_ENVIRONMENT_CONFIG,
+        'simulation_settings': {
+            'total_time': 120,
+            'emit_step': FAST_TIMESCALE,
         },
     },
     'mixed': {

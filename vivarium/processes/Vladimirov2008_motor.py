@@ -49,16 +49,20 @@ class MotorActivity(Process):
     name = NAME
     defaults = {
         'time_step': 0.1,
+        # Vladimirov parameters
         # 'k_A': 5.0,  #
         'k_y': 100.0,  # 1/uM/s
         'k_z': 30.0,  # / CheZ,
         'gamma_Y': 0.1,
         'k_s': 0.45,  # scaling coefficient
-        'adapt_precision': 3,  # scales CheY_P to cluster activity
+        'adapt_precision': 3,  # scales CheY_P to cluster activity, increases probability of switch to tumble (cw)
         # motor
         'mb_0': 0.65,  # steady state motor bias (Cluzel et al 2000)
         'n_motors': 5,
         'cw_to_ccw': 0.83,  # 1/s (Block1983) motor bias, assumed to be constant
+        # parameters for multibody physics
+        'tumble_jitter': 120.0,
+        # initial state
         'initial_state': {
             'internal': {
                 # response regulator proteins
@@ -137,7 +141,7 @@ class MotorActivity(Process):
             prob_switch = ccw_to_cw * timestep
             if np.random.random(1)[0] <= prob_switch:
                 motor_state = 1
-                thrust, torque = tumble()
+                thrust, torque = tumble(self.parameters['tumble_jitter'])
             else:
                 motor_state = 0
                 thrust, torque = run()
@@ -163,12 +167,11 @@ class MotorActivity(Process):
                 'torque': torque
             }}
 
-def tumble():
+def tumble(tumble_jitter=120.0):
     thrust = 100  # pN
     # average = 160
     # sigma = 10
     # torque = random.choice([-1, 1]) * random.normalvariate(average, sigma)
-    tumble_jitter = 120.0
     torque = random.normalvariate(0, tumble_jitter)
     return [thrust, torque]
 
