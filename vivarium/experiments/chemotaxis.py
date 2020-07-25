@@ -293,6 +293,21 @@ preset_experiments = {
             'emit_step': FAST_TIMESCALE,
         },
     },
+    'fast_minimal': {
+        'agents_config': [
+            {
+                'number': 1,
+                'name': 'minimal',
+                'type': ChemotaxisMinimal,
+                'config': FAST_MINIMAL_CHEMOTAXIS_CONFIG,
+            }
+        ],
+        'environment_config': FAST_TIMESCALE_ENVIRONMENT_CONFIG,
+        'simulation_settings': {
+            'total_time': 120,
+            'emit_step': FAST_TIMESCALE,
+        },
+    },
     'mixed': {
         'agents_config': [
             {
