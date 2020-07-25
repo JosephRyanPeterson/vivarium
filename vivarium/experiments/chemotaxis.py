@@ -421,9 +421,9 @@ def plot_chemotaxis_experiment(
     for agent_id, s_timeseries in agents_timeseries.items():
         cell_timeseries = s_timeseries['cell']
         try:
-            plot_variable_receptor(cell_timeseries, out_dir, filename + '_motor_response_' + str(agent_id))
+            plot_variable_receptor(cell_timeseries, out_dir, filename + 'motor_response_' + str(agent_id))
         except:
-            print('plot_variable_receptor failed')
+            print('plot_variable_receptor failed for {}'.format(agent_id))
 
 
 # parsing expression grammar for agents
