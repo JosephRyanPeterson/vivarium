@@ -147,13 +147,11 @@ DEFAULT_AGENT_CONFIG = {
 
 # configs with faster timescales, to support close agent/environment coupling
 FAST_TIMESCALE = 0.001
-# cw_to_ccw = 4.0
 tumble_jitter = 4000
 adapt_rate = 2  # 2 receptor adaptation rate
 # fast timescale minimal agents
 FAST_MOTOR_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
 FAST_MOTOR_CONFIG.update({
-        # 'cw_to_ccw': cw_to_ccw,
         'tumble_jitter': tumble_jitter,
         'time_step': FAST_TIMESCALE,
     })
@@ -163,7 +161,6 @@ FAST_MINIMAL_CHEMOTAXIS_CONFIG.update({
         # 'adapt_rate': adapt_rate,
         'time_step': FAST_TIMESCALE},
     'motor': {
-        # 'cw_to_ccw': cw_to_ccw,
         'tumble_jitter': tumble_jitter,
         'time_step': FAST_TIMESCALE},
     })

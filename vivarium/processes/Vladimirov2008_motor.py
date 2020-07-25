@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import random
 import copy
+import math
 
 import numpy as np
 from numpy import linspace
@@ -138,7 +139,9 @@ class MotorActivity(Process):
 
         if motor_state_current == 0:  # 0 for run
             # switch to tumble (cw)?
-            prob_switch = ccw_to_cw * timestep
+            rate = -math.log(1 - ccw_to_cw)  # rate for probability function of time
+            prob_switch = 1 - math.exp(-rate * timestep)
+            # prob_switch = ccw_to_cw * timestep  # linear probability assumption (bad)
             if np.random.random(1)[0] <= prob_switch:
                 motor_state = 1
                 thrust, torque = tumble(self.parameters['tumble_jitter'])
@@ -148,7 +151,9 @@ class MotorActivity(Process):
 
         elif motor_state_current == 1:  # 1 for tumble
             # switch to run (ccw)?
-            prob_switch = cw_to_ccw * timestep
+            rate = -math.log(1 - cw_to_ccw)  # rate for probability function of time
+            prob_switch = 1 - math.exp(-rate * timestep)
+            # prob_switch = cw_to_ccw * timestep # linear probability assumption (bad)
             if np.random.random(1)[0] <= prob_switch:
                 motor_state = 0
                 [thrust, torque] = run()
