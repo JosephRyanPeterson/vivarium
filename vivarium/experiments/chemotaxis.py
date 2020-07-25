@@ -21,7 +21,10 @@ from arpeggio import (
 )
 
 from vivarium.library.dict_utils import deep_merge
-from vivarium.core.emitter import time_indexed_timeseries_from_data
+from vivarium.core.emitter import (
+    time_indexed_timeseries_from_data,
+    timeseries_from_data
+)
 from vivarium.core.composition import (
     agent_environment_experiment,
     make_agents,
@@ -53,15 +56,14 @@ from vivarium.plots.multibody_physics import (
     plot_motility,
 )
 
-
 # make an agent from a lone MotorActivity process
-MotorActivityAgent = MotorActivity
-# MotorActivityAgent = process_in_compartment(
-#     MotorActivity,
-#     topology={
-#         'external': ('boundary',),
-#         'internal': ('cell',)
-#     })
+# MotorActivityAgent = MotorActivity
+MotorActivityAgent = process_in_compartment(
+    MotorActivity,
+    topology={
+        'external': ('boundary',),
+        'internal': ('cell',)
+    })
 
 # defaults
 DEFAULT_BOUNDS = [1000, 3000]
@@ -143,15 +145,20 @@ DEFAULT_AGENT_CONFIG = {
 }
 
 # configs with faster timescales, to support close agent/environment coupling
-FAST_TIMESCALE = 0.01
+FAST_TIMESCALE = 0.001
 # fast timescale minimal agents
-FAST_TIMESCALE_AGENT_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
-FAST_TIMESCALE_AGENT_CONFIG.update({
+FAST_MINIMAL_CHEMOTAXIS_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
+FAST_MINIMAL_CHEMOTAXIS_CONFIG.update({
     'receptor': {
         'time_step': FAST_TIMESCALE},
     'motor': {
         'time_step': FAST_TIMESCALE},
     })
+FAST_MOTOR_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
+FAST_MOTOR_CONFIG.update({
+        'time_step': FAST_TIMESCALE,
+    })
+
 # fast timescale environment
 FAST_TIMESCALE_ENVIRONMENT_CONFIG = copy.deepcopy(DEFAULT_ENVIRONMENT_CONFIG)
 FAST_TIMESCALE_ENVIRONMENT_CONFIG['config']['multibody']['time_step'] = FAST_TIMESCALE
@@ -167,12 +174,12 @@ agents_library = {
     'motor': {
         'name': 'motor',
         'type': MotorActivityAgent,
-        'config': FAST_TIMESCALE_AGENT_CONFIG,
+        'config': FAST_MOTOR_CONFIG,
     },
     'minimal': {
         'name': 'minimal',
         'type': ChemotaxisMinimal,
-        'config': FAST_TIMESCALE_AGENT_CONFIG,
+        'config': FAST_MINIMAL_CHEMOTAXIS_CONFIG,
     },
     'variable': {
         'name': 'variable',
@@ -230,7 +237,7 @@ preset_experiments = {
         ],
         'environment_config': DEFAULT_ENVIRONMENT_CONFIG,
         'simulation_settings': {
-            'total_time': 5000,
+            'total_time': 50,
             'emit_step': 1.0,
         },
     },
@@ -271,19 +278,19 @@ preset_experiments = {
                 'type': ChemotaxisMinimal,
                 'name': 'motor_receptor',
                 'number': 1,
-                'config': FAST_TIMESCALE_AGENT_CONFIG,
+                'config': FAST_MINIMAL_CHEMOTAXIS_CONFIG,
             },
             {
                 'type': MotorActivityAgent,
                 'name': 'motor',
                 'number': 1,
-                'config': FAST_TIMESCALE_AGENT_CONFIG,
+                'config': FAST_MOTOR_CONFIG,
             }
         ],
         'environment_config': FAST_TIMESCALE_ENVIRONMENT_CONFIG,
         'simulation_settings': {
             'total_time': 60,
-            'emit_step': FAST_TIMESCALE * 2,
+            'emit_step': FAST_TIMESCALE,
         },
     },
 }
@@ -369,8 +376,10 @@ def plot_chemotaxis_experiment(
 
     plot_temporal_trajectory(copy.deepcopy(agents_timeseries), trajectory_config, out_dir, filename + 'temporal')
     plot_agent_trajectory(copy.deepcopy(agents_timeseries), trajectory_config, out_dir, filename + 'trajectory')
+
+    agent_embdedded_timeseries = timeseries_from_data(data)
     try:
-        plot_motility(agents_timeseries, out_dir, filename + 'motility_analysis')
+        plot_motility(agent_embdedded_timeseries, out_dir, filename + 'motility_analysis')
     except:
         print('plot_motility failed')
 

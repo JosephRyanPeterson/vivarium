@@ -699,6 +699,7 @@ def plot_motility(timeseries, out_dir='out', filename='motility_analysis'):
         for agent_id in list(agents.keys())}
 
     for agent_id, agent_data in agents.items():
+
         boundary_data = agent_data['boundary']
         cell_data = agent_data['cell']
         previous_time = times[0]

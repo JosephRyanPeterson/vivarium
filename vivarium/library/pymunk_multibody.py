@@ -128,7 +128,9 @@ class PymunkMultibody(object):
             self.add_body_from_center(agent_id, specs)
 
     def run(self, timestep):
-        assert self.physics_dt < timestep
+        if self.physics_dt > timestep:
+            print('timestep skipped by pymunk_multibody: {}'.format(timestep))
+            return
 
         time = 0
         while time < timestep:
