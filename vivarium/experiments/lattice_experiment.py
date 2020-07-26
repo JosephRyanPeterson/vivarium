@@ -106,7 +106,9 @@ def get_lattice_config(
     }
     return environment_config
 
-def get_iAF1260b_environment():
+def get_iAF1260b_environment(
+    bounds=[20,20],
+):
     # get external state from iAF1260b metabolism
     config = get_iAF1260b_config()
     metabolism = Metabolism(config)
@@ -115,6 +117,7 @@ def get_iAF1260b_environment():
         'type': 'uniform',
         'molecules': molecules}
     return get_lattice_config(
+        bounds=bounds,
         molecules=list(molecules.keys()),
         gradient=gradient,
     )
@@ -129,7 +132,9 @@ environments_library = {
     },
     'iAF1260b': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_iAF1260b_environment(),
+        'config': get_iAF1260b_environment(
+            bounds=[17, 17],
+        ),
     },
 }
 
@@ -411,7 +416,7 @@ def main():
                 emit_step=120,
                 agent_names=True,
                 emitter='database',
-                total_time=11000,
+                total_time=12000,
             ),
             plot_settings=get_plot_settings(
                 skip_paths=[
