@@ -509,8 +509,9 @@ def initialize_spatial_figure(bounds, fontsize=18):
     [x_bins, y_bins] = [int(n_ticks * edge / min_edge) for edge in [x_length, y_length]]
     plt.locator_params(axis='y', nbins=y_bins)
     plt.locator_params(axis='x', nbins=x_bins)
+    ax = plt.gca()
 
-    return fig
+    return fig, ax
 
 def get_agent_trajectories(agents, times):
     trajectories = {}
@@ -553,7 +554,11 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
     trajectories = get_agent_trajectories(agents, times)
 
     # initialize a spatial figure
-    fig = initialize_spatial_figure(bounds, legend_fontsize)
+    fig, ax = initialize_spatial_figure(bounds, legend_fontsize)
+
+    # move x axis to top
+    ax.tick_params(labelbottom=False,labeltop=True,bottom=False,top=True)
+    ax.xaxis.set_label_coords(0.5, 1.12)
 
     if field is not None:
         field = np.transpose(field)
@@ -561,10 +566,10 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
         im = plt.imshow(field,
                         origin='lower',
                         extent=[0, shape[1], 0, shape[0]],
-                        # vmin=vmin,
-                        # vmax=vmax,
-                        cmap='Greys'
-                        )
+                        cmap='Greys')
+        # colorbar for field concentrations
+        cbar = plt.colorbar(im, pad=0.02, aspect=50, shrink=0.7)
+        cbar.set_label('concentration', rotation=270, labelpad=20)
 
     for agent_id, trajectory_data in trajectories.items():
         agent_trajectory = trajectory_data['value']
@@ -575,24 +580,25 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
         y_coord = locations_array[:, 1]
 
         # plot line
-        plt.plot(x_coord, y_coord, linewidth=2, label=agent_id)
-        plt.plot(x_coord[0], y_coord[0],
+        ax.plot(x_coord, y_coord, linewidth=2, label=agent_id)
+        ax.plot(x_coord[0], y_coord[0],
                  color=(0.0, 0.8, 0.0), marker='.', markersize=markersize)  # starting point
-        plt.plot(x_coord[-1], y_coord[-1],
+        ax.plot(x_coord[-1], y_coord[-1],
                  color='r', marker='.', markersize=markersize)  # ending point
 
     # create legend for agent ids
-    first_legend = plt.legend(
-        loc='center left', bbox_to_anchor=(1.01, 0.5), prop={'size': legend_fontsize})
-    ax = plt.gca().add_artist(first_legend)
+    agent_legend = plt.legend(
+        title='agent type', loc='lower center', bbox_to_anchor=(0.3, -0.2), ncol=2, prop={'size': legend_fontsize})
+    ax.add_artist(agent_legend)
 
     # create a legend for start/end markers
     start = mlines.Line2D([], [],
             color=(0.0, 0.8, 0.0), marker='.', markersize=markersize, linestyle='None', label='start')
     end = mlines.Line2D([], [],
             color='r', marker='.', markersize=markersize, linestyle='None', label='end')
-    plt.legend(
-        handles=[start, end], loc='center left', bbox_to_anchor=(1.01, 0.9), prop={'size': legend_fontsize})
+    marker_legend = plt.legend(
+        title='trajectory', handles=[start, end], loc='lower center', bbox_to_anchor=(0.7, -0.2), ncol=2, prop={'size': legend_fontsize})
+    ax.add_artist(marker_legend)
 
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.1)
@@ -640,7 +646,7 @@ def plot_temporal_trajectory(agent_timeseries, config, out_dir='out', filename='
     trajectories = get_agent_trajectories(agents, times)
 
     # initialize a spatial figure
-    fig = initialize_spatial_figure(bounds)
+    fig, ax = initialize_spatial_figure(bounds)
 
     if field is not None:
         field = np.transpose(field)
