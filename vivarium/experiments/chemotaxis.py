@@ -14,6 +14,7 @@ import copy
 import sys
 import argparse
 
+import numpy as np
 from arpeggio import (
     RegExMatch,
     ParserPython,
@@ -66,23 +67,28 @@ MotorActivityAgent = process_in_compartment(
         'internal': ('cell',)
     })
 
-# defaults
+# environment defaults
+DEFAULT_ENVIRONMENT_TYPE = StaticLattice
 DEFAULT_BOUNDS = [1000, 3000]
 DEFAULT_AGENT_LOCATION = [0.5, 0.1]
+# exponential field parameters
+FIELD_SCALE = 3.0
+EXPONENTIAL_BASE = 1.2e2
+FIELD_CENTER = [0.5, 0.0]
 DEFAULT_LIGAND_ID = 'MeAsp'
-DEFAULT_INITIAL_LIGAND = 25.0
-DEFAULT_ENVIRONMENT_TYPE = StaticLattice
+
+# get initial ligand concentration based on location
+LOC_DX = (DEFAULT_AGENT_LOCATION[0] - FIELD_CENTER[0]) * DEFAULT_BOUNDS[0]
+LOC_DY = (DEFAULT_AGENT_LOCATION[1] - FIELD_CENTER[1]) * DEFAULT_BOUNDS[1]
+DIST = np.sqrt(LOC_DX ** 2 + LOC_DY ** 2)
+INITIAL_LIGAND = FIELD_SCALE * EXPONENTIAL_BASE ** (DIST / 1000)
+
 
 def get_exponential_env_config():
-    # field parameters
-    field_scale = 1.0
-    exponential_base = 2e2
-    field_center = [0.5, 0.0]
-
     # multibody process config
     multibody_config = {
         'animate': False,
-        'jitter_force': 5e-4,
+        # 'jitter_force': 5e-4,
         'bounds': DEFAULT_BOUNDS}
 
     # static field config
@@ -92,9 +98,9 @@ def get_exponential_env_config():
             'type': 'exponential',
             'molecules': {
                 DEFAULT_LIGAND_ID: {
-                    'center': field_center,
-                    'scale': field_scale,
-                    'base': exponential_base}}},
+                    'center': FIELD_CENTER,
+                    'scale': FIELD_SCALE,
+                    'base': EXPONENTIAL_BASE}}},
         'bounds': DEFAULT_BOUNDS}
 
     return {
@@ -139,7 +145,7 @@ DEFAULT_ENVIRONMENT_CONFIG = {
 
 DEFAULT_AGENT_CONFIG = {
     'ligand_id': DEFAULT_LIGAND_ID,
-    'initial_ligand': DEFAULT_INITIAL_LIGAND,
+    'initial_ligand': INITIAL_LIGAND,
     'external_path': ('global',),
     'agents_path': ('..', '..', 'agents'),
     'daughter_path': tuple(),
@@ -148,7 +154,7 @@ DEFAULT_AGENT_CONFIG = {
 # configs with faster timescales, to support close agent/environment coupling
 FAST_TIMESCALE = 0.001
 tumble_jitter = 4000
-adapt_rate = 2  # 2 receptor adaptation rate
+adapt_rate = 3  # 2 receptor adaptation rate
 # fast timescale minimal agents
 FAST_MOTOR_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
 FAST_MOTOR_CONFIG.update({
@@ -325,7 +331,7 @@ preset_experiments = {
         ],
         'environment_config': FAST_TIMESCALE_ENVIRONMENT_CONFIG,
         'simulation_settings': {
-            'total_time': 60,
+            'total_time': 240,
             'emit_step': FAST_TIMESCALE,
         },
     },
