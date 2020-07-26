@@ -54,13 +54,14 @@ class MotorActivity(Process):
         # 'k_A': 5.0,  #
         'k_y': 100.0,  # 1/uM/s
         'k_z': 30.0,  # / CheZ,
-        'gamma_Y': 0.1,
+        'gamma_Y': 0.1,  # rate constant
         'k_s': 0.45,  # scaling coefficient
         'adapt_precision': 3,  # scales CheY_P to cluster activity, increases probability of switch to tumble (cw)
         # motor
         'mb_0': 0.65,  # steady state motor bias (Cluzel et al 2000)
         'n_motors': 5,
         'cw_to_ccw': 0.83,  # 1/s (Block1983) motor bias, assumed to be constant
+        'cw_to_ccw_leak': 0.1,  # rate of spontaneous transition to tumble
         # parameters for multibody physics
         'tumble_jitter': 120.0,
         # initial state
@@ -136,6 +137,9 @@ class MotorActivity(Process):
         # CCW corresponds to run. CW corresponds to tumble
         ccw_motor_bias = mb_0 / (CheY_P * (1 - mb_0) + mb_0)  # (1/s)
         ccw_to_cw = cw_to_ccw * (1 / ccw_motor_bias - 1)  # (1/s)
+        # don't let ccw_to_cw get under leak value
+        if ccw_to_cw < self.parameters['cw_to_ccw_leak']:
+            ccw_to_cw = self.parameters['cw_to_ccw_leak']
 
         if motor_state_current == 0:  # 0 for run
             # switch to tumble (cw)?

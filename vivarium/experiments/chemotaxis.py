@@ -161,9 +161,11 @@ def set_agent_config(config={}):
 FAST_TIMESCALE = 0.001
 tumble_jitter = 4000
 adapt_rate = 3  # 2 receptor adaptation rate
+cw_to_ccw = 0.99  # increase this to get more frequent transitions
 # fast timescale minimal agents
 FAST_MOTOR_CONFIG = set_agent_config({
         'tumble_jitter': tumble_jitter,
+        'cw_to_ccw': cw_to_ccw,
         'time_step': FAST_TIMESCALE})
 FAST_MINIMAL_CHEMOTAXIS_CONFIG = set_agent_config({
     'receptor': {
@@ -171,6 +173,7 @@ FAST_MINIMAL_CHEMOTAXIS_CONFIG = set_agent_config({
         'time_step': FAST_TIMESCALE},
     'motor': {
         'tumble_jitter': tumble_jitter,
+        'cw_to_ccw': cw_to_ccw,
         'time_step': FAST_TIMESCALE}})
 
 # fast timescale environment
@@ -293,7 +296,7 @@ preset_experiments = {
         'agents_config': [
             {
                 'number': 1,
-                'name': 'minimal',
+                'name': 'motor + receptor',
                 'type': ChemotaxisMinimal,
                 'config': FAST_MINIMAL_CHEMOTAXIS_CONFIG,
             }
@@ -308,7 +311,7 @@ preset_experiments = {
         'agents_config': [
             {
                 'type': ChemotaxisMinimal,
-                'name': 'motor_receptor',
+                'name': 'motor + receptor',
                 'number': 1,
                 'config': FAST_MINIMAL_CHEMOTAXIS_CONFIG,
             },
@@ -329,7 +332,7 @@ preset_experiments = {
         'agents_config': [
             {
                 'type': ChemotaxisMinimal,
-                'name': 'motor_receptor',
+                'name': 'motor + receptor',
                 'number': 5,
                 'config': FAST_MINIMAL_CHEMOTAXIS_CONFIG,
             },
