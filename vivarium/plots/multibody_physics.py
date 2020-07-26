@@ -583,7 +583,7 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
 
     # create legend for agent ids
     first_legend = plt.legend(
-        title='agent ids', loc='center left', bbox_to_anchor=(1.01, 0.5), prop={'size': legend_fontsize})
+        loc='center left', bbox_to_anchor=(1.01, 0.5), prop={'size': legend_fontsize})
     ax = plt.gca().add_artist(first_legend)
 
     # create a legend for start/end markers
@@ -592,7 +592,7 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
     end = mlines.Line2D([], [],
             color='r', marker='.', markersize=markersize, linestyle='None', label='end')
     plt.legend(
-        handles=[start, end], loc='upper right', prop={'size': legend_fontsize})
+        handles=[start, end], loc='center left', bbox_to_anchor=(1.01, 0.9), prop={'size': legend_fontsize})
 
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.1)

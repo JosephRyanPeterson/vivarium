@@ -64,18 +64,18 @@ MotorActivityAgent = process_in_compartment(
     MotorActivity,
     topology={
         'external': ('boundary',),
-        'internal': ('cell',)
-    })
+        'internal': ('cell',)})
 
 # environment defaults
 DEFAULT_ENVIRONMENT_TYPE = StaticLattice
+DEFAULT_LIGAND_ID = 'glc__D_e'  # BiGG id for external glucose
 DEFAULT_BOUNDS = [1000, 3000]
 DEFAULT_AGENT_LOCATION = [0.5, 0.1]
+
 # exponential field parameters
 FIELD_SCALE = 3.0
 EXPONENTIAL_BASE = 1.2e2
 FIELD_CENTER = [0.5, 0.0]
-DEFAULT_LIGAND_ID = 'MeAsp'
 
 # get initial ligand concentration based on location
 LOC_DX = (DEFAULT_AGENT_LOCATION[0] - FIELD_CENTER[0]) * DEFAULT_BOUNDS[0]
@@ -88,7 +88,6 @@ def get_exponential_env_config():
     # multibody process config
     multibody_config = {
         'animate': False,
-        # 'jitter_force': 5e-4,
         'bounds': DEFAULT_BOUNDS}
 
     # static field config
@@ -116,7 +115,6 @@ def get_linear_env_config():
     # multibody process config
     multibody_config = {
         'animate': False,
-        'jitter_force': 5e-4,
         'bounds': DEFAULT_BOUNDS}
 
     # static field config
@@ -140,46 +138,45 @@ def get_linear_env_config():
 
 DEFAULT_ENVIRONMENT_CONFIG = {
     'type': DEFAULT_ENVIRONMENT_TYPE,
-    'config': get_exponential_env_config()
-}
+    'config': get_exponential_env_config()}
 
 DEFAULT_AGENT_CONFIG = {
     'ligand_id': DEFAULT_LIGAND_ID,
     'initial_ligand': INITIAL_LIGAND,
     'external_path': ('global',),
     'agents_path': ('..', '..', 'agents'),
-    'daughter_path': tuple(),
-}
+    'daughter_path': tuple()}
+
+def set_environment_config(config={}):
+    # override default environment config
+    return deep_merge(dict(DEFAULT_ENVIRONMENT_CONFIG), config)
+
+def set_agent_config(config={}):
+    # override default agent config
+    return deep_merge(dict(DEFAULT_AGENT_CONFIG), config)
+
 
 # configs with faster timescales, to support close agent/environment coupling
 FAST_TIMESCALE = 0.001
 tumble_jitter = 4000
 adapt_rate = 3  # 2 receptor adaptation rate
 # fast timescale minimal agents
-FAST_MOTOR_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
-FAST_MOTOR_CONFIG.update({
+FAST_MOTOR_CONFIG = set_agent_config({
         'tumble_jitter': tumble_jitter,
-        'time_step': FAST_TIMESCALE,
-    })
-FAST_MINIMAL_CHEMOTAXIS_CONFIG = copy.deepcopy(DEFAULT_AGENT_CONFIG)
-FAST_MINIMAL_CHEMOTAXIS_CONFIG.update({
+        'time_step': FAST_TIMESCALE})
+FAST_MINIMAL_CHEMOTAXIS_CONFIG = set_agent_config({
     'receptor': {
         # 'adapt_rate': adapt_rate,
         'time_step': FAST_TIMESCALE},
     'motor': {
         'tumble_jitter': tumble_jitter,
-        'time_step': FAST_TIMESCALE},
-    })
+        'time_step': FAST_TIMESCALE}})
 
 # fast timescale environment
-FAST_TIMESCALE_ENVIRONMENT_CONFIG = copy.deepcopy(DEFAULT_ENVIRONMENT_CONFIG)
-FAST_TIMESCALE_ENVIRONMENT_CONFIG['config']['multibody']['time_step'] = FAST_TIMESCALE
-FAST_TIMESCALE_ENVIRONMENT_CONFIG['config']['field']['time_step'] = FAST_TIMESCALE
-
-
-def set_agent_config(config={}):
-    return deep_merge(dict(DEFAULT_AGENT_CONFIG), config)
-
+FAST_TIMESCALE_ENVIRONMENT_CONFIG = set_environment_config({
+    'config': {
+        'multibody': {'time_step': FAST_TIMESCALE},
+        'field': {'time_step': FAST_TIMESCALE} }})
 
 # agent types
 agents_library = {
@@ -209,14 +206,6 @@ agents_library = {
         'config': DEFAULT_AGENT_CONFIG
     }
 }
-
-def make_agent_config(agent_specs):
-    agent_type = agent_specs[0].value
-    number = int(agent_specs[1].value)
-    config = agents_library[agent_type]
-    config['number'] = number
-    return config
-
 
 # preset experimental configurations
 preset_experiments = {
@@ -331,7 +320,7 @@ preset_experiments = {
         ],
         'environment_config': FAST_TIMESCALE_ENVIRONMENT_CONFIG,
         'simulation_settings': {
-            'total_time': 240,
+            'total_time': 300,
             'emit_step': FAST_TIMESCALE,
         },
     },
@@ -438,13 +427,20 @@ def number(): return RegExMatch(r'[0-9]+')
 def specification(): return agent_type, number
 def rule(): return OneOrMore(specification)
 agent_parser = ParserPython(rule)
+
+def make_agent_config(agent_specs):
+    agent_type = agent_specs[0].value
+    number = int(agent_specs[1].value)
+    config = agents_library[agent_type]
+    config['number'] = number
+    return config
+
 def parse_agents_string(agents_string):
     all_agents = agent_parser.parse(agents_string)
     agents_config = []
     for idx, agent_specs in enumerate(all_agents):
         agents_config.append(make_agent_config(agent_specs))
     return agents_config
-
 
 def make_dir(out_dir):
     if not os.path.exists(out_dir):
