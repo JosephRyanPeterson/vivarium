@@ -303,9 +303,9 @@ def run_variable_flagella(out_dir):
     init_params = {'n_flagella': 5}
     timeline = [
         (0, {}),
-        (60, {('internal_counts', 'flagella'): 6}),
-        (200, {('internal_counts', 'flagella'): 7}),
-        (240, {})]
+        (20, {('internal_counts', 'flagella'): 6}),
+        (40, {('internal_counts', 'flagella'): 7}),
+        (60, {})]
     output3 = test_activity(init_params, timeline)
     plot_activity(output3, out_dir, 'variable_flagella')
 

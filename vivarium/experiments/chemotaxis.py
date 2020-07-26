@@ -88,6 +88,7 @@ def get_exponential_env_config():
     # multibody process config
     multibody_config = {
         'animate': False,
+        'jitter_force': 5e-3,
         'bounds': DEFAULT_BOUNDS}
 
     # static field config
@@ -315,6 +316,27 @@ preset_experiments = {
                 'type': MotorActivityAgent,
                 'name': 'motor',
                 'number': 1,
+                'config': FAST_MOTOR_CONFIG,
+            }
+        ],
+        'environment_config': FAST_TIMESCALE_ENVIRONMENT_CONFIG,
+        'simulation_settings': {
+            'total_time': 300,
+            'emit_step': FAST_TIMESCALE,
+        },
+    },
+    'many_mixed': {
+        'agents_config': [
+            {
+                'type': ChemotaxisMinimal,
+                'name': 'motor_receptor',
+                'number': 5,
+                'config': FAST_MINIMAL_CHEMOTAXIS_CONFIG,
+            },
+            {
+                'type': MotorActivityAgent,
+                'name': 'motor',
+                'number': 5,
                 'config': FAST_MOTOR_CONFIG,
             }
         ],

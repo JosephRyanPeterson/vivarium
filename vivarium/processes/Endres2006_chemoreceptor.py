@@ -258,7 +258,7 @@ def plot_output(output, out_dir='out', filename='response'):
     # plot results
     cols = 1
     rows = 3
-    plt.figure(figsize=(cols * 4, rows * 1.7))
+    plt.figure(figsize=(2.5 * cols, 1.5 * rows))
 
     ax1 = plt.subplot(rows, cols, 1)
     ax2 = plt.subplot(rows, cols, 2)
@@ -288,7 +288,7 @@ def plot_output(output, out_dir='out', filename='response'):
     ax3.set_ylabel("average \n methylation", fontsize=10)
 
     fig_path = os.path.join(out_dir, filename)
-    plt.subplots_adjust(wspace=0.7, hspace=0.2)
+    plt.subplots_adjust(wspace=0.7, hspace=0.4)
     plt.savefig(fig_path + '.png', bbox_inches='tight')
 
 
