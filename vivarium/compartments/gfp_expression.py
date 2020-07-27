@@ -107,8 +107,8 @@ if __name__ == '__main__':
 
     # run simulation
     settings = {
-        # 'total_time': 100,
-        'total_time': 60 * 60 * 4,
+        'total_time': 200,
+        # 'total_time': 60 * 60 * 4,
         'initial_state': gfp_config['initial_state']}
 
     timeseries = simulate_compartment_in_experiment(
@@ -116,7 +116,7 @@ if __name__ == '__main__':
         settings)
 
     plot_config = {
-        'name': 'gfp_expression_four_hours',
+        'name': 'gfp_expression',
         'ports': {
             'transcripts': 'transcripts',
             'molecules': 'molecules',
