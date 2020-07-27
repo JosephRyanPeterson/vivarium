@@ -73,8 +73,8 @@ DEFAULT_BOUNDS = [1000, 3000]
 DEFAULT_AGENT_LOCATION = [0.5, 0.1]
 
 # exponential field parameters
-FIELD_SCALE = 3.0
-EXPONENTIAL_BASE = 1.2e2
+FIELD_SCALE = 4.0
+EXPONENTIAL_BASE = 1.3e2
 FIELD_CENTER = [0.5, 0.0]
 
 # get initial ligand concentration based on location
@@ -160,20 +160,15 @@ def set_agent_config(config={}):
 # configs with faster timescales, to support close agent/environment coupling
 FAST_TIMESCALE = 0.001
 tumble_jitter = 4000
-adapt_rate = 3  # 2 receptor adaptation rate
-cw_to_ccw = 0.99  # increase this to get more frequent transitions
 # fast timescale minimal agents
 FAST_MOTOR_CONFIG = set_agent_config({
         'tumble_jitter': tumble_jitter,
-        'cw_to_ccw': cw_to_ccw,
         'time_step': FAST_TIMESCALE})
 FAST_MINIMAL_CHEMOTAXIS_CONFIG = set_agent_config({
     'receptor': {
-        # 'adapt_rate': adapt_rate,
         'time_step': FAST_TIMESCALE},
     'motor': {
         'tumble_jitter': tumble_jitter,
-        'cw_to_ccw': cw_to_ccw,
         'time_step': FAST_TIMESCALE}})
 
 # fast timescale environment
@@ -331,22 +326,22 @@ preset_experiments = {
     'many_mixed': {
         'agents_config': [
             {
+                'type': MotorActivityAgent,
+                'name': 'motor',
+                'number': 5,
+                'config': FAST_MOTOR_CONFIG,
+            },
+            {
                 'type': ChemotaxisMinimal,
                 'name': 'motor + receptor',
                 'number': 5,
                 'config': FAST_MINIMAL_CHEMOTAXIS_CONFIG,
             },
-            {
-                'type': MotorActivityAgent,
-                'name': 'motor',
-                'number': 5,
-                'config': FAST_MOTOR_CONFIG,
-            }
         ],
         'environment_config': FAST_TIMESCALE_ENVIRONMENT_CONFIG,
         'simulation_settings': {
             'total_time': 300,
-            'emit_step': FAST_TIMESCALE,
+            'emit_step': FAST_TIMESCALE*10,
         },
     },
 }
@@ -436,14 +431,14 @@ def plot_chemotaxis_experiment(
     embdedded_timeseries = timeseries_from_data(data)
     plot_motility(embdedded_timeseries, out_dir, filename + 'motility_analysis')
 
-    # plot for each agent individually
-    agents_timeseries = embdedded_timeseries['agents']
-    for agent_id, s_timeseries in agents_timeseries.items():
-        cell_timeseries = s_timeseries['cell']
-        try:
-            plot_variable_receptor(cell_timeseries, out_dir, filename + 'motor_response_' + str(agent_id))
-        except:
-            print('plot_variable_receptor failed for {}'.format(agent_id))
+    # # plots for individual agents
+    # agents_timeseries = embdedded_timeseries['agents']
+    # for agent_id, s_timeseries in agents_timeseries.items():
+    #     cell_timeseries = s_timeseries['cell']
+    #     try:
+    #         plot_variable_receptor(cell_timeseries, out_dir, filename + 'motor_response_' + str(agent_id))
+    #     except:
+    #         print('plot_variable_receptor failed for {}'.format(agent_id))
 
 
 # parsing expression grammar for agents

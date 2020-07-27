@@ -61,7 +61,7 @@ class MotorActivity(Process):
         'mb_0': 0.65,  # steady state motor bias (Cluzel et al 2000)
         'n_motors': 5,
         'cw_to_ccw': 0.83,  # 1/s (Block1983) motor bias, assumed to be constant
-        'cw_to_ccw_leak': 0.1,  # rate of spontaneous transition to tumble
+        'cw_to_ccw_leak': 0.25,  # rate of spontaneous transition to tumble
         # parameters for multibody physics
         'tumble_jitter': 120.0,
         # initial state

@@ -529,12 +529,37 @@ def get_agent_trajectories(agents, times):
         }
     return trajectories
 
+def get_agent_type_colors(agent_ids):
+    """ get colors for each agent id by agent type
+    Assumes that agents of the same type share the beginning
+    of their name, followed by '_x' with x as a single number
+    TODO -- make this more general for more digits and other comparisons"""
+    agent_type_colors = {}
+    agent_types = {}
+    for agent1, agent2 in itertools.combinations(agent_ids, 2):
+        if agent1[0:-2] == agent2[0:-2]:
+            agent_type = agent1[0:-2]
+            if agent_type not in agent_type_colors:
+                color = plt.rcParams['axes.prop_cycle'].by_key()['color'][len(agent_type_colors)]
+                agent_type_colors[agent_type] = color
+            else:
+                color = agent_type_colors[agent_type]
+            agent_types[agent1] = agent_type
+            agent_types[agent2] = agent_type
+    for agent in agent_ids:
+        if agent not in agent_types:
+            color = plt.rcParams['axes.prop_cycle'].by_key()['color'][len(agent_type_colors)]
+            agent_type_colors[agent] = color
+            agent_types[agent] = agent
+
+    return agent_types, agent_type_colors
+
 def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='trajectory'):
     check_plt_backend()
 
     # trajectory plot settings
     legend_fontsize = 18
-    markersize = 30
+    markersize = 25
 
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     field = config.get('field')
@@ -543,6 +568,7 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
     # get agents
     times = np.array(agent_timeseries['time'])
     agents = agent_timeseries['agents']
+    agent_types, agent_type_colors = get_agent_type_colors(list(agents.keys()))
 
     if rotate_90:
         field = rotate_field_90(field)
@@ -579,16 +605,24 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
         x_coord = locations_array[:, 0]
         y_coord = locations_array[:, 1]
 
+        # get agent type and color
+        agent_type = agent_types[agent_id]
+        agent_color = agent_type_colors[agent_type]
+
         # plot line
-        ax.plot(x_coord, y_coord, linewidth=2, label=agent_id)
+        ax.plot(x_coord, y_coord, linewidth=2, color=agent_color, label=agent_type)
         ax.plot(x_coord[0], y_coord[0],
                  color=(0.0, 0.8, 0.0), marker='.', markersize=markersize)  # starting point
         ax.plot(x_coord[-1], y_coord[-1],
                  color='r', marker='.', markersize=markersize)  # ending point
 
-    # create legend for agent ids
+    # create legend for agent types
+    agent_labels = [
+        mlines.Line2D([], [], color=agent_color, linewidth=2, label=agent_type)
+        for agent_type, agent_color in agent_type_colors.items()]
     agent_legend = plt.legend(
-        title='agent type', loc='lower center', bbox_to_anchor=(0.3, -0.2), ncol=2, prop={'size': legend_fontsize})
+        title='agent type', handles=agent_labels, loc='upper center',
+        bbox_to_anchor=(0.3, 0.0), ncol=2, prop={'size': legend_fontsize})
     ax.add_artist(agent_legend)
 
     # create a legend for start/end markers
@@ -597,7 +631,8 @@ def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='tra
     end = mlines.Line2D([], [],
             color='r', marker='.', markersize=markersize, linestyle='None', label='end')
     marker_legend = plt.legend(
-        title='trajectory', handles=[start, end], loc='lower center', bbox_to_anchor=(0.7, -0.2), ncol=2, prop={'size': legend_fontsize})
+        title='trajectory', handles=[start, end], loc='upper center',
+        bbox_to_anchor=(0.7, 0.0), ncol=2, prop={'size': legend_fontsize})
     ax.add_artist(marker_legend)
 
     fig_path = os.path.join(out_dir, filename)
