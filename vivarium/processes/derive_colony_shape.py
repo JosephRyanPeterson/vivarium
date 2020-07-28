@@ -157,9 +157,9 @@ class ColonyShapeDeriver(Deriver):
             agent['boundary']['location']
             for agent in agents.values()
         ]
-        points = [point for point in points if np.all(~np.isnan(point))]
+        points = [tuple(point) for point in points if np.all(~np.isnan(point))]
         alpha_shape = alphashape.alphashape(
-            points, self.parameters['alpha'])
+            set(points), self.parameters['alpha'])
         if isinstance(alpha_shape, Polygon):
             shapes = [alpha_shape]
         elif isinstance(alpha_shape, (Point, LineString)):
