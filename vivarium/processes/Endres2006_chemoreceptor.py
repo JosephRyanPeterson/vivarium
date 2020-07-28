@@ -27,24 +27,8 @@ INITIAL_INTERNAL_STATE = {
     'CheB_P': 0.0,  # phosphorylated CheB
 }
 
-# Parameters from Endres and Wingreen 2006. See paper for serine binding, NiCl2 binding rates.
-DEFAULT_PARAMETERS = {
-    'n_Tar': 6,  # number of Tar receptors in a cluster
-    'n_Tsr': 12,  # number of Tsr receptors in a cluster
-    # dissociation constants (mM)
-    # K_Tar_on = 12e-3  # Tar to Asp (Emonet05)
-    # K_Tar_off = 1.7e-3  # Tar to Asp (Emonet05)
-    # (Endres & Wingreen, 2006) has dissociation constants for serine binding, NiCl2 binding
-    'K_Tar_off': 0.02,  # (mM) MeAsp binding by Tar (Endres06)
-    'K_Tar_on': 0.5,  # (mM) MeAsp binding by Tar (Endres06)
-    'K_Tsr_off': 100.0,  # (mM) MeAsp binding by Tsr (Endres06)
-    'K_Tsr_on': 10e6,  # (mM) MeAsp binding by Tsr (Endres06)
-    # k_CheR = 0.0182  # effective catalytic rate of CheR
-    # k_CheB = 0.0364  # effective catalytic rate of CheB
-    'k_meth': 0.0625,  # Catalytic rate of methylation
-    'k_demeth': 0.0714,  # Catalytic rate of demethylation
-    'adapt_rate': 2,  # adaptation rate relative to wild-type. cell-to-cell variation cause by variability in [CheR, CheB]
-}
+
+
 
 def run_step(receptor, state, timestep):
     update = receptor.next_update(timestep, state)
@@ -72,29 +56,34 @@ class ReceptorCluster(Process):
         'ligand_id': 'MeAsp',
         'initial_ligand': 5.0,
         'initial_internal_state': INITIAL_INTERNAL_STATE,
-        'parameters': DEFAULT_PARAMETERS
+        # Parameters from Endres and Wingreen 2006. See paper for serine binding, NiCl2 binding rates.
+        'n_Tar': 6,  # number of Tar receptors in a cluster
+        'n_Tsr': 12,  # number of Tsr receptors in a cluster
+        # dissociation constants (mM)
+        # K_Tar_on = 12e-3  # Tar to Asp (Emonet05)
+        # K_Tar_off = 1.7e-3  # Tar to Asp (Emonet05)
+        # (Endres & Wingreen, 2006) has dissociation constants for serine binding, NiCl2 binding
+        'K_Tar_off': 0.02,  # (mM) MeAsp binding by Tar (Endres06)
+        'K_Tar_on': 0.5,  # (mM) MeAsp binding by Tar (Endres06)
+        'K_Tsr_off': 100.0,  # (mM) MeAsp binding by Tsr (Endres06)
+        'K_Tsr_on': 10e6,  # (mM) MeAsp binding by Tsr (Endres06)
+        # k_CheR = 0.0182  # effective catalytic rate of CheR
+        # k_CheB = 0.0364  # effective catalytic rate of CheB
+        'k_meth': 0.0625,  # Catalytic rate of methylation
+        'k_demeth': 0.0714,  # Catalytic rate of demethylation
+        'adapt_rate': 2,  # adaptation rate relative to wild-type. cell-to-cell variation cause by variability in [CheR, CheB]
     }
 
-    def __init__(self, initial_parameters=None):
-        if not initial_parameters:
-            initial_parameters = {}
-
-        self.ligand_id = self.or_default(
-            initial_parameters, 'ligand_id')
-        self.initial_ligand = self.or_default(
-            initial_parameters, 'initial_ligand')
-        initial_internal_state = self.or_default(
-            initial_parameters, 'initial_internal_state')
-        self.initial_state = {
-            'internal': initial_internal_state,
-            'external': {self.ligand_id: self.initial_ligand}}
-
-        parameters = self.defaults['parameters']
-        parameters.update(initial_parameters)
-
+    def __init__(self, parameters=None):
         super(ReceptorCluster, self).__init__(parameters)
 
         # initialize the state by running until steady
+        initial_internal_state = self.parameters['initial_internal_state']
+        ligand_id = self.parameters['ligand_id']
+        initial_ligand = self.parameters['initial_ligand']
+        self.initial_state = {
+            'internal': initial_internal_state,
+            'external': {ligand_id: initial_ligand}}
         run_to_steady_state(self, self.initial_state, 1.0)
 
     def ports_schema(self):
@@ -124,17 +113,6 @@ class ReceptorCluster(Process):
             Endres & Wingreen. (2006). Precise adaptation in bacterial chemotaxis through "assistance neighborhoods"
         '''
 
-        # states
-        n_methyl = states['internal']['n_methyl']
-        P_on = states['internal']['chemoreceptor_activity']
-        CheR = states['internal']['CheR'] * (units.mmol / units.L)
-        CheB = states['internal']['CheB'] * (units.mmol / units.L)
-        ligand_conc = states['external'][self.ligand_id]   # mmol/L
-
-        # convert to umol / L
-        CheR = CheR.to('umol/L').magnitude
-        CheB = CheB.to('umol/L').magnitude
-
         # parameters
         n_Tar = self.parameters['n_Tar']
         n_Tsr = self.parameters['n_Tsr']
@@ -145,6 +123,17 @@ class ReceptorCluster(Process):
         adapt_rate = self.parameters['adapt_rate']
         k_meth = self.parameters['k_meth']
         k_demeth = self.parameters['k_demeth']
+
+        # states
+        n_methyl = states['internal']['n_methyl']
+        P_on = states['internal']['chemoreceptor_activity']
+        CheR = states['internal']['CheR'] * (units.mmol / units.L)
+        CheB = states['internal']['CheB'] * (units.mmol / units.L)
+        ligand_conc = states['external'][self.parameters['ligand_id']]   # mmol/L
+
+        # convert to umol / L
+        CheR = CheR.to('umol/L').magnitude
+        CheB = CheB.to('umol/L').magnitude
 
         if n_methyl < 0:
             n_methyl = 0

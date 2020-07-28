@@ -48,19 +48,17 @@ class MotorActivity(Process):
 
     name = NAME
     defaults = {
-        'parameters': {
-            # 'k_A': 5.0,  #
-            'k_y': 100.0,  # 1/uM/s
-            'k_z': 30.0,  # / CheZ,
-            'gamma_Y': 0.1,
-            'k_s': 0.45,  # scaling coefficient
-            'adapt_precision': 3,  # scales CheY_P to cluster activity
-            # motor
-            'mb_0': 0.65,  # steady state motor bias (Cluzel et al 2000)
-            'n_motors': 5,
-            'cw_to_ccw': 0.83,  # 1/s (Block1983) motor bias, assumed to be constant
-            'time_step': 0.1,
-        },
+        'time_step': 0.1,
+        # 'k_A': 5.0,  #
+        'k_y': 100.0,  # 1/uM/s
+        'k_z': 30.0,  # / CheZ,
+        'gamma_Y': 0.1,
+        'k_s': 0.45,  # scaling coefficient
+        'adapt_precision': 3,  # scales CheY_P to cluster activity
+        # motor
+        'mb_0': 0.65,  # steady state motor bias (Cluzel et al 2000)
+        'n_motors': 5,
+        'cw_to_ccw': 0.83,  # 1/s (Block1983) motor bias, assumed to be constant
         'initial_state': {
             'internal': {
                 # response regulator proteins
@@ -81,13 +79,7 @@ class MotorActivity(Process):
             }}
     }
 
-    def __init__(self, initial_parameters=None):
-        if initial_parameters is None:
-            initial_parameters = {}
-
-        parameters = self.defaults['parameters']
-        parameters.update(initial_parameters)
-
+    def __init__(self, parameters=None):
         super(MotorActivity, self).__init__(parameters)
 
     def ports_schema(self):
@@ -95,7 +87,7 @@ class MotorActivity(Process):
         schema = {port: {} for port in ports}
 
         # external
-        for state, default in self.defaults['initial_state']['external'].items():
+        for state, default in self.parameters['initial_state']['external'].items():
             schema['external'][state] = {
                 '_default': default,
                 '_emit': True,
@@ -108,7 +100,7 @@ class MotorActivity(Process):
                 'motor_state',
                 'CheA',
                 'CheY_P']
-        for state, default in self.defaults['initial_state']['internal'].items():
+        for state, default in self.parameters['initial_state']['internal'].items():
             schema['internal'][state] = {'_default': default}
             if state in set_and_emit:
                 schema['internal'][state].update({
