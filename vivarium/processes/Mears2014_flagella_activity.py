@@ -72,7 +72,7 @@ class FlagellaActivity(Process):
         # motile force parameters
         'flagellum_thrust': 25,  # (pN) (Berg H, E. coli in motion, 2004, pg 113)
         'tumble_jitter': 120.0,
-        'tumble_scaling': 0.5 / initial_pmf,
+        'tumble_scaling': 1 / initial_pmf,
         'run_scaling': 1 / initial_pmf,
         'time_step': 0.01,  # 0.001
     }

@@ -98,7 +98,10 @@ def time_indexed_timeseries_from_data(data):
     embedded_timeseries['time'] = times_vector
     return embedded_timeseries
 
-def timeseries_from_data(data):
+def timeseries_from_data(data, remove_first=False):
+    if remove_first:
+        first_ts = list(data.keys())[0]
+        data.pop(first_ts)
     times_vector = list(data.keys())
     embedded_timeseries = {}
     for time, value in data.items():

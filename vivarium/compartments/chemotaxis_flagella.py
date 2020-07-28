@@ -40,6 +40,9 @@ from vivarium.compartments.flagella_expression import (
     plot_gene_expression_output,
 )
 
+# plots
+from vivarium.plots.chemotaxis_flagella import plot_signal_transduction
+
 
 
 NAME = 'chemotaxis_flagella'
@@ -51,12 +54,10 @@ DEFAULT_INITIAL_LIGAND = 1e-2
 
 class ChemotaxisVariableFlagella(Generator):
     n_flagella = 5
-    ligand_id = 'MeAsp'
-    initial_ligand = 0.1
     defaults = {
         'receptor': {
-            'ligand_id': ligand_id,
-            'initial_ligand': initial_ligand
+            'ligand_id': DEFAULT_LIGAND,
+            'initial_ligand': DEFAULT_INITIAL_LIGAND
         },
         'flagella': {
             'n_flagella': n_flagella
@@ -446,6 +447,8 @@ def test_variable_chemotaxis(
 
     # plot
     plot_timeseries(timeseries, out_dir)
+
+    plot_signal_transduction(timeseries, out_dir)
 
 
 def make_dir(out_dir):

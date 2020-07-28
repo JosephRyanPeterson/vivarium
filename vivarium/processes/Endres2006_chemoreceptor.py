@@ -258,7 +258,8 @@ def plot_output(output, out_dir='out', filename='response'):
     # plot results
     cols = 1
     rows = 3
-    plt.figure(figsize=(2.5 * cols, 1.5 * rows))
+    plt.figure(figsize=(3.0 * cols, 2.5 * rows))
+    plt.rc('font', size=12)
 
     ax1 = plt.subplot(rows, cols, 1)
     ax2 = plt.subplot(rows, cols, 2)

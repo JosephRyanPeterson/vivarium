@@ -12,7 +12,7 @@ from vivarium.core.emitter import timeseries_from_data
 
 
 def plot_activity(data, out_dir='out', filename='motor_control'):
-    timeseries = timeseries_from_data(data)
+    timeseries = timeseries_from_data(data, True)
 
     CheY_vec = timeseries['internal']['CheY']
     CheY_P_vec = timeseries['internal']['CheY_P']
@@ -76,7 +76,7 @@ def plot_activity(data, out_dir='out', filename='motor_control'):
     # plot results
     cols = 1
     rows = 5
-    plt.figure(figsize=(3.5 * cols, 1.5 * rows))
+    plt.figure(figsize=(3.0 * cols, 1.5 * rows))
     plt.rc('font', size=12)
 
     # define subplots
@@ -91,11 +91,15 @@ def plot_activity(data, out_dir='out', filename='motor_control'):
     ax1.plot(time_vec, CheY_P_vec, label='CheY_P')
     ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     ax1.set_xticks([])
+    ax1.spines['right'].set_visible(False)
+    ax1.spines['top'].set_visible(False)
     ax1.set_xlim(time_vec[0], time_vec[-1])
     ax1.set_ylabel('concentration \n (uM)')
 
     # plot CW bias
     ax2.plot(time_vec, cw_bias_vec)
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
     ax2.set_xticks([])
     ax2.set_xlim(time_vec[0], time_vec[-1])
     ax2.set_ylabel('CW bias')
@@ -147,9 +151,10 @@ def plot_activity(data, out_dir='out', filename='motor_control'):
     # plot motor thrust
     ax5.plot(time_vec, thrust_vec)
     ax5.set_xlim(time_vec[0], time_vec[-1])
-    ax5.set_ylabel('motor thrust (pN)')
+    ax5.spines['right'].set_visible(False)
+    ax5.spines['top'].set_visible(False)
+    ax5.set_ylabel('thrust (pN)')
     ax5.set_xlabel('time (sec)')
-
 
     # save figure
     fig_path = os.path.join(out_dir, filename)
