@@ -14,7 +14,10 @@ from vivarium.core.emitter import (
     get_local_client,
     data_from_database,
     SECRETS_PATH,
+    timeseries_from_data,
+    path_timeseries_from_embedded_timeseries,
 )
+from vivarium.plots.colonies import plot_colony_metrics
 
 
 OUT_DIR = 'out'
@@ -108,6 +111,15 @@ class Analyzer:
         plot_settings.update(self.timeseries_config)
         plot_agents_multigen(data, plot_settings, out_dir)
 
+    def plot_colony_metrics(self, data, out_dir):
+        embedded_ts = timeseries_from_data(data)
+        colony_metrics_ts = embedded_ts['colony_global']
+        colony_metrics_ts['time'] = embedded_ts['time']
+        path_ts = path_timeseries_from_embedded_timeseries(
+            colony_metrics_ts)
+        fig = plot_colony_metrics(path_ts)
+        fig.savefig(os.path.join(out_dir, 'colonies'))
+
     def plot(self, args):
         data, environment_config = self.get_data(args)
         out_dir = os.path.join(OUT_DIR, args.experiment_id)
@@ -124,6 +136,8 @@ class Analyzer:
                 data, environment_config, args.tags, out_dir)
         if args.timeseries:
             self.plot_timeseries(data, out_dir)
+        if args.colony_metrics:
+            self.plot_colony_metrics(data, out_dir)
 
     def _get_parser(self):
         parser = argparse.ArgumentParser()
@@ -154,6 +168,12 @@ class Analyzer:
             action='store_true',
             default=False,
             help='Generate line plot for each variable over time',
+        )
+        parser.add_argument(
+            '--colony_metrics', '-c',
+            action='store_true',
+            default=False,
+            help='Plot colony metrics',
         )
         parser.add_argument(
             '--force', '-f',
