@@ -57,7 +57,7 @@ COMPARTMENT_TIMESTEP = 10.0
 def default_metabolism_config():
     metabolism_config = get_iAF1260b_config()
     metabolism_config.update({
-        'initial_mass': 1339.0,  # 200, # fg of metabolite pools
+        'initial_mass': 1339.0,  # fg of metabolite pools
         'time_step': COMPARTMENT_TIMESTEP,
         'tolerance': {
             'EX_glc__D_e': [1.05, 1.0],

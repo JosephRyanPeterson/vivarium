@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 import random
+import logger as log
 
 from vivarium.core.process import Process
 from vivarium.library.dict_utils import deep_merge, tuplify_port_dicts
@@ -250,6 +251,7 @@ class ODE_expression(Process):
         # counts
         for state in self.internal + self.internal_regulators:
             schema['counts'][state] = {
+                '_divider': 'split',
                 '_emit': True
             }
 
@@ -283,13 +285,14 @@ class ODE_expression(Process):
         # M: conc of mRNA, k_M: transcription rate, d_M: degradation rate
         for transcript, rate in self.transcription.items():
             transcript_state = internal_state[transcript]
-            # do not transcribe inhibited genes
-            if transcript in regulation_state and not regulation_state[transcript]:
+
+            # do not transcribe inhibited genes, except for transcription leaks
+            if regulation_state.get(transcript):
                 if random.uniform(0, 1) < abs(random.gauss(0, self.transcription_leak_sigma)):
                     rate = self.transcription_leak_magnitude
+                    log.info('TRANSCRIPTION LEAK!')
                 else:
                     rate = 0.0
-
             internal_update[transcript] = \
                 (rate - self.degradation.get(transcript, 0) * transcript_state) * timestep
 

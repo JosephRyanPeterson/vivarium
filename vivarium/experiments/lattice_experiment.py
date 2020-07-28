@@ -48,6 +48,8 @@ agents_library = {
         'type': GrowthDivision,
         'config': {
             'agents_path': ('..', '..', 'agents'),
+            'fields_path': ('..', '..', 'fields'),
+            'dimensions_path': ('..', '..', 'dimensions'),
         }
     },
     'growth_division_minimal': {
@@ -55,6 +57,8 @@ agents_library = {
         'type': GrowthDivisionMinimal,
         'config': {
             'agents_path': ('..', '..', 'agents'),
+            'fields_path': ('..', '..', 'fields'),
+            'dimensions_path': ('..', '..', 'dimensions'),
             'growth_rate': 0.001,
             'division_volume': 2.6
         }
@@ -64,6 +68,8 @@ agents_library = {
         'type': FlagellaExpressionMetabolism,
         'config': {
             'agents_path': ('..', '..', 'agents'),
+            'fields_path': ('..', '..', 'fields'),
+            'dimensions_path': ('..', '..', 'dimensions'),
         }
     },
     'transport_metabolism': {
@@ -134,6 +140,15 @@ environments_library = {
         'type': DEFAULT_ENVIRONMENT_TYPE,
         'config': get_iAF1260b_environment(
             bounds=[17, 17],
+        ),
+    },
+    'shallow_glc_lcts': {
+        'type': DEFAULT_ENVIRONMENT_TYPE,
+        'config': get_lattice_config(
+            bounds=[25, 25],
+            n_bins=[25, 25],
+            depth=1e-1,
+            diffusion=4e-3,
         ),
     },
 }
@@ -438,12 +453,16 @@ def main():
         make_dir(txp_mtb_out_dir)
         run_workflow(
             agent_type='transport_metabolism',
+            environment_type='shallow_glc_lcts',
             out_dir=txp_mtb_out_dir,
-            simulation_settings=get_simulation_settings(
-                total_time=100,
+            experiment_settings=get_experiment_settings(
+                total_time=2400,
             ),
             plot_settings=get_plot_settings(
                 fields=['glc__D_e', 'lcts_e'],
+                tags=[
+                    ('cytoplasm', 'LacY'),
+                ],
             ),
         ),
 

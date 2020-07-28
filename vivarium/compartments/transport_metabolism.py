@@ -19,6 +19,7 @@ from vivarium.parameters.parameters import (
 
 # processes
 from vivarium.plots.transport_metabolism import plot_diauxic_shift
+from vivarium.processes.division_volume import DivisionVolume
 from vivarium.processes.meta_division import MetaDivision
 from vivarium.processes.metabolism import (
     Metabolism,
@@ -32,13 +33,15 @@ from vivarium.processes.ode_expression import (
 
 
 NAME = 'transport_metabolism'
+TIMESTEP = 30
 
 def default_metabolism_config():
     config = get_iAF1260b_config()
 
     # set flux bond tolerance for reactions in ode_expression's lacy_config
     metabolism_config = {
-        'moma': False,
+        'time_step': TIMESTEP,
+        'initial_mass': 1339.0,  # fg of metabolite pools
         'tolerance': {
             'EX_glc__D_e': [1.05, 1.0],
             'EX_lcts_e': [1.05, 1.0]}}
@@ -55,9 +58,13 @@ def default_expression_config():
     reg_config = {
         'regulators': regulators,
         'regulation': regulation}
-
     config.update(reg_config)
+    return config
 
+
+def default_transport_config():
+    config = get_glc_lct_config()
+    config['time_step'] = TIMESTEP
     return config
 
 
@@ -73,7 +80,7 @@ class TransportMetabolism(Generator):
         'fields_path': ('fields',),
         'dimensions_path': ('dimensions',),
         'division': {},
-        'transport': get_glc_lct_config(),
+        'transport': default_transport_config(),
         'metabolism': default_metabolism_config(),
         'expression': default_expression_config(),
     }
@@ -99,18 +106,21 @@ class TransportMetabolism(Generator):
         expression = ODE_expression(config['expression'])
 
         # Division
+        # configure division condition and meta-division processes
+        division_condition = DivisionVolume({})
         division_config = dict(
             config.get('division', {}),
             daughter_path=daughter_path,
             agent_id=agent_id,
             compartment=self)
-        division = MetaDivision(division_config)
+        meta_division = MetaDivision(division_config)
 
         return {
             'transport': transport,
             'metabolism': metabolism,
             'expression': expression,
-            'division': division
+            'division': division_condition,
+            'meta_division': meta_division,
         }
 
     def generate_topology(self, config):
@@ -144,6 +154,9 @@ class TransportMetabolism(Generator):
                 'global': boundary_path,
             },
             'division': {
+                'global': boundary_path,
+            },
+            'meta_division': {
                 'global': boundary_path,
                 'cells': agents_path,
             }
