@@ -100,7 +100,7 @@ class AntibioticDetector(DetectorInterface):
         self.threshold = antibiotic_threshold
         self.key = antibiotic_key
         self.needed_state_keys.setdefault(
-            'internal', set()).add('antibiotic')
+            'internal', set()).add(antibiotic_key)
 
     def check_can_survive(self, states):
         '''Checks if the current antibiotic concentration is survivable
@@ -151,6 +151,8 @@ class DeathFreezeState(Process):
         * **``internal``**: The internal state of the cell.
         * **``global``**: Should be linked to the ``global``
           :term:`store`.
+        * **``processes``**: Should be linked to the store that has
+          the processes as children.
         '''
         if initial_parameters is None:
             initial_parameters = {}
@@ -174,10 +176,12 @@ class DeathFreezeState(Process):
             '_emit': True,
             '_updater': 'set'
         }
-        schema['global'].update({
+        schema['processes'] = {
             target: {
-                '_default': None}
-            for target in self.targets})
+                '_default': None
+            }
+            for target in self.targets
+        }
 
         # detector ports
         for detector in self.detectors:
@@ -202,10 +206,15 @@ class DeathFreezeState(Process):
                 # kill the cell
                 return {
                     'global': {
+                        'dead': 1,
+                    },
+                    'processes': {
                         '_delete': [
                             ('..', target,)
-                            for target in self.targets],
-                        'dead': 1}}
+                            for target in self.targets
+                        ],
+                    },
+                }
         return {}
 
 
@@ -266,6 +275,7 @@ class ToyDeath(Generator):
             'death': {
                 'internal': ('cell',),
                 'global': ('global',),
+                'processes': ('global',),
             },
             'injector': {
                 'internal': ('cell',),
