@@ -210,6 +210,7 @@ class Metabolism(Process):
         for state in list(self.objective_composition.keys()):
             schema['internal'][state] = {
                 '_value': self.initial_state['internal'].get(state, 0),
+                '_divider': 'split',
                 '_default': 0.0,
                 '_emit': True,
                 '_properties': {

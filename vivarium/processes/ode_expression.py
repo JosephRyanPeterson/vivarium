@@ -9,7 +9,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 import random
-import logger as log
+import logging as log
 
 from vivarium.core.process import Process
 from vivarium.library.dict_utils import deep_merge, tuplify_port_dicts

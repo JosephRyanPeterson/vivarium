@@ -147,8 +147,8 @@ environments_library = {
         'config': get_lattice_config(
             bounds=[25, 25],
             n_bins=[25, 25],
-            depth=1e-1,
-            diffusion=4e-3,
+            depth=5e-2,
+            diffusion=2e-3,
         ),
     },
 }
@@ -456,7 +456,7 @@ def main():
             environment_type='shallow_glc_lcts',
             out_dir=txp_mtb_out_dir,
             experiment_settings=get_experiment_settings(
-                total_time=2400,
+                total_time=3000,
             ),
             plot_settings=get_plot_settings(
                 fields=['glc__D_e', 'lcts_e'],
