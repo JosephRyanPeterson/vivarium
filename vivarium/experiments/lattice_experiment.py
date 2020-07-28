@@ -456,7 +456,7 @@ def main():
             environment_type='shallow_glc_lcts',
             out_dir=txp_mtb_out_dir,
             experiment_settings=get_experiment_settings(
-                total_time=3000,
+                total_time=4000,
             ),
             plot_settings=get_plot_settings(
                 fields=['glc__D_e', 'lcts_e'],

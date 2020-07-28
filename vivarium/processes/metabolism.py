@@ -283,7 +283,7 @@ class Metabolism(Process):
                 },
                 'config': {
                     'from_path': ('..', '..'),
-                    'initial_mass': self.initial_mass,
+                    # 'initial_mass': self.initial_mass,
                 },
             },
             self.global_deriver_key: {
