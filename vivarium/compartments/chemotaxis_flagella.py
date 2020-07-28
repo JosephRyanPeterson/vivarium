@@ -297,7 +297,7 @@ def get_timeline(
     initial_conc=DEFAULT_INITIAL_LIGAND,
     total_time=10,
     timestep=1,
-    base=1+4e-4,
+    base=1+3e-4,
     speed=14,
 ):
     return get_exponential_random_timeline({
@@ -476,7 +476,7 @@ if __name__ == '__main__':
         make_dir(variable_out_dir)
         test_variable_chemotaxis(
             n_flagella=args.flagella,
-            total_time=60,
+            total_time=90,
             out_dir=variable_out_dir)
     elif args.ode:
         # ODE flagella expression

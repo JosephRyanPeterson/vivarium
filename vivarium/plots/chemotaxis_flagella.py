@@ -67,7 +67,7 @@ def plot_signal_transduction(timeseries, out_dir='out', filename='signal_transdu
     ax2.tick_params(right=False, top=False)
     ax2.set_ylabel("cluster activity \n P(on)", fontsize=10)
 
-    ax2.set_xticklabels([])
+    ax3.set_xticklabels([])
     ax3.spines['right'].set_visible(False)
     ax3.spines['top'].set_visible(False)
     ax3.tick_params(right=False, top=False)
