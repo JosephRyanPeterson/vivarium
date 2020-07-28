@@ -95,4 +95,3 @@ def plot_signal_transduction(timeseries, out_dir='out', filename='signal_transdu
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.3)
     plt.savefig(fig_path + '.png', bbox_inches='tight')
-    

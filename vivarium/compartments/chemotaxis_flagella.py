@@ -314,10 +314,13 @@ def get_baseline_config(
 ):
     return {
         'agents_path': ('agents',),  # Note -- should go two level up for experiments with environment
-        'ligand_id': DEFAULT_LIGAND,
-        'initial_ligand': DEFAULT_INITIAL_LIGAND,
         # 'growth_rate': 0.0001,
-        'n_flagella': n_flagella}
+        'receptor': {
+            'ligand_id': DEFAULT_LIGAND,
+            'initial_ligand': DEFAULT_INITIAL_LIGAND,
+        },
+        'flagella': {
+            'n_flagella': n_flagella}}
 
 
 def print_growth(timeseries):
@@ -346,7 +349,7 @@ def test_ode_expression_chemotaxis(
         out_dir='out'
 ):
     # make the compartment
-    config = get_baseline_config(n_flagella)
+    config = get_baseline_config(n_flagella=n_flagella)
     compartment = ChemotaxisODEExpressionFlagella(config)
 
     # save the topology network
@@ -383,7 +386,7 @@ def test_expression_chemotaxis(
         out_dir='out'
 ):
     # make the compartment
-    config = get_baseline_config(n_flagella)
+    config = get_baseline_config(n_flagella=n_flagella)
     compartment = ChemotaxisExpressionFlagella(config)
 
     # save the topology network
@@ -426,7 +429,7 @@ def test_variable_chemotaxis(
         out_dir='out'
 ):
     # make the compartment
-    config = get_baseline_config(n_flagella)
+    config = get_baseline_config(n_flagella=n_flagella)
     compartment = ChemotaxisVariableFlagella(config)
 
     # save the topology network
