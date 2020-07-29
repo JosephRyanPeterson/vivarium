@@ -184,30 +184,23 @@ class ODE_expression(Process):
         'counts_deriver_key': 'expression_counts',
     }
 
-    def __init__(self, initial_parameters=None):
-        if initial_parameters is None:
-            initial_parameters = {}
+    def __init__(self, parameters=None):
+        super(ODE_expression, self).__init__(parameters)
 
         # ode gene expression
-        self.transcription = initial_parameters.get(
-            'transcription_rates', self.defaults['transcription_rates'])
-        self.translation = initial_parameters.get(
-            'translation_rates', self.defaults['translation_rates'])
-        self.degradation = initial_parameters.get(
-            'degradation_rates', self.defaults['degradation_rates'])
-        self.protein_map = initial_parameters.get(
-            'protein_map', self.defaults['protein_map'])
-        transcription_leak = initial_parameters.get(
-            'transcription_leak', self.defaults['transcription_leak'])
+        self.transcription = self.parameters.get('transcription_rates')
+        self.translation = self.parameters.get('translation_rates')
+        self.degradation = self.parameters.get('degradation_rates')
+        self.protein_map = self.parameters.get('protein_map')
+        transcription_leak = self.parameters.get('transcription_leak')
         self.transcription_leak_rate = transcription_leak['rate']
         self.transcription_leak_magnitude = transcription_leak['magnitude']
 
         # boolean regulation
-        regulation_logic = initial_parameters.get(
-            'regulation', self.defaults['regulation'])
+        regulation_logic = self.parameters.get('regulation')
         self.regulation = {
             gene_id: build_rule(logic) for gene_id, logic in regulation_logic.items()}
-        regulators = initial_parameters.get('regulators', self.defaults['regulators'])
+        regulators = self.parameters.get('regulators')
         self.internal_regulators = [state_id for port_id, state_id in regulators if port_id == 'internal']
         self.external_regulators = [state_id for port_id, state_id in regulators if port_id == 'external']
 
@@ -215,17 +208,12 @@ class ODE_expression(Process):
         states = list(self.transcription.keys()) + list(self.translation.keys())
         null_states = {'internal': {
             state_id: 0 for state_id in states}}
-        initialized_states = initial_parameters.get('initial_state', self.defaults['initial_state'])
+        initialized_states = self.parameters.get('initial_state')
         self.initial_state = deep_merge(null_states, initialized_states)
         self.internal = list(self.initial_state.get('internal', {}).keys())
         self.external = list(self.initial_state.get('external', {}).keys())
-        self.counts_deriver_key = self.or_default(
-            initial_parameters, 'counts_deriver_key')
+        self.counts_deriver_key = self.parameters.get('counts_deriver_key')
 
-        parameters = {}
-        parameters.update(initial_parameters)
-
-        super(ODE_expression, self).__init__(parameters)
 
     def ports_schema(self):
         ports = [
@@ -290,7 +278,8 @@ class ODE_expression(Process):
 
             # do not transcribe inhibited genes, except for transcription leaks
             if regulation_state.get(transcript):
-                rate = -math.log(1 - abs(random.gauss(0, self.transcription_leak_rate)))  # rate for probability function of time
+                # rate for probability as function of timestep
+                rate = -math.log(1 - abs(random.gauss(0, self.transcription_leak_rate)))
                 leak_probability = 1 - math.exp(-rate * timestep)
                 if random.uniform(0, 1) < leak_probability:
                     rate = self.transcription_leak_magnitude
@@ -334,15 +323,15 @@ def get_lacy_config():
         'LacY': 'lacy_RNA'}
 
     degradation_rates = {
-        'lacy_RNA': 5e-3,  # a single RNA lasts about 5 minutes
+        'lacy_RNA': 3e-3,  # a single RNA lasts about 5 minutes
         'LacY': 3e-5}
 
     # define regulation
     regulators = [('external', 'glc__D_e')]
-    regulation = {'lacy_RNA': 'if not (external, glc__D_e) > 0.05'}
+    regulation = {'lacy_RNA': 'if not (external, glc__D_e) > 0.1'}
     transcription_leak = {
         'rate': 1e-4,
-        'magnitude': 0.0  #1e-6
+        'magnitude': 1e-6,
         }
 
     # initial state
@@ -407,7 +396,7 @@ def get_flagella_expression():
         'initial_state': initial_state}
 
 
-def test_expression(config=get_lacy_config(), timeline=[(100, {})]):
+def test_expression(config=None, timeline=[(100, {})]):
     expression = ODE_expression(config)
     settings = {'timeline': {'timeline': timeline}}
     return simulate_process_in_experiment(expression, settings)
