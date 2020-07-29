@@ -222,7 +222,7 @@ def test_variable_receptor():
         motor_state_vec.append(motile_state)
 
     # check ccw_to_cw bias is strictly increasing with increased receptor activity
-    assert all(i < j for i, j in zip(ccw_to_cw_vec, ccw_to_cw_vec[1:]))
+    assert all(i <= j for i, j in zip(ccw_to_cw_vec, ccw_to_cw_vec[1:]))
 
     return {
         'chemoreceptor_activity': chemoreceptor_activity,
