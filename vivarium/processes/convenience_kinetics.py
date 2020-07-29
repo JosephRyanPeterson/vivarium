@@ -482,14 +482,14 @@ def get_glc_lct_config():
     transport_kinetics = {
         'EX_glc__D_e': {
             ('internal', 'EIIglc'): {
-                ('external', 'glc__D_e'): 1e-1,  # k_m for external [glc__D_e]
+                ('external', 'glc__D_e'): 1e0,  # k_m for external [glc__D_e]
                 ('internal', 'pep_c'): None,  # Set k_m = None to make a reactant non-limiting
                 'kcat_f': 6e1,  # kcat for the forward direction
             }
         },
         'EX_lcts_e': {
             ('internal', 'LacY'): {
-                ('external', 'lcts_e'): 1e-1,
+                ('external', 'lcts_e'): 1e0,
                 'kcat_f': 6e1,
             }
         }
