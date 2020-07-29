@@ -55,7 +55,7 @@ def default_expression_config():
 
     # redo regulation with BiGG id for glucose
     regulators = [('external', 'glc__D_e')]
-    regulation = {'lacy_RNA': 'if (external, glc__D_e) > 0.1'}  # inhibited in this condition
+    regulation = {'lacy_RNA': 'if (external, glc__D_e) > 0.05'}  # inhibited in this condition
     reg_config = {
         'regulators': regulators,
         'regulation': regulation}
