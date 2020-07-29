@@ -7,8 +7,10 @@ Process and Compartment Classes
 from __future__ import absolute_import, division, print_function
 
 import copy
-
 import numpy as np
+
+from multiprocessing import Pipe
+from multiprocessing import Process as Multiprocess
 
 from vivarium.library.units import Quantity
 from vivarium.core.registry import process_registry, serializer_registry
@@ -203,9 +205,15 @@ class Process(Generator):
         if parameters is None:
              parameters = {}
         self.parameters = copy.deepcopy(self.defaults)
+
         self.schema_override = {}
         if '_schema' in parameters:
             self.schema_override = parameters.pop('_schema')
+
+        self.parallel = False
+        if '_parallel' in parameters:
+            self.parallel = parameters.pop('_parallel')
+
         deep_merge(self.parameters, parameters)
 
         # register process repository
@@ -300,3 +308,40 @@ class Process(Generator):
 class Deriver(Process):
     def is_deriver(self):
         return True
+
+
+def run_update(connection, process):
+    running = True
+
+    while running:
+        interval, states = connection.recv()
+
+        # stop process by sending -1 as the interval
+        if interval == -1:
+            running = False
+
+        else:
+            update = process.next_update(interval, states)
+            connection.send(update)
+
+    connection.close()
+
+
+class ParallelProcess(object):
+    def __init__(self, process):
+        self.process = process
+        self.parent, self.child = Pipe()
+        self.multiprocess = Multiprocess(
+            target=run_update,
+            args=(self.child, self.process))
+        self.multiprocess.start()
+
+    def update(self, interval, states):
+        self.parent.send((interval, states))
+
+    def get(self):
+        return self.parent.recv()
+
+    def end(self):
+        self.parent.send((-1, None))
+        self.multiprocess.join()
