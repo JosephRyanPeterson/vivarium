@@ -4,6 +4,7 @@ import os
 import math
 import random
 import itertools
+import logging as log
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -29,6 +30,10 @@ DEFAULT_HUE = HUES[0]
 DEFAULT_SV = [100.0/100.0, 70.0/100.0]
 BASELINE_TAG_COLOR = [220/360, 1.0, 0.2]  # HSV
 FLOURESCENT_SV = [0.75, 1.0]  # SV for fluorescent colors
+
+
+log.basicConfig(level=os.environ.get('LOGLEVEL', log.WARNING))
+
 
 def check_plt_backend():
     # reset matplotlib backend for non-interactive plotting
@@ -228,7 +233,10 @@ def plot_snapshots(data, plot_config):
             * **include_fields** (:py:class:`Iterable`): Keys of fields
               to plot.
     '''
+    log.info('Starting plot_snapshots')
     check_plt_backend()
+
+    log.debug('plot_config: {}'.format(plot_config))
 
     n_snapshots = plot_config.get('n_snapshots', 6)
     out_dir = plot_config.get('out_dir', 'out')
@@ -259,6 +267,7 @@ def plot_snapshots(data, plot_config):
 
     time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
     snapshot_times = [time_vec[i] for i in time_indices]
+    log.debug('Snapshot Times: {}'.format(snapshot_times))
 
     # get fields id and range
     if fields:
@@ -272,6 +281,7 @@ def plot_snapshots(data, plot_config):
             field_min = min([min(min(field_data[field_id])) for t, field_data in fields.items()])
             field_max = max([max(max(field_data[field_id])) for t, field_data in fields.items()])
             field_range[field_id] = [field_min, field_max]
+    log.debug('Field IDs to plot: {}'.format(field_ids))
 
     # get agent ids
     agent_ids = set()
@@ -294,17 +304,22 @@ def plot_snapshots(data, plot_config):
     # make the figure
     n_rows = max(len(field_ids), 1)
     n_cols = n_snapshots + 1  # one column for the colorbar
+    log.debug('Figure will have {} rows and {} cols'.format(
+        n_rows, n_cols))
     figsize = (12 * n_cols, 12 * n_rows)
     max_dpi = min([2**16 // dim for dim in figsize]) - 1
-    fig = plt.figure(figsize=figsize, dpi=min(max_dpi, 100))
+    dpi = min(max_dpi, 100)
+    fig = plt.figure(figsize=figsize, dpi=dpi)
     grid = plt.GridSpec(n_rows, n_cols, wspace=0.2, hspace=0.2)
     plt.rcParams.update({'font.size': 36})
+    log.debug('Made plot with size {} and dpi {}'.format(figsize, dpi))
 
     # plot snapshot data in each subsequent column
     for col_idx, (time_idx, time) in enumerate(zip(time_indices, snapshot_times)):
         if field_ids:
             for row_idx, field_id in enumerate(field_ids):
-
+                log.debug('Plotting figure at col {} and row {}'.format(
+                    col_idx, row_idx))
                 ax = init_axes(
                     fig, edge_length_x, edge_length_y, grid, row_idx,
                     col_idx, time, field_id
@@ -340,11 +355,14 @@ def plot_snapshots(data, plot_config):
             if agents:
                 agents_now = agents[time]
                 plot_agents(ax, agents_now, agent_colors, agent_shape)
+    log.debug('Finished plotting data')
 
     fig_path = os.path.join(out_dir, filename)
     plt.subplots_adjust(wspace=0.7, hspace=0.1)
+    log.debug('Saving figure to {}'.format(fig_path))
     plt.savefig(fig_path, bbox_inches='tight')
     plt.close(fig)
+    log.debug('Finishing plot_snapshots')
 
 def get_fluorescent_color(baseline_hsv, tag_color, intensity):
     # move color towards bright fluoresence color when intensity = 1
