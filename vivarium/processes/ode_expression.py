@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function
 import os
 import argparse
 import random
+import math
 import logging as log
 
 from vivarium.core.process import Process
@@ -174,8 +175,9 @@ class ODE_expression(Process):
         'degradation_rates': {},
         'protein_map': {},
         'transcription_leak': {
-            'sigma': 0.0,
-            'magnitude': 0.0},
+            'rate': 0.0,  # probability of leak in 1 second
+            'magnitude': 0.0,  # the amount of leak
+        },
         'regulation': {},
         'regulators': [],
         'initial_state': {},
@@ -197,7 +199,7 @@ class ODE_expression(Process):
             'protein_map', self.defaults['protein_map'])
         transcription_leak = initial_parameters.get(
             'transcription_leak', self.defaults['transcription_leak'])
-        self.transcription_leak_sigma = transcription_leak['sigma']
+        self.transcription_leak_rate = transcription_leak['rate']
         self.transcription_leak_magnitude = transcription_leak['magnitude']
 
         # boolean regulation
@@ -288,7 +290,9 @@ class ODE_expression(Process):
 
             # do not transcribe inhibited genes, except for transcription leaks
             if regulation_state.get(transcript):
-                if random.uniform(0, 1) < abs(random.gauss(0, self.transcription_leak_sigma)):
+                rate = -math.log(1 - abs(random.gauss(0, self.transcription_leak_rate)))  # rate for probability function of time
+                leak_probability = 1 - math.exp(-rate * timestep)
+                if random.uniform(0, 1) < leak_probability:
                     rate = self.transcription_leak_magnitude
                     log.info('TRANSCRIPTION LEAK!')
                 else:
@@ -330,15 +334,16 @@ def get_lacy_config():
         'LacY': 'lacy_RNA'}
 
     degradation_rates = {
-        'lacy_RNA': 3e-3,  # a single RNA lasts about 5 minutes
+        'lacy_RNA': 5e-3,  # a single RNA lasts about 5 minutes
         'LacY': 3e-5}
 
     # define regulation
     regulators = [('external', 'glc__D_e')]
-    regulation = {'lacy_RNA': 'if not (external, glc__D_e) > 0.1'}
+    regulation = {'lacy_RNA': 'if not (external, glc__D_e) > 0.05'}
     transcription_leak = {
-        'sigma': 1e-4,
-        'magnitude': 1e-6}
+        'rate': 1e-4,
+        'magnitude': 0.0  #1e-6
+        }
 
     # initial state
     initial_state = {

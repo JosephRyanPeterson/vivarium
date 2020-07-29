@@ -79,6 +79,8 @@ agents_library = {
             'agents_path': ('..', '..', 'agents'),
             'fields_path': ('..', '..', 'fields'),
             'dimensions_path': ('..', '..', 'dimensions'),
+            'metabolism': {'time_step': 10},
+            'transport': {'time_step': 10},
         }
     },
 }
@@ -145,9 +147,9 @@ environments_library = {
     'shallow_glc_lcts': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
         'config': get_lattice_config(
-            bounds=[25, 25],
-            n_bins=[25, 25],
-            depth=5e-2,
+            bounds=[30, 30],
+            n_bins=[50, 50],
+            depth=5e-1,
             diffusion=2e-3,
         ),
     },
@@ -456,7 +458,7 @@ def main():
             environment_type='shallow_glc_lcts',
             out_dir=txp_mtb_out_dir,
             experiment_settings=get_experiment_settings(
-                total_time=4000,
+                total_time=6000,
             ),
             plot_settings=get_plot_settings(
                 fields=['glc__D_e', 'lcts_e'],

@@ -21,6 +21,7 @@ from vivarium.parameters.parameters import (
 from vivarium.plots.transport_metabolism import plot_diauxic_shift
 from vivarium.processes.division_volume import DivisionVolume
 from vivarium.processes.meta_division import MetaDivision
+from vivarium.processes.tree_mass import TreeMass
 from vivarium.processes.metabolism import (
     Metabolism,
     get_iAF1260b_config)
@@ -33,7 +34,7 @@ from vivarium.processes.ode_expression import (
 
 
 NAME = 'transport_metabolism'
-TIMESTEP = 30
+TIMESTEP = 1
 
 def default_metabolism_config():
     config = get_iAF1260b_config()
@@ -105,6 +106,9 @@ class TransportMetabolism(Generator):
         # Gene expression
         expression = ODE_expression(config['expression'])
 
+        # Mass deriver
+        mass_deriver = TreeMass({})
+
         # Division
         # configure division condition and meta-division processes
         division_condition = DivisionVolume({})
@@ -119,6 +123,7 @@ class TransportMetabolism(Generator):
             'transport': transport,
             'metabolism': metabolism,
             'expression': expression,
+            'mass_deriver': mass_deriver,
             'division': division_condition,
             'meta_division': meta_division,
         }
@@ -153,6 +158,9 @@ class TransportMetabolism(Generator):
                 'external': external_path,
                 'global': boundary_path,
             },
+            'mass_deriver': {
+                'global': boundary_path,
+            },
             'division': {
                 'global': boundary_path,
             },
@@ -183,7 +191,7 @@ def test_txp_mtb_ge():
 
 def simulate_txp_mtb_ge(config={}, out_dir='out'):
 
-    end_time = 2520  # 2520 sec (42 min) is the expected doubling time in minimal media
+    end_time = 1000  # 2520 sec (42 min) is the expected doubling time in minimal media
     environment_volume = 1e-14
     timeline = [
         (0, {
@@ -203,6 +211,7 @@ def simulate_txp_mtb_ge(config={}, out_dir='out'):
                 'fields': ('fields',),
                 'external': ('boundary', 'external'),
                 'dimensions': ('dimensions',),
+                'global': ('boundary',),
             }},
         'timeline': {
             'timeline': timeline,
@@ -236,6 +245,7 @@ def simulate_txp_mtb_ge(config={}, out_dir='out'):
     # simulation plot
     plot_settings = {
         'max_rows': 30,
+        'remove_flat': True,
         'remove_zeros': True,
         'skip_ports': ['null', 'reactions'],
     }
