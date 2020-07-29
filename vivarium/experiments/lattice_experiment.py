@@ -149,7 +149,7 @@ environments_library = {
         'config': get_lattice_config(
             bounds=[30, 30],
             n_bins=[50, 50],
-            depth=5e-1,
+            depth=5e0,
             diffusion=2e-3,
         ),
     },

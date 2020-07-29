@@ -55,7 +55,7 @@ def default_expression_config():
 
     # redo regulation with BiGG id for glucose
     regulators = [('external', 'glc__D_e')]
-    regulation = {'lacy_RNA': 'if not (external, glc__D_e) > 0.05'}
+    regulation = {'lacy_RNA': 'if (external, glc__D_e) > 0.1'}  # inhibited in this condition
     reg_config = {
         'regulators': regulators,
         'regulation': regulation}
@@ -191,8 +191,8 @@ def test_txp_mtb_ge():
 
 def simulate_txp_mtb_ge(config={}, out_dir='out'):
 
-    end_time = 1000  # 2520 sec (42 min) is the expected doubling time in minimal media
-    environment_volume = 1e-13
+    end_time = 2520  # 2520 sec (42 min) is the expected doubling time in minimal media
+    environment_volume = 1e-14
     timeline = [
         (0, {
             ('external', 'glc__D_e'): 3.0,
@@ -226,10 +226,7 @@ def simulate_txp_mtb_ge(config={}, out_dir='out'):
 
     # calculate growth
     volume_ts = timeseries['boundary']['volume']
-    try:
-        print('growth: {}'.format(volume_ts[-1] / volume_ts[0]))
-    except:
-        print('no volume!')
+    print('growth: {}'.format(volume_ts[-1] / volume_ts[1]))
 
     ## plot
     # diauxic plot

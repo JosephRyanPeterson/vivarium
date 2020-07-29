@@ -277,15 +277,16 @@ class ODE_expression(Process):
             transcript_state = internal_state[transcript]
 
             # do not transcribe inhibited genes, except for transcription leaks
-            if regulation_state.get(transcript):
-                # rate for probability as function of timestep
-                rate = -math.log(1 - abs(random.gauss(0, self.transcription_leak_rate)))
+            if transcript in regulation_state and regulation_state.get(transcript):
+                # leak probability for probability as function of the time step
+                rate = -math.log(1 - self.transcription_leak_rate)
                 leak_probability = 1 - math.exp(-rate * timestep)
                 if random.uniform(0, 1) < leak_probability:
                     rate = self.transcription_leak_magnitude
                     log.info('TRANSCRIPTION LEAK!')
                 else:
                     rate = 0.0
+
             internal_update[transcript] = \
                 (rate - self.degradation.get(transcript, 0) * transcript_state) * timestep
 
@@ -328,7 +329,7 @@ def get_lacy_config():
 
     # define regulation
     regulators = [('external', 'glc__D_e')]
-    regulation = {'lacy_RNA': 'if not (external, glc__D_e) > 0.1'}
+    regulation = {'lacy_RNA': 'if (external, glc__D_e) > 0.1'} # inhibited in this condition
     transcription_leak = {
         'rate': 1e-4,
         'magnitude': 1e-6,
