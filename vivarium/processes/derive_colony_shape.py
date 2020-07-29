@@ -101,6 +101,7 @@ class ColonyShapeDeriver(Deriver):
     name = 'colony_shape_deriver'
     defaults = {
         'alpha': 1.0,
+        'bounds': [1, 1],
     }
 
     def ports_schema(self):
@@ -109,7 +110,10 @@ class ColonyShapeDeriver(Deriver):
                 '*': {
                     'boundary': {
                         'location': {
-                            '_default': [0.5, 0.5],
+                            '_default': [
+                                0.5 * bound for bound in
+                                self.parameters['bounds']
+                            ],
                         },
                         'mass': {
                             '_default': 1339 * units.fg,
