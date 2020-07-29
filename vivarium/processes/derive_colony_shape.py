@@ -112,7 +112,7 @@ class ColonyShapeDeriver(Deriver):
                             '_default': [0.5, 0.5],
                         },
                         'mass': {
-                            '_default': 0.0 * units.fg,
+                            '_default': 1339 * units.fg,
                         },
                     },
                 },
