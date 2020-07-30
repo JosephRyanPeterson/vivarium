@@ -147,7 +147,7 @@ class ODE_expression(Process):
      ...     'initial_state': initial_state,
      ...     'regulators': [('external', 'glc__D_e')],
      ...     'regulation': {
-     ...         'lacy_RNA': 'if not (external, glc__D_e) > 1.0',
+     ...         'lacy_RNA': 'if (external, glc__D_e) > 1.0',
      ...     },
      ... }
      >>> expression_process = ODE_expression(config)
@@ -400,7 +400,7 @@ def get_flagella_expression():
         'initial_state': initial_state}
 
 
-def test_expression(config=None, timeline=[(100, {})]):
+def test_expression(config=get_lacy_config(), timeline=[(100, {})]):
     expression = ODE_expression(config)
     settings = {'timeline': {'timeline': timeline}}
     return simulate_process_in_experiment(expression, settings)
