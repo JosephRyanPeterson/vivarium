@@ -112,7 +112,7 @@ class Metabolism(Process):
         'default_upper_bound': 0.0,
         'regulation': {},
         'initial_state': {},
-        'exchange_threshold': 1e-6, # concentrations lower than exchange_threshold are considered depleted
+        'exchange_threshold': 1e-4,  # concentrations lower than exchange_threshold are considered depleted
         'initial_mass': 1339,  # fg
         'global_deriver_key': 'global_deriver',
         'mass_deriver_key': 'mass_deriver',

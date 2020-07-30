@@ -34,7 +34,7 @@ from vivarium.processes.ode_expression import (
 
 
 NAME = 'transport_metabolism'
-TIMESTEP = 1
+TIMESTEP = 10
 
 def default_metabolism_config():
     config = get_iAF1260b_config()
@@ -54,8 +54,11 @@ def default_expression_config():
     config = get_lacy_config()
 
     # redo regulation with BiGG id for glucose
-    regulators = [('external', 'glc__D_e')]
-    regulation = {'lacy_RNA': 'if (external, glc__D_e) > 0.05'}  # inhibited in this condition
+    regulators = [
+        ('external', 'glc__D_e'),
+        ('internal', 'lcts_p')]
+    regulation = {
+        'lacy_RNA': 'if (external, glc__D_e) > 0.05 and (internal, lcts_p) < 0.01'}  # inhibited in this condition
     reg_config = {
         'regulators': regulators,
         'regulation': regulation}

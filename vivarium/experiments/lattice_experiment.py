@@ -95,6 +95,7 @@ def get_lattice_config(
     diffusion=1e-2,
     molecules=['glc__D_e', 'lcts_e'],
     gradient={},
+    keep_fields_emit=[],
 ):
 
     environment_config = {
@@ -110,12 +111,24 @@ def get_lattice_config(
             'depth': depth,
             'diffusion': diffusion,
             'gradient': gradient,
+            '_schema': {
+                'fields': {
+                    field_id: {
+                        '_emit': False}
+                    for field_id in molecules
+                    if field_id not in keep_fields_emit}}
         }
     }
+
     return environment_config
 
 def get_iAF1260b_environment(
     bounds=[20,20],
+    n_bins=[10, 10],
+    jitter_force=1e-4,
+    depth=3000.0,
+    diffusion=5e-3,
+    keep_fields_emit=[],
 ):
     # get external state from iAF1260b metabolism
     config = get_iAF1260b_config()
@@ -127,7 +140,12 @@ def get_iAF1260b_environment(
     return get_lattice_config(
         bounds=bounds,
         molecules=list(molecules.keys()),
+        n_bins=n_bins,
+        jitter_force=jitter_force,
+        depth=depth,
+        diffusion=diffusion,
         gradient=gradient,
+        keep_fields_emit=keep_fields_emit,
     )
 
 environments_library = {
@@ -144,19 +162,23 @@ environments_library = {
             bounds=[17, 17],
         ),
     },
-    'shallow_glc_lcts': {
+    'shallow_iAF1260b': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
-        'config': get_lattice_config(
+        'config': get_iAF1260b_environment(
             bounds=[30, 30],
             n_bins=[50, 50],
-            depth=1e1,
-            diffusion=5e-3,
+            jitter_force=5e-4,
+            depth=2e1,
+            diffusion=1e-2,
+            keep_fields_emit=['glc__D_e', 'lcts_e'],
         ),
     },
 }
 
 # simulation settings
 def get_experiment_settings(
+        experiment_id='lattice',
+        description='an experiment in the lattice environment',
         total_time=4000,
         emit_step=10,
         emitter='timeseries',
@@ -164,6 +186,8 @@ def get_experiment_settings(
         return_raw_data=True,
 ):
     return {
+        'experiment_id': experiment_id,
+        'description': description,
         'total_time': total_time,
         'emit_step': emit_step,
         'emitter': emitter,
@@ -455,10 +479,18 @@ def main():
         make_dir(txp_mtb_out_dir)
         run_workflow(
             agent_type='transport_metabolism',
-            environment_type='shallow_glc_lcts',
+            environment_type='shallow_iAF1260b',
             out_dir=txp_mtb_out_dir,
             experiment_settings=get_experiment_settings(
-                total_time=6000,
+                experiment_id='glucose lactose diauxie',
+                description='glucose-lactose diauxic shifters are placed in a shallow environment with glucose and '
+                           'lactose. They start off with no internal LacY and uptake only glucose, but LacY is '
+                           'expressed upon depletion of glucose they begin to uptake lactose. Cells have an iAF1260b '
+                           'BiGG metabolism, kinetic transport of glucose and lactose, and ode-based gene expression '
+                           'of LacY',
+                total_time=20000,
+                emit_step=100,
+                emitter='database',
             ),
             plot_settings=get_plot_settings(
                 fields=['glc__D_e', 'lcts_e'],
