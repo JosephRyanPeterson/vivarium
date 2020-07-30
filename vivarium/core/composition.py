@@ -159,6 +159,8 @@ def agent_environment_experiment(
     }
     if invoke:
         experiment_config['invoke'] = invoke
+    if 'emit_step' in settings:
+        experiment_config['emit_step'] = settings['emit_step']
     return Experiment(experiment_config)
 
 def process_in_compartment(process, topology={}):
