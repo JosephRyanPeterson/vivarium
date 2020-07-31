@@ -153,8 +153,8 @@ def agent_environment_experiment(
         'emitter': emitter,
         'initial_state': initial_state,
     }
-    if settings.get('experiment_id'):
-        experiment_config['experiment_id'] = settings.get('experiment_id')
+    if settings.get('experiment_name'):
+        experiment_config['experiment_name'] = settings.get('experiment_name')
     if settings.get('description'):
         experiment_config['description'] = settings.get('description')
     if invoke:
