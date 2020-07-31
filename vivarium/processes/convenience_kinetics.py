@@ -45,7 +45,7 @@ from vivarium.core.composition import (
 )
 from vivarium.library.kinetic_rate_laws import KineticFluxModel
 from vivarium.library.dict_utils import tuplify_port_dicts
-from vivarium.library.units import units
+from vivarium.library.units import units, remove_units
 
 
 #: The name of the process, which is used to name the subdirectory under
@@ -306,7 +306,7 @@ class ConvenienceKinetics(Process):
         mmol_to_counts = states['global']['mmol_to_counts']
 
         # kinetic rate law requires a flat dict with ('port', 'state') keys.
-        flattened_states = tuplify_port_dicts(states)
+        flattened_states = remove_units(tuplify_port_dicts(states))
 
         # get flux
         fluxes = self.kinetic_rate_laws.get_fluxes(flattened_states)
