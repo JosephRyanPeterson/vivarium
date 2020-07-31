@@ -4,7 +4,10 @@ import os
 import copy
 import argparse
 
-from vivarium.library.dict_utils import get_value_from_path
+from vivarium.library.dict_utils import (
+    get_value_from_path,
+    deep_merge
+)
 from vivarium.library.units import units
 from vivarium.core.process import Generator
 from vivarium.core.composition import (
@@ -58,17 +61,38 @@ def default_expression_config():
         ('external', 'glc__D_e'),
         ('internal', 'lcts_p')]
     regulation = {
-        'lacy_RNA': 'if (external, glc__D_e) > 0.05 and (internal, lcts_p) < 0.01'}  # inhibited in this condition
+        'lacy_RNA': 'if (external, glc__D_e) > 0.005 and (internal, lcts_p) < 0.02'}  # inhibited in this condition
+    transcription_leak = {
+        'rate': 1e-5,
+        'magnitude': 1e-6}
     reg_config = {
+        'time_step': TIMESTEP,
         'regulators': regulators,
-        'regulation': regulation}
+        'regulation': regulation,
+        'transcription_leak': transcription_leak,
+    }
     config.update(reg_config)
     return config
 
 
 def default_transport_config():
     config = get_glc_lct_config()
-    config['time_step'] = TIMESTEP
+    txp_config = {
+        'time_step': TIMESTEP,
+        'kinetic_parameters': {
+            'EX_glc__D_e': {
+                ('internal', 'EIIglc'): {
+                    ('external', 'glc__D_e'): 2e-1,  # k_m for external [glc__D_e]
+                }
+            },
+            'EX_lcts_e': {
+                ('internal', 'LacY'): {
+                    ('external', 'lcts_e'): 2e-1,
+                }
+            }
+        }
+    }
+    deep_merge(config, txp_config)
     return config
 
 

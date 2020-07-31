@@ -128,12 +128,15 @@ def get_iAF1260b_environment(
     jitter_force=1e-4,
     depth=3000.0,
     diffusion=5e-3,
+    override_initial={},
     keep_fields_emit=[],
 ):
     # get external state from iAF1260b metabolism
     config = get_iAF1260b_config()
     metabolism = Metabolism(config)
     molecules = metabolism.initial_state['external']
+    for mol_id, conc in override_initial.items():
+        molecules[mol_id] = conc
     gradient = {
         'type': 'uniform',
         'molecules': molecules}
@@ -167,17 +170,22 @@ environments_library = {
         'config': get_iAF1260b_environment(
             bounds=[30, 30],
             n_bins=[50, 50],
-            jitter_force=5e-4,
+            jitter_force=1e-3,
             depth=2e1,
-            diffusion=1e-2,
-            keep_fields_emit=['glc__D_e', 'lcts_e'],
+            diffusion=1.5e-2,
+            override_initial={
+                'glc__D_e': 1.0,
+                'lcts_e': 1.0},
+            keep_fields_emit=[
+                'glc__D_e',
+                'lcts_e'],
         ),
     },
 }
 
 # simulation settings
 def get_experiment_settings(
-        experiment_id='lattice',
+        experiment_name='lattice',
         description='an experiment in the lattice environment',
         total_time=4000,
         emit_step=10,
@@ -186,7 +194,7 @@ def get_experiment_settings(
         return_raw_data=True,
 ):
     return {
-        'experiment_id': experiment_id,
+        'experiment_name': experiment_name,
         'description': description,
         'total_time': total_time,
         'emit_step': emit_step,
@@ -480,15 +488,20 @@ def main():
         run_workflow(
             agent_type='transport_metabolism',
             environment_type='shallow_iAF1260b',
+            initial_agent_state={
+                'boundary': {
+                    'external': {
+                        'glc__D_e': 1.0,
+                        'lcts_e': 1.0}}},
             out_dir=txp_mtb_out_dir,
             experiment_settings=get_experiment_settings(
-                experiment_id='glucose lactose diauxie',
+                experiment_name='glucose lactose diauxie',
                 description='glucose-lactose diauxic shifters are placed in a shallow environment with glucose and '
                            'lactose. They start off with no internal LacY and uptake only glucose, but LacY is '
                            'expressed upon depletion of glucose they begin to uptake lactose. Cells have an iAF1260b '
                            'BiGG metabolism, kinetic transport of glucose and lactose, and ode-based gene expression '
                            'of LacY',
-                total_time=20000,
+                total_time=24000,
                 emit_step=100,
                 emitter='database',
             ),

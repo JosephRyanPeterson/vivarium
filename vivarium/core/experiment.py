@@ -1198,6 +1198,7 @@ class Experiment(object):
         self.config = config
         self.experiment_id = config.get(
             'experiment_id', timestamp(datetime.datetime.utcnow()))
+        self.experiment_name = config.get('experiment_name', self.experiment_id)
         self.description = config.get('description', '')
         self.processes = config['processes']
         self.topology = config['topology']
@@ -1244,6 +1245,7 @@ class Experiment(object):
         data = {
             'time_created': timestamp(),
             'experiment_id': self.experiment_id,
+            'name': self.experiment_name,
             'description': self.description,
             'processes': serialize_dictionary(self.processes),
             'topology': self.topology,
