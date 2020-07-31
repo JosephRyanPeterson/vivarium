@@ -290,8 +290,6 @@ class ODE_expression(Process):
             else:
                 log.info('TRANSCRIPTION DISINHIBITED!')
 
-            import ipdb; ipdb.set_trace()
-
             internal_update[transcript] = \
                 (rate - self.degradation.get(transcript, 0) * transcript_state) * timestep
 

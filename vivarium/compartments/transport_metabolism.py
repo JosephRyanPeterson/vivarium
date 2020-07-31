@@ -37,7 +37,7 @@ from vivarium.processes.ode_expression import (
 
 
 NAME = 'transport_metabolism'
-TIMESTEP = 10
+TIMESTEP = 5
 
 def default_metabolism_config():
     config = get_iAF1260b_config()
@@ -61,9 +61,9 @@ def default_expression_config():
         ('external', 'glc__D_e'),
         ('internal', 'lcts_p')]
     regulation = {
-        'lacy_RNA': 'if (external, glc__D_e) > 0.005 and (internal, lcts_p) < 0.02'}  # inhibited in this condition
+        'lacy_RNA': 'if (external, glc__D_e) > 0.005 and (internal, lcts_p) < 0.05'}  # inhibited in this condition
     transcription_leak = {
-        'rate': 1e-5,
+        'rate': 7e-5,  #5e-5,
         'magnitude': 1e-6}
     reg_config = {
         'time_step': TIMESTEP,
@@ -82,12 +82,13 @@ def default_transport_config():
         'kinetic_parameters': {
             'EX_glc__D_e': {
                 ('internal', 'EIIglc'): {
-                    ('external', 'glc__D_e'): 1e-1,  # k_m for external [glc__D_e]
+                    ('external', 'glc__D_e'): 2e-1,  # k_m for external [glc__D_e]
                 }
             },
             'EX_lcts_e': {
                 ('internal', 'LacY'): {
                     ('external', 'lcts_e'): 1e-1,
+                    # 'kcat_f': 8e1,
                 }
             }
         }

@@ -227,16 +227,20 @@ class DatabaseEmitter(Emitter):
         table.insert_one(data)
 
     def get_data(self):
-        query = {'experiment_id': self.experiment_id}
-        raw_data = self.history.find(query)
-        raw_data = list(raw_data)
-        data = {}
-        for datum in raw_data:
-            time = datum['time']
-            data[time] = {
-                key: value for key, value in datum.items()
-                if key not in ['_id', 'experiment_id', 'time']}
-        return data
+        return get_history_data_db(self.history, experiment_id)
+
+
+def get_history_data_db(history_collection, experiment_id):
+    query = {'experiment_id': experiment_id}
+    raw_data = history_collection.find(query)
+    raw_data = list(raw_data)
+    data = {}
+    for datum in raw_data:
+        time = datum['time']
+        data[time] = {
+            key: value for key, value in datum.items()
+            if key not in ['_id', 'experiment_id', 'time']}
+    return data
 
 
 def get_atlas_client(secrets_path):

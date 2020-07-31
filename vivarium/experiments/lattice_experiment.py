@@ -89,7 +89,7 @@ agents_library = {
 
 # environment config
 def get_lattice_config(
-    # time_step=TIME_STEP,
+    time_step=TIME_STEP,
     bounds=[20, 20],
     n_bins=[10, 10],
     jitter_force=1e-4,
@@ -102,7 +102,7 @@ def get_lattice_config(
 
     environment_config = {
         'multibody': {
-            # 'time_step': time_step,
+            'time_step': time_step,
             'bounds': bounds,
             'jitter_force': jitter_force,
             'agents': {}
@@ -127,11 +127,12 @@ def get_lattice_config(
     return environment_config
 
 def get_iAF1260b_environment(
-    # time_step=TIME_STEP,
+    time_step=TIME_STEP,
     bounds=[20,20],
     n_bins=[10, 10],
     jitter_force=1e-4,
     depth=3000.0,
+    scale_concentration=1,  # scales minimal media
     diffusion=5e-3,
     override_initial={},
     keep_fields_emit=[],
@@ -139,14 +140,17 @@ def get_iAF1260b_environment(
     # get external state from iAF1260b metabolism
     config = get_iAF1260b_config()
     metabolism = Metabolism(config)
-    molecules = metabolism.initial_state['external']
+    molecules = {
+        mol_id: conc * scale_concentration
+        for mol_id, conc in metabolism.initial_state['external'].items()
+    }
     for mol_id, conc in override_initial.items():
         molecules[mol_id] = conc
     gradient = {
         'type': 'uniform',
         'molecules': molecules}
     return get_lattice_config(
-        # time_step=time_step,
+        time_step=time_step,
         bounds=bounds,
         molecules=list(molecules.keys()),
         n_bins=n_bins,
@@ -174,21 +178,23 @@ environments_library = {
     'shallow_iAF1260b': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
         'config': get_iAF1260b_environment(
-            # time_step=10,
+            time_step=10,
             bounds=[30, 30],
             n_bins=[40, 40],
-            jitter_force=1e-3,
-            depth=2e1,
-            diffusion=2e-2,
+            jitter_force=2e-3,
+            depth=1e1,
+            scale_concentration=10000,
+            diffusion=1e-1,
             override_initial={
-                'glc__D_e': 0.8,
-                'lcts_e': 1.0},
+                'glc__D_e': 0.2,
+                'lcts_e': 8.0},
             keep_fields_emit=[
                 'glc__D_e',
                 'lcts_e'],
         ),
-    },
+    }
 }
+
 
 # simulation settings
 def get_experiment_settings(
@@ -494,6 +500,7 @@ def main():
         make_dir(txp_mtb_out_dir)
         run_workflow(
             agent_type='transport_metabolism',
+            n_agents=2,
             environment_type='shallow_iAF1260b',
             initial_agent_state={
                 'boundary': {
@@ -509,7 +516,7 @@ def main():
                            'BiGG metabolism, kinetic transport of glucose and lactose, and ode-based gene expression '
                            'of LacY',
                 total_time=24000,
-                emit_step=100,
+                emit_step=200,
                 emitter='database',
             ),
             plot_settings=get_plot_settings(
