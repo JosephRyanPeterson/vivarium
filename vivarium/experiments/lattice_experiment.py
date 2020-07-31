@@ -39,6 +39,7 @@ from vivarium.compartments.flagella_expression import (
 
 NAME = 'lattice'
 DEFAULT_ENVIRONMENT_TYPE = Lattice
+TIME_STEP = 1
 
 
 # agents and their configurations
@@ -88,6 +89,7 @@ agents_library = {
 
 # environment config
 def get_lattice_config(
+    # time_step=TIME_STEP,
     bounds=[20, 20],
     n_bins=[10, 10],
     jitter_force=1e-4,
@@ -100,11 +102,13 @@ def get_lattice_config(
 
     environment_config = {
         'multibody': {
+            # 'time_step': time_step,
             'bounds': bounds,
             'jitter_force': jitter_force,
             'agents': {}
         },
         'diffusion': {
+            # 'time_step': time_step,
             'molecules': molecules,
             'n_bins': n_bins,
             'bounds': bounds,
@@ -123,6 +127,7 @@ def get_lattice_config(
     return environment_config
 
 def get_iAF1260b_environment(
+    # time_step=TIME_STEP,
     bounds=[20,20],
     n_bins=[10, 10],
     jitter_force=1e-4,
@@ -141,6 +146,7 @@ def get_iAF1260b_environment(
         'type': 'uniform',
         'molecules': molecules}
     return get_lattice_config(
+        # time_step=time_step,
         bounds=bounds,
         molecules=list(molecules.keys()),
         n_bins=n_bins,
@@ -168,13 +174,14 @@ environments_library = {
     'shallow_iAF1260b': {
         'type': DEFAULT_ENVIRONMENT_TYPE,
         'config': get_iAF1260b_environment(
+            # time_step=10,
             bounds=[30, 30],
-            n_bins=[50, 50],
+            n_bins=[40, 40],
             jitter_force=1e-3,
             depth=2e1,
-            diffusion=1.5e-2,
+            diffusion=2e-2,
             override_initial={
-                'glc__D_e': 1.0,
+                'glc__D_e': 0.8,
                 'lcts_e': 1.0},
             keep_fields_emit=[
                 'glc__D_e',

@@ -82,12 +82,12 @@ def default_transport_config():
         'kinetic_parameters': {
             'EX_glc__D_e': {
                 ('internal', 'EIIglc'): {
-                    ('external', 'glc__D_e'): 2e-1,  # k_m for external [glc__D_e]
+                    ('external', 'glc__D_e'): 1e-1,  # k_m for external [glc__D_e]
                 }
             },
             'EX_lcts_e': {
                 ('internal', 'LacY'): {
-                    ('external', 'lcts_e'): 2e-1,
+                    ('external', 'lcts_e'): 1e-1,
                 }
             }
         }

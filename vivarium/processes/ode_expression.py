@@ -170,6 +170,7 @@ class ODE_expression(Process):
 
     name = NAME
     defaults = {
+        'time_step': 1.0,
         'transcription_rates': {},
         'translation_rates': {},
         'degradation_rates': {},
@@ -286,6 +287,10 @@ class ODE_expression(Process):
                     log.info('TRANSCRIPTION LEAK!')
                 else:
                     rate = 0.0
+            else:
+                log.info('TRANSCRIPTION DISINHIBITED!')
+
+            import ipdb; ipdb.set_trace()
 
             internal_update[transcript] = \
                 (rate - self.degradation.get(transcript, 0) * transcript_state) * timestep
