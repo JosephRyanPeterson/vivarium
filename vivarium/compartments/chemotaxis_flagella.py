@@ -364,8 +364,6 @@ def test_ode_expression_chemotaxis(
             'timeline': timeline,
             'ports': {
                 'external': ('boundary', 'external'),
-                'fields': ('fields',),
-                'dimensions': ('dimensions',),
                 'global': ('boundary',),
             },
         },
