@@ -11,7 +11,7 @@ from vivarium.core.composition import (
 )
 
 # processes
-from vivarium.processes.Endres2006_chemoreceptor import (
+from vivarium.processes.chemoreceptor_cluster import (
     ReceptorCluster,
     get_exponential_random_timeline
 )

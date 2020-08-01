@@ -50,28 +50,69 @@ def run_to_steady_state(receptor, state, timestep):
 
 
 class ReceptorCluster(Process):
+    '''Models the activity of a chemoreceptor cluster
+
+       This :term:`process class` models the activity of a chemoreceptor cluster
+       composed of Tsr and Tar amino acid chemoreceptors. The model is a
+       Monod-Wyman-Changeux (MWC) model adapted from "Endres, R. G., & Wingreen, N. S.
+       (2006). Precise adaptation in bacterial chemotaxis through assistance neighborhoods”.
+       Each receptor homodimer is modeled as a two-state system (on or off) with energy
+       values based on ligand concentration and methylation levels. This results in four
+       energy levels: 1) on without ligand, on with ligand, off without ligand, off with
+       ligand. Sensory adaptation comes from the methylation of receptors, which alters the
+       free-energy offset and transition rate to favor the on state; attractant ligand
+       binding favors the off state.
+
+       :term:`Ports`:
+
+       * **internal**: Expects a :term:`store` with 'chemoreceptor_activity',
+         'CheR', 'CheB', 'CheB_P', and 'n_methyl'.
+       * **external**: Expects a :term:`store` with the ligand.
+
+       Arguments:
+           initial_parameters: A dictionary of configuration options.
+               The following configuration options may be provided:
+
+               * **ligand_id** (:py:class:`str`): The name of the external
+                 ligand sensed by the cluster.
+               * **initial_ligand** (:py:class:`float`): The initial concentration
+                 of the ligand. The initial state of the cluster is set to
+                 steady state relative to this concetnration.
+               * **n_Tar** (:py:class:`int`): number of Tar receptors in a cluster
+               * **n_Tsr** (:py:class:`int`): number of Tsr receptors in a cluster
+               * **K_Tar_off** (:py:class:`float`): (mM) MeAsp binding by Tar (Endres06)
+               * **K_Tar_on** (:py:class:`float`): (mM) MeAsp binding by Tar (Endres06)
+               * **K_Tsr_off** (:py:class:`float`): (mM) MeAsp binding by Tsr (Endres06)
+               * **K_Tsr_on** (:py:class:`float`): (mM) MeAsp binding by Tsr (Endres06)
+               * **k_meth** (:py:class:`float`): Catalytic rate of methylation
+               * **k_demeth** (:py:class:`float`): Catalytic rate of demethylation
+               * **adapt_rate** (:py:class:`float`): adaptation rate relative to wild-type.
+                 cell-to-cell variation cause by variability in CheR and CheB
+
+       Notes:
+           * dissociation constants (mM)
+           * K_Tar_on = 12e-3  # Tar to Asp (Emonet05)
+           * K_Tar_off = 1.7e-3  # Tar to Asp (Emonet05)
+           * (Endres & Wingreen, 2006) has dissociation constants for serine binding, NiCl2 binding
+       '''
 
     name = NAME
     defaults = {
         'ligand_id': 'MeAsp',
         'initial_ligand': 5.0,
         'initial_internal_state': INITIAL_INTERNAL_STATE,
-        # Parameters from Endres and Wingreen 2006. See paper for serine binding, NiCl2 binding rates.
-        'n_Tar': 6,  # number of Tar receptors in a cluster
-        'n_Tsr': 12,  # number of Tsr receptors in a cluster
-        # dissociation constants (mM)
-        # K_Tar_on = 12e-3  # Tar to Asp (Emonet05)
-        # K_Tar_off = 1.7e-3  # Tar to Asp (Emonet05)
-        # (Endres & Wingreen, 2006) has dissociation constants for serine binding, NiCl2 binding
-        'K_Tar_off': 0.02,  # (mM) MeAsp binding by Tar (Endres06)
-        'K_Tar_on': 0.5,  # (mM) MeAsp binding by Tar (Endres06)
-        'K_Tsr_off': 100.0,  # (mM) MeAsp binding by Tsr (Endres06)
-        'K_Tsr_on': 10e6,  # (mM) MeAsp binding by Tsr (Endres06)
+        # Parameters from Endres and Wingreen 2006.
+        'n_Tar': 6,
+        'n_Tsr': 12,
+        'K_Tar_off': 0.02,
+        'K_Tar_on': 0.5,
+        'K_Tsr_off': 100.0,
+        'K_Tsr_on': 10e6,
         # k_CheR = 0.0182  # effective catalytic rate of CheR
         # k_CheB = 0.0364  # effective catalytic rate of CheB
-        'k_meth': 0.0625,  # Catalytic rate of methylation
-        'k_demeth': 0.0714,  # Catalytic rate of demethylation
-        'adapt_rate': 1.2,  # adaptation rate relative to wild-type. cell-to-cell variation cause by variability in [CheR, CheB]
+        'k_meth': 0.0625,
+        'k_demeth': 0.0714,
+        'adapt_rate': 1.2,
     }
 
     def __init__(self, parameters=None):
