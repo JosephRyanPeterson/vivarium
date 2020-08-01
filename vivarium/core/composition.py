@@ -127,6 +127,10 @@ def agent_environment_experiment(
                     agent_id: initial_agent_state
                     for agent_id in agent_ids})
 
+    if 'agents' in initial_state:
+        environment_config[
+            'config']['diffusion']['agents'] = initial_state['agents']
+
     # initialize the environment
     environment_type = environment_config['type']
     environment_compartment = environment_type(environment_config['config'])
@@ -159,6 +163,8 @@ def agent_environment_experiment(
         experiment_config['description'] = settings.get('description')
     if invoke:
         experiment_config['invoke'] = invoke
+    if 'emit_step' in settings:
+        experiment_config['emit_step'] = settings['emit_step']
     return Experiment(experiment_config)
 
 def process_in_compartment(process, topology={}):

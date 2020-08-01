@@ -222,6 +222,11 @@ def plot_snapshots(data, plot_config):
               ``out`` by default.
             * **filename** (:py:class:`str`): Base name of output file.
               ``snapshots`` by default.
+            * **skip_fields** (:py:class:`Iterable`): Keys of fields to
+              exclude from the plot. This takes priority over
+              ``include_fields``.
+            * **include_fields** (:py:class:`Iterable`): Keys of fields
+              to plot.
     '''
     check_plt_backend()
 
@@ -230,6 +235,8 @@ def plot_snapshots(data, plot_config):
     filename = plot_config.get('filename', 'snapshots')
     agent_shape = plot_config.get('agent_shape', 'segment')
     phylogeny_names = plot_config.get('phylogeny_names', True)
+    skip_fields = plot_config.get('skip_fields', [])
+    include_fields = plot_config.get('include_fields', None)
 
     # get data
     agents = data.get('agents', {})
@@ -254,9 +261,12 @@ def plot_snapshots(data, plot_config):
     snapshot_times = [time_vec[i] for i in time_indices]
 
     # get fields id and range
-    field_ids = []
     if fields:
-        field_ids = list(fields[time_vec[0]].keys())
+        if include_fields is None:
+            field_ids = set(fields[time_vec[0]].keys())
+        else:
+            field_ids = set(include_fields)
+        field_ids -= set(skip_fields)
         field_range = {}
         for field_id in field_ids:
             field_min = min([min(min(field_data[field_id])) for t, field_data in fields.items()])

@@ -9,7 +9,6 @@ try:
 except ImportError:
     from urllib import quote_plus  # Python 2
 
-from vivarium.actor.actor import delivery_report
 from vivarium.library.dict_utils import (
     merge_dicts, value_in_embedded_dict, get_path_list_from_dict, \
     get_value_from_path, make_path_dict)
@@ -27,6 +26,15 @@ CONFIGURATION_INDEXES = [
 
 SECRETS_PATH = 'secrets.json'
 
+
+def delivery_report(err, msg):
+    """
+    This is a utility method passed to the Kafka Producer to handle the delivery
+    of messages sent using `send(topic, message)`.
+    """
+    if err is not None:
+        print('message delivery failed: {}'.format(msg))
+        print('failed message: {}'.format(err))
 
 def create_indexes(table, columns):
     '''Create all of the necessary indexes for the given table name.'''
