@@ -785,12 +785,15 @@ def agent_timeseries_from_data(data, agents_key='cells'):
     return timeseries
 
 def save_timeseries(timeseries, out_dir='out'):
-    '''Save a timeseries as a CSV in out_dir'''
     flattened = flatten_timeseries(timeseries)
-    rows = np.transpose(list(flattened.values())).tolist()
+    save_flat_timeseries(flattened, out_dir)
+
+def save_flat_timeseries(timeseries, out_dir='out'):
+    '''Save a timeseries as a CSV in out_dir'''
+    rows = np.transpose(list(timeseries.values())).tolist()
     with open(os.path.join(out_dir, 'simulation_data.csv'), 'w') as f:
         writer = csv.writer(f)
-        writer.writerow(flattened.keys())
+        writer.writerow(timeseries.keys())
         writer.writerows(rows)
 
 def load_timeseries(path_to_csv):
