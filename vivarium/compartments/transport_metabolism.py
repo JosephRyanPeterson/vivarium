@@ -100,7 +100,7 @@ class TransportMetabolism(Generator):
     """
     Transport/Metabolism Compartment, with ODE expression
     """
-
+    name = NAME
     defaults = {
         'boundary_path': ('boundary',),
         'agents_path': ('agents',),
@@ -111,6 +111,7 @@ class TransportMetabolism(Generator):
         'transport': default_transport_config(),
         'metabolism': default_metabolism_config(),
         'expression': default_expression_config(),
+        'divide': True
     }
 
     def __init__(self, config=None):
@@ -137,23 +138,28 @@ class TransportMetabolism(Generator):
         mass_deriver = TreeMass({})
 
         # Division
-        # configure division condition and meta-division processes
         division_condition = DivisionVolume({})
-        division_config = dict(
-            config.get('division', {}),
-            daughter_path=daughter_path,
-            agent_id=agent_id,
-            compartment=self)
-        meta_division = MetaDivision(division_config)
 
-        return {
+        processes = {
             'transport': transport,
             'metabolism': metabolism,
             'expression': expression,
             'mass_deriver': mass_deriver,
             'division': division_condition,
-            'meta_division': meta_division,
         }
+
+        # divide process set to true, add meta-division processes
+        if config['divide']:
+            meta_division_config = dict(
+                {},
+                daughter_path=daughter_path,
+                agent_id=agent_id,
+                compartment=self)
+            meta_division = MetaDivision(meta_division_config)
+            processes['meta_division'] = meta_division
+
+        return processes
+
 
     def generate_topology(self, config):
         boundary_path = config['boundary_path']
@@ -161,7 +167,7 @@ class TransportMetabolism(Generator):
         fields_path = config['fields_path']
         dimensions_path = config['dimensions_path']
         external_path = boundary_path + ('external',)
-        return {
+        topology = {
             'transport': {
                 'internal': ('cytoplasm',),
                 'external': external_path,
@@ -191,11 +197,14 @@ class TransportMetabolism(Generator):
             'division': {
                 'global': boundary_path,
             },
-            'meta_division': {
-                'global': boundary_path,
-                'cells': agents_path,
-            }
         }
+        if config['divide']:
+            topology.update({
+                'meta_division': {
+                    'global': boundary_path,
+                    'cells': agents_path,
+                }})
+        return topology
 
 
 # simulate
@@ -216,22 +225,47 @@ def test_txp_mtb_ge():
     compartment = TransportMetabolism({'agent_id': agent_id})
     return simulate_compartment_in_experiment(compartment, default_test_setting)
 
-def simulate_txp_mtb_ge(config={}, out_dir='out'):
+def get_metabolism_initial_state(
+    scale_concentration=1,
+    override={}
+):
+    # get external state from iAF1260b metabolism
+    config = get_iAF1260b_config()
+    metabolism = Metabolism(config)
+    molecules = {
+        mol_id: conc * scale_concentration
+        for mol_id, conc in metabolism.initial_state['external'].items()
+    }
+    for mol_id, conc in override.items():
+        molecules[mol_id] = conc
+    return molecules
 
-    end_time = 2520  # 2520 sec (42 min) is the expected doubling time in minimal media
-    environment_volume = 1e-14
+def simulate_transport_metabolism(config={}):
+    end_time = config.get('end_time', 2520)  # 2520 sec (42 min) is the expected doubling time in minimal media
+    environment_volume = config.get('environment_volume', 1e-14)
+
+    # make the compartment
+    agent_id = '0'
+    compartment = TransportMetabolism({
+        'agent_id': agent_id,
+        'divide': False})
+
+    # make timeline initial state
+    initial_state = get_metabolism_initial_state(
+        # scale_concentration=1000,
+        # override={'glc__D_e': 1.0, 'lcts_e': 1.0}
+    )
+    initial_state = {
+        ('external', mol_id): conc
+        for mol_id, conc in initial_state.items()}
     timeline = [
-        (0, {
-            ('external', 'glc__D_e'): 3.0,
-            ('external', 'lcts_e'): 3.0,
-        }),
-        # (500, {
-        #     ('external', 'glc__D_e'): 0.0,
-        #     ('external', 'lcts_e'): 3.0,
-        # }),
+        (0, initial_state),
+        # (200, initial_state),
         (end_time, {})]
 
+    # run simulation
     sim_settings = {
+        # 'initial_state': initial_state,
         'environment': {
             'volume': environment_volume * units.L,
             'ports': {
@@ -243,28 +277,17 @@ def simulate_txp_mtb_ge(config={}, out_dir='out'):
         'timeline': {
             'timeline': timeline,
             'ports': {
-                'external': ('boundary', 'external')}}
-    }
+                'external': ('boundary', 'external'),
+                'global': ('boundary',)}}}
+    return simulate_compartment_in_experiment(compartment, sim_settings)
 
-    # run simulation
-    agent_id = '0'
-    compartment = TransportMetabolism({'agent_id': agent_id})
-    timeseries = simulate_compartment_in_experiment(compartment, sim_settings)
+
+def analyze_transport_metabolism(timeseries, config={}, out_dir='out'):
+    environment_volume = config.get('environment_volume', 1e-14)
 
     # calculate growth
     volume_ts = timeseries['boundary']['volume']
     print('growth: {}'.format(volume_ts[-1] / volume_ts[1]))
-
-    ## plot
-    # diauxic plot
-    settings = {
-        'internal_path': ('cytoplasm',),
-        'external_path': ('boundary', 'external'),
-        'global_path': ('boundary',),
-        'environment_volume': 1e-13,  # L
-        # 'timeline': timeline
-    }
-    plot_diauxic_shift(timeseries, settings, out_dir)
 
     # simulation plot
     plot_settings = {
@@ -274,6 +297,16 @@ def simulate_txp_mtb_ge(config={}, out_dir='out'):
         'skip_ports': ['null', 'reactions'],
     }
     plot_simulation_output(timeseries, plot_settings, out_dir)
+
+    # diauxic plot
+    settings = {
+        'internal_path': ('cytoplasm',),
+        'external_path': ('boundary', 'external'),
+        'global_path': ('boundary',),
+        'environment_volume': environment_volume,  # L
+    }
+    plot_diauxic_shift(timeseries, settings, out_dir)
+
 
 # parameters
 def scan_transport_metabolism():
@@ -369,5 +402,9 @@ if __name__ == '__main__':
         results = scan_transport_metabolism()
         plot_scan_results(results, out_dir)
     else:
-        config = {}
-        simulate_txp_mtb_ge(config, out_dir)
+        config ={
+            'end_time': 2520,
+            'environment_volume': 1e-12,
+        }
+        timeseries = simulate_transport_metabolism(config)
+        analyze_transport_metabolism(timeseries, config, out_dir)

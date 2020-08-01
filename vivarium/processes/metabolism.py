@@ -592,8 +592,7 @@ if __name__ == '__main__':
             'environment': {
                 'volume': 1e-5 * units.L,
             },
-            # 'timestep': 1,
-            'total_time': 20,  # 2520 sec (42 min) is the expected doubling time in minimal media
+            'total_time': 2520,  # 2520 sec (42 min) is the expected doubling time in minimal media
         }
 
         # run simulation
