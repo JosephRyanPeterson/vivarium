@@ -4,7 +4,16 @@ import os
 import sys
 import argparse
 import uuid
+import random
+import pytest
 
+import numpy as np
+
+from vivarium.core.emitter import path_timeseries_from_data
+from vivarium.library.timeseries import (
+    process_path_timeseries_for_csv,
+    save_flat_timeseries,
+)
 from vivarium.core.experiment import (
     Experiment
 )
@@ -13,6 +22,9 @@ from vivarium.core.composition import (
     simulate_experiment,
     plot_agents_multigen,
     EXPERIMENT_OUT_DIR,
+    REFERENCE_DATA_DIR,
+    load_timeseries,
+    assert_timeseries_close,
 )
 from vivarium.plots.multibody_physics import (
     plot_snapshots,
@@ -38,6 +50,7 @@ from vivarium.compartments.flagella_expression import (
 
 
 NAME = 'lattice'
+OUT_DIR = os.path.join(EXPERIMENT_OUT_DIR, NAME)
 DEFAULT_ENVIRONMENT_TYPE = Lattice
 TIME_STEP = 1
 
@@ -314,7 +327,7 @@ def run_lattice_experiment(
     # agents ids
     agent_ids = []
     for config in agents_config:
-        number = config['number']
+        number = config.get('number', 1)
         if 'name' in config:
             name = config['name']
             if number > 1:
@@ -415,12 +428,49 @@ def test_growth_division_experiment():
     assert final_agents > initial_agents
 
 
+@pytest.mark.slow
+def test_transport_metabolism_experiment(seed=1):
+    random.seed(seed)
+    np.random.seed(seed)
+    experiment_name = 'transport_metabolism_experiment'
+    agent_config = agents_library['transport_metabolism']
+    agents_config = [agent_config]
+    environment_config = environments_library['shallow_iAF1260b']
+    experiment_settings = get_experiment_settings(total_time=60)
+
+    # simulate
+    data = run_lattice_experiment(
+        agents_config=agents_config,
+        environment_config=environment_config,
+        # initial_state=initial_state,
+        # initial_agent_state=initial_agent_state,
+        experiment_settings=experiment_settings,
+    )
+    path_ts = path_timeseries_from_data(data)
+    del path_ts[('agents', 'transport_metabolism', 'boundary', 'divide')]  # these contain 'False'
+
+    # save timeseries as csv
+    processed_for_csv = process_path_timeseries_for_csv(path_ts)
+    save_flat_timeseries(
+        processed_for_csv,
+        OUT_DIR,
+        experiment_name + '.csv')
+
+    # compare timeseries to reference
+    test_output = load_timeseries(os.path.join(OUT_DIR, experiment_name + '.csv'))
+    expected = load_timeseries(os.path.join(REFERENCE_DATA_DIR, experiment_name + '.csv'))
+    assert_timeseries_close(
+        test_output, expected,
+        default_tolerance=(1 - 1e-5),
+    )
+
+
 def make_dir(out_dir):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
 def main():
-    out_dir = os.path.join(EXPERIMENT_OUT_DIR, NAME)
+    out_dir = OUT_DIR
     make_dir(out_dir)
 
     parser = argparse.ArgumentParser(description='lattice_experiment')
@@ -515,7 +565,7 @@ def main():
                            'expressed upon depletion of glucose they begin to uptake lactose. Cells have an iAF1260b '
                            'BiGG metabolism, kinetic transport of glucose and lactose, and ode-based gene expression '
                            'of LacY',
-                total_time=24000,
+                total_time=6000,
                 emit_step=200,
                 emitter='database',
             ),
