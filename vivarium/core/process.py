@@ -205,7 +205,7 @@ class Process(Generator):
         if parameters is None:
              parameters = {}
         self.parameters = copy.deepcopy(self.defaults)
-
+        self.config = {}  # config is required for generate
         self.schema_override = {}
         if '_schema' in parameters:
             self.schema_override = parameters.pop('_schema')
@@ -220,14 +220,13 @@ class Process(Generator):
         process_registry.register(self.name, type(self))
 
     def generate_processes(self, config):
-        return {'process': self}
+        return {self.name: self}
 
     def generate_topology(self, config):
-        ports_schema = self.ports_schema()
-        topology = config.get('topology', {})
+        ports = self.ports()
         return {
-            'process': {
-                port: topology.get(port, (port,)) for port in ports_schema().keys()}}
+            self.name: {
+                port: (port,) for port in ports.keys()}}
 
     def get_schema(self, override=None):
         ports = copy.deepcopy(self.ports_schema())

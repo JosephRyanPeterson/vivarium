@@ -223,6 +223,7 @@ class DiffusionField(Process):
 
     name = NAME
     defaults = {
+        'time_step': 1,
         'molecules': ['glc'],
         'initial_state': {},
         'n_bins': [10, 10],

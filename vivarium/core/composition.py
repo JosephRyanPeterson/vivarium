@@ -157,6 +157,10 @@ def agent_environment_experiment(
         'emitter': emitter,
         'initial_state': initial_state,
     }
+    if settings.get('experiment_name'):
+        experiment_config['experiment_name'] = settings.get('experiment_name')
+    if settings.get('description'):
+        experiment_config['description'] = settings.get('description')
     if invoke:
         experiment_config['invoke'] = invoke
     if 'emit_step' in settings:
@@ -167,9 +171,10 @@ def process_in_compartment(process, topology={}):
     """ put a lone process in a compartment"""
     class ProcessCompartment(Generator):
         def __init__(self, config):
-            self.config = config
+            super(ProcessCompartment, self).__init__(config)
+            self.schema_override = {}
             self.topology = topology
-            self.process = process(config)
+            self.process = process(self.config)
 
         def generate_processes(self, config):
             return {'process': self.process}
@@ -288,16 +293,16 @@ def compartment_in_experiment(compartment, settings={}):
     topology = network['topology']
 
     if timeline is not None:
-        # Environment requires ports for all states defined in the timeline
+        # Environment requires ports for all states defined in the timeline, and a global port
         ports = timeline['ports']
         timeline_process = TimelineProcess({'timeline': timeline['timeline']})
         processes.update({'timeline_process': timeline_process})
+        if 'global' not in ports:
+            ports['global'] = ('global',)
         topology.update({
-            'timeline_process': {'global': ('global',)}
-        })
-        topology['timeline_process'].update({
-                port_id: ports[port_id]
-                for port_id in timeline_process.ports if port_id != 'global'})
+            'timeline_process': {
+                port: path
+                for port, path in ports.items()}})
 
     if environment is not None:
         # Environment requires ports for external, fields, dimensions,
@@ -786,12 +791,15 @@ def agent_timeseries_from_data(data, agents_key='cells'):
     return timeseries
 
 def save_timeseries(timeseries, out_dir='out'):
-    '''Save a timeseries as a CSV in out_dir'''
     flattened = flatten_timeseries(timeseries)
-    rows = np.transpose(list(flattened.values())).tolist()
+    save_flat_timeseries(flattened, out_dir)
+
+def save_flat_timeseries(timeseries, out_dir='out'):
+    '''Save a timeseries as a CSV in out_dir'''
+    rows = np.transpose(list(timeseries.values())).tolist()
     with open(os.path.join(out_dir, 'simulation_data.csv'), 'w') as f:
         writer = csv.writer(f)
-        writer.writerow(flattened.keys())
+        writer.writerow(timeseries.keys())
         writer.writerows(rows)
 
 def load_timeseries(path_to_csv):
