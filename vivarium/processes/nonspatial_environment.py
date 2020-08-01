@@ -21,7 +21,7 @@ class NonSpatialEnvironment(Deriver):
 
     def __init__(self, parameters=None):
         super(NonSpatialEnvironment, self).__init__(parameters)
-        volume = parameters['volume']
+        volume = parameters.get('volume', self.defaults['volume'])
         self.mmol_to_counts = (AVOGADRO.to('1/mmol') * volume).to('L/mmol')
 
 
