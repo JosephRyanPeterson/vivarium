@@ -457,10 +457,10 @@ def test_transport_metabolism_experiment(seed=1):
         experiment_name + '.csv')
 
     # compare timeseries to reference
-    test_output = load_timeseries(os.path.join(OUT_DIR, experiment_name + '.csv'))
+    # test_output = load_timeseries(os.path.join(OUT_DIR, experiment_name + '.csv'))
     expected = load_timeseries(os.path.join(REFERENCE_DATA_DIR, experiment_name + '.csv'))
     assert_timeseries_close(
-        test_output, expected,
+        processed_for_csv, expected,
         default_tolerance=(1 - 1e-5),
     )
 
