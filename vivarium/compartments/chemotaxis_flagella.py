@@ -349,7 +349,7 @@ def test_ode_expression_chemotaxis(
         out_dir='out'
 ):
     # make the compartment
-    config = get_baseline_config(n_flagella=n_flagella)
+    config = get_baseline_config(n_flagella)
     compartment = ChemotaxisODEExpressionFlagella(config)
 
     # save the topology network
@@ -386,7 +386,7 @@ def test_expression_chemotaxis(
         out_dir='out'
 ):
     # make the compartment
-    config = get_baseline_config(n_flagella=n_flagella)
+    config = get_baseline_config(n_flagella)
     compartment = ChemotaxisExpressionFlagella(config)
 
     # save the topology network
@@ -429,7 +429,7 @@ def test_variable_chemotaxis(
         out_dir='out'
 ):
     # make the compartment
-    config = get_baseline_config(n_flagella=n_flagella)
+    config = get_baseline_config(n_flagella)
     compartment = ChemotaxisVariableFlagella(config)
 
     # save the topology network

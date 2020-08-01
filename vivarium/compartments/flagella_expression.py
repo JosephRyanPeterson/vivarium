@@ -415,7 +415,7 @@ def run_flagella_compartment(
         out_dir)
 
 
-# @pytest.mark.slow
+@pytest.mark.slow
 def test_flagella_expression():
     flagella_compartment = flagella_expression_compartment({})
 

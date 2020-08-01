@@ -284,11 +284,8 @@ class ODE_expression(Process):
                 leak_probability = 1 - math.exp(-rate * timestep)
                 if random.uniform(0, 1) < leak_probability:
                     rate = self.transcription_leak_magnitude
-                    log.info('TRANSCRIPTION LEAK!')
                 else:
                     rate = 0.0
-            else:
-                log.info('TRANSCRIPTION DISINHIBITED!')
 
             internal_update[transcript] = \
                 (rate - self.degradation.get(transcript, 0) * transcript_state) * timestep

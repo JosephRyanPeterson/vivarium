@@ -56,7 +56,7 @@ class MotorActivity(Process):
         'k_z': 30.0,  # / CheZ,
         'gamma_Y': 0.1,  # rate constant
         'k_s': 0.45,  # scaling coefficient
-        'adapt_precision': 3,  # scales CheY_P to cluster activity, increases probability of switch to tumble (cw)
+        'adapt_precision': 3,  # scales CheY_P to cluster activity
         # motor
         'mb_0': 0.65,  # steady state motor bias (Cluzel et al 2000)
         'n_motors': 5,
@@ -145,7 +145,6 @@ class MotorActivity(Process):
             # switch to tumble (cw)?
             rate = -math.log(1 - ccw_to_cw)  # rate for probability function of time
             prob_switch = 1 - math.exp(-rate * timestep)
-            # prob_switch = ccw_to_cw * timestep  # linear probability assumption (bad)
             if np.random.random(1)[0] <= prob_switch:
                 motor_state = 1
                 thrust, torque = tumble(self.parameters['tumble_jitter'])
@@ -157,7 +156,6 @@ class MotorActivity(Process):
             # switch to run (ccw)?
             rate = -math.log(1 - cw_to_ccw)  # rate for probability function of time
             prob_switch = 1 - math.exp(-rate * timestep)
-            # prob_switch = cw_to_ccw * timestep # linear probability assumption (bad)
             if np.random.random(1)[0] <= prob_switch:
                 motor_state = 0
                 [thrust, torque] = run()

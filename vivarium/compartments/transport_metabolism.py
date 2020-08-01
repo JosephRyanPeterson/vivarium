@@ -88,7 +88,6 @@ def default_transport_config():
             'EX_lcts_e': {
                 ('internal', 'LacY'): {
                     ('external', 'lcts_e'): 1e-1,
-                    # 'kcat_f': 8e1,
                 }
             }
         }

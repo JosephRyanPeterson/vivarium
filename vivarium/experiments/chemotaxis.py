@@ -87,8 +87,6 @@ INITIAL_LIGAND = FIELD_SCALE * EXPONENTIAL_BASE ** (DIST / 1000)
 def get_exponential_env_config():
     # multibody process config
     multibody_config = {
-        'animate': False,
-        'jitter_force': 5e-3,
         'bounds': DEFAULT_BOUNDS}
 
     # static field config
@@ -430,15 +428,6 @@ def plot_chemotaxis_experiment(
 
     embdedded_timeseries = timeseries_from_data(data)
     plot_motility(embdedded_timeseries, out_dir, filename + 'motility_analysis')
-
-    # # plots for individual agents
-    # agents_timeseries = embdedded_timeseries['agents']
-    # for agent_id, s_timeseries in agents_timeseries.items():
-    #     cell_timeseries = s_timeseries['cell']
-    #     try:
-    #         plot_variable_receptor(cell_timeseries, out_dir, filename + 'motor_response_' + str(agent_id))
-    #     except:
-    #         print('plot_variable_receptor failed for {}'.format(agent_id))
 
 
 # parsing expression grammar for agents

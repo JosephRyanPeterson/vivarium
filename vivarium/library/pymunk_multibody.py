@@ -161,9 +161,6 @@ class PymunkMultibody(object):
 
             # add to angular velocity
             body.angular_velocity += torque
-            # # force-based torque
-            # if torque != 0.0:
-            #     motile_force = get_force_with_angle(thrust, torque)
 
         scaled_motile_force = [force * self.force_scaling for force in motile_force]
         body.apply_impulse_at_local_point(scaled_motile_force, motile_location)

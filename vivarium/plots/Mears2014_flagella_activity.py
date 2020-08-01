@@ -12,7 +12,7 @@ from vivarium.core.emitter import timeseries_from_data
 
 
 def plot_activity(data, out_dir='out', filename='motor_control'):
-    timeseries = timeseries_from_data(data, True)
+    timeseries = timeseries_from_data(data)
 
     CheY_vec = timeseries['internal']['CheY']
     CheY_P_vec = timeseries['internal']['CheY_P']
@@ -139,7 +139,6 @@ def plot_activity(data, out_dir='out', filename='motor_control'):
                extent=[time_vec[0], time_vec[-1], 0, 1])
     ax4.set_yticks([])
     ax4.set_xticks([])
-    # ax4.set_ylabel('motile state')
 
     # legend
     ax4.legend(
