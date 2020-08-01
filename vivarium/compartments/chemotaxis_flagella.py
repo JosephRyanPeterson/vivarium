@@ -24,7 +24,7 @@ from vivarium.processes.chemoreceptor_cluster import (
     ReceptorCluster,
     get_exponential_random_timeline
 )
-from vivarium.processes.Mears2014_flagella_activity import FlagellaActivity
+from vivarium.processes.flagella_activity import FlagellaActivity
 from vivarium.processes.transcription import Transcription, UNBOUND_RNAP_KEY
 from vivarium.processes.translation import Translation, UNBOUND_RIBOSOME_KEY
 from vivarium.processes.degradation import RnaDegradation

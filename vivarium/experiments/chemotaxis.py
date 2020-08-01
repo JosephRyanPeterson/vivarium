@@ -46,7 +46,7 @@ from vivarium.compartments.chemotaxis_flagella import (
 )
 
 # processes
-from vivarium.processes.Vladimirov2008_motor import MotorActivity
+from vivarium.processes.coarse_motor import MotorActivity
 from vivarium.processes.multibody_physics import agent_body_config
 from vivarium.processes.static_field import make_field
 
@@ -56,7 +56,7 @@ from vivarium.plots.multibody_physics import (
     plot_agent_trajectory,
     plot_motility,
 )
-from vivarium.plots.Vladimirov2008_motor import plot_variable_receptor
+from vivarium.plots.coarse_motor import plot_variable_receptor
 
 # make an agent from a lone MotorActivity process
 # MotorActivityAgent = MotorActivity

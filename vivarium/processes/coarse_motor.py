@@ -20,12 +20,12 @@ from vivarium.core.composition import (
     simulate_process_in_experiment,
     PROCESS_OUT_DIR,
 )
-from vivarium.plots.Vladimirov2008_motor import (
+from vivarium.plots.coarse_motor import (
     plot_variable_receptor,
     plot_motor_control,
 )
 
-NAME = 'Vladimirov2008_motor'
+NAME = 'coarse_motor'
 
 class MotorActivity(Process):
     ''' Model of motor activity

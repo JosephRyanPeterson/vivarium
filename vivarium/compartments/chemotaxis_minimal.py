@@ -15,7 +15,7 @@ from vivarium.processes.chemoreceptor_cluster import (
     ReceptorCluster,
     get_exponential_random_timeline
 )
-from vivarium.processes.Vladimirov2008_motor import MotorActivity
+from vivarium.processes.coarse_motor import MotorActivity
 
 
 

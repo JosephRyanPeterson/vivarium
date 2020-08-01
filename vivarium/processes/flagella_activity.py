@@ -16,9 +16,9 @@ from vivarium.core.composition import (
     simulate_process_in_experiment,
     PROCESS_OUT_DIR
 )
-from vivarium.plots.Mears2014_flagella_activity import plot_activity
+from vivarium.plots.flagella_activity import plot_activity
 
-NAME = 'Mears2014_flagella_activity'
+NAME = 'flagella_activity'
 
 
 

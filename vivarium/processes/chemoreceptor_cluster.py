@@ -15,7 +15,7 @@ from vivarium.core.process import Process
 from vivarium.library.units import units
 
 
-NAME = 'Endres2006_chemoreceptor'
+NAME = 'chemoreceptor_cluster'
 
 STEADY_STATE_DELTA = 1e-6
 
@@ -26,8 +26,6 @@ INITIAL_INTERNAL_STATE = {
     'CheB': 0.00028,  # (mM) wild type concentration. 0.28 uM = 0.00028 mM. [CheR]:[CheB]=0.16:0.28
     'CheB_P': 0.0,  # phosphorylated CheB
 }
-
-
 
 
 def run_step(receptor, state, timestep):
