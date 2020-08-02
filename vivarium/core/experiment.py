@@ -1372,7 +1372,7 @@ class Experiment(object):
 
             # find any parallel processes that were removed and terminate them
             for terminated in self.parallel.keys() - processes.keys():
-                terminated.end()
+                self.parallel[terminated].end()
                 del self.parallel[terminated]
 
             # setup a way to track how far each process has simulated in time
