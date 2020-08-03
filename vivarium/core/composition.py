@@ -733,13 +733,16 @@ def plot_agents_multigen(data, settings={}, out_dir='out', filename='agents'):
             ax.title.set_text(path)
             ax.title.set_fontsize(title_size)
             ax.set_xlim([time_vec[0], time_vec[-1]])
+            ax.xaxis.get_offset_text().set_fontsize(tick_label_size)
+            ax.yaxis.get_offset_text().set_fontsize(tick_label_size)
 
             # if last state in this port, add time ticks
             if (row_idx >= highest_row
                 or path_idx >= len(ordered_paths[port_id]) - 1
             ):
                 set_axes(ax, True)
-                ax.set_xlabel('time (s)')
+                ax.set_xlabel('time (s)', fontsize=title_size)
+
             else:
                 set_axes(ax)
             ax.set_xlim([time_vec[0], time_vec[-1]])
