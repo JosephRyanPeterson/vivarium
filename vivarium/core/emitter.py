@@ -232,7 +232,7 @@ class DatabaseEmitter(Emitter):
         table.insert_one(data)
 
     def get_data(self):
-        return get_history_data_db(self.history, experiment_id)
+        return get_history_data_db(self.history, self.experiment_id)
 
 
 def get_history_data_db(history_collection, experiment_id):
