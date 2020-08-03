@@ -309,21 +309,29 @@ class Deriver(Process):
         return True
 
 
+import time
 def run_update(connection, process):
     running = True
 
     while running:
+        print('child Starting recv update request:', time.time())
         interval, states = connection.recv()
+        print('child Finished recv update request:', time.time())
 
         # stop process by sending -1 as the interval
         if interval == -1:
             running = False
 
         else:
+            print('child Starting compute update:', time.time())
             update = process.next_update(interval, states)
+            print('child Finished compute update:', time.time())
+            print('child Starting send update:', time.time())
             connection.send(update)
+            print('child Finished send update:', time.time())
 
     connection.close()
+
 
 
 class ParallelProcess(object):
@@ -336,10 +344,14 @@ class ParallelProcess(object):
         self.multiprocess.start()
 
     def update(self, interval, states):
+        print('parent Starting send update request:', time.time())
         self.parent.send((interval, states))
+        print('parent Finished sending update request:', time.time())
 
     def get(self):
+        print('parent Starting recv update:', time.time())
         return self.parent.recv()
+        print('parent Finished recv update:', time.time())
 
     def end(self):
         self.parent.send((-1, None))
