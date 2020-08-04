@@ -407,6 +407,8 @@ def plot_tags(data, plot_config):
     agent_shape = plot_config.get('agent_shape', 'segment')
     background_color = plot_config.get('background_color', 'black')
     tagged_molecules = plot_config['tagged_molecules']
+    tag_path_name_map = plot_config.get('tag_path_name_map', {})
+    tag_label_size = plot_config.get('tag_label_size', 20)
 
     if tagged_molecules == []:
         raise ValueError('At least one molecule must be tagged.')
@@ -457,17 +459,25 @@ def plot_tags(data, plot_config):
     plt.rcParams.update({'font.size': 36})
 
     # plot tags
-    for col_idx, (time_idx, time) in enumerate(
-        zip(time_indices, snapshot_times)
-    ):
-        for row_idx, tag_id in enumerate(tag_ranges.keys()):
+    for row_idx, tag_id in enumerate(tag_ranges.keys()):
+        used_agent_colors = []
+        concentrations = []
+        for col_idx, (time_idx, time) in enumerate(
+            zip(time_indices, snapshot_times)
+        ):
+            tag_name = tag_path_name_map.get(tag_id, tag_id)
             ax = init_axes(
                 fig, edge_length_x, edge_length_y, grid,
-                row_idx, col_idx, time, tag_id,
+                row_idx, col_idx, time, tag_name, tag_label_size,
+            )
+            ax.tick_params(
+                axis='both', which='both', bottom=False, top=False,
+                left=False, right=False,
             )
             ax.set_facecolor(background_color)
 
             # update agent colors based on tag_level
+            min_tag, max_tag = tag_ranges[tag_id]
             agent_tag_colors = {}
             for agent_id, agent_data in agents[time].items():
                 agent_color = BASELINE_TAG_COLOR
@@ -476,21 +486,43 @@ def plot_tags(data, plot_config):
                 count = get_value_from_path(agent_data, tag_id)
                 volume = agent_data.get('boundary', {}).get('volume', 0)
                 level = count / volume if volume else 0
-                min_tag, max_tag = tag_ranges[tag_id]
                 if min_tag != max_tag:
+                    concentrations.append(level)
                     intensity = max((level - min_tag), 0)
                     intensity = min(intensity / (max_tag - min_tag), 1)
                     tag_color = tag_colors[tag_id]
                     agent_color = get_fluorescent_color(
                         BASELINE_TAG_COLOR, tag_color, intensity)
+                    agent_rgb = matplotlib.colors.hsv_to_rgb(agent_color)
+                    used_agent_colors.append(agent_rgb)
 
                 agent_tag_colors[agent_id] = agent_color
 
             plot_agents(ax, agents[time], agent_tag_colors, agent_shape)
 
+            # colorbar in new column after final snapshot
+            if col_idx == n_snapshots - 1:
+                cbar_col = col_idx + 1
+                ax = fig.add_subplot(grid[row_idx, cbar_col])
+                if row_idx == 0:
+                    ax.set_title('Concentration (mmol/fL)', y=1.08)
+                ax.axis('off')
+                if min_tag == max_tag:
+                    continue
+                divider = make_axes_locatable(ax)
+                cax = divider.append_axes("left", size="5%", pad=0.0)
+                norm = matplotlib.colors.Normalize()
+                norm.autoscale(used_agent_colors)
+                cmap = matplotlib.colors.ListedColormap(
+                    used_agent_colors).reversed()
+                mappable = matplotlib.cm.ScalarMappable(norm, cmap)
+                mappable.set_array(concentrations)
+                mappable.set_clim(min_tag, max_tag)
+                fig.colorbar(mappable, cax=cax, format='%.6f')
+
     fig_path = os.path.join(out_dir, filename)
-    plt.subplots_adjust(wspace=0.7, hspace=0.1)
-    plt.savefig(fig_path, bbox_inches='tight')
+    fig.subplots_adjust(wspace=0.7, hspace=0.1)
+    fig.savefig(fig_path, bbox_inches='tight')
     plt.close(fig)
 
 def initialize_spatial_figure(bounds, fontsize=18):
@@ -932,14 +964,17 @@ def plot_motility(timeseries, out_dir='out', filename='motility_analysis'):
 
 def init_axes(
     fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time,
-    molecule,
+    molecule, ylabel_size=20
 ):
     ax = fig.add_subplot(grid[row_idx, col_idx])
     if row_idx == 0:
         plot_title = 'time: {:.4f} s'.format(float(time))
         plt.title(plot_title, y=1.08)
     if col_idx == 0:
-        ax.set_ylabel(molecule, fontsize=20)
+        ax.set_ylabel(
+            molecule, fontsize=ylabel_size, rotation='horizontal',
+            horizontalalignment='right',
+        )
     ax.set(xlim=[0, edge_length_x], ylim=[0, edge_length_y], aspect=1)
     ax.set_yticklabels([])
     ax.set_xticklabels([])
