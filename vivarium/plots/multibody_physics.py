@@ -398,6 +398,8 @@ def plot_tags(data, plot_config):
               value being the molecule's count variable.
             * **background_color** (:py:class:`str`): use matplotlib colors,
               ``black`` by default
+            * **tag_label_size** (:py:class:`float`): The font size for
+              the tag name label
     '''
     check_plt_backend()
 
