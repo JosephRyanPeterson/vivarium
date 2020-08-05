@@ -227,6 +227,8 @@ def plot_snapshots(data, plot_config):
               ``include_fields``.
             * **include_fields** (:py:class:`Iterable`): Keys of fields
               to plot.
+            * **field_label_size** (:py:class:`float`): Font size of the
+              field label.
     '''
     check_plt_backend()
 
@@ -237,6 +239,7 @@ def plot_snapshots(data, plot_config):
     phylogeny_names = plot_config.get('phylogeny_names', True)
     skip_fields = plot_config.get('skip_fields', [])
     include_fields = plot_config.get('include_fields', None)
+    field_label_size = plot_config.get('field_label_size', 20)
 
     # get data
     agents = data.get('agents', {})
@@ -307,7 +310,11 @@ def plot_snapshots(data, plot_config):
 
                 ax = init_axes(
                     fig, edge_length_x, edge_length_y, grid, row_idx,
-                    col_idx, time, field_id
+                    col_idx, time, field_id, field_label_size,
+                )
+                ax.tick_params(
+                    axis='both', which='both', bottom=False, top=False,
+                    left=False, right=False,
                 )
 
                 # transpose field to align with agents
@@ -324,9 +331,14 @@ def plot_snapshots(data, plot_config):
                     plot_agents(ax, agents_now, agent_colors, agent_shape)
 
                 # colorbar in new column after final snapshot
-                if col_idx == n_snapshots-1 and (vmin != vmax):
+                if col_idx == n_snapshots - 1:
                     cbar_col = col_idx + 1
                     ax = fig.add_subplot(grid[row_idx, cbar_col])
+                    if row_idx == 0:
+                        ax.set_title('Concentration (mmol/L)', y=1.08)
+                    ax.axis('off')
+                    if vmin == vmax:
+                        continue
                     divider = make_axes_locatable(ax)
                     cax = divider.append_axes("left", size="5%", pad=0.0)
                     fig.colorbar(im, cax=cax, format='%.6f')
@@ -342,8 +354,8 @@ def plot_snapshots(data, plot_config):
                 plot_agents(ax, agents_now, agent_colors, agent_shape)
 
     fig_path = os.path.join(out_dir, filename)
-    plt.subplots_adjust(wspace=0.7, hspace=0.1)
-    plt.savefig(fig_path, bbox_inches='tight')
+    fig.subplots_adjust(wspace=0.7, hspace=0.1)
+    fig.savefig(fig_path, bbox_inches='tight')
     plt.close(fig)
 
 def get_fluorescent_color(baseline_hsv, tag_color, intensity):
