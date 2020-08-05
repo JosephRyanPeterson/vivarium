@@ -505,7 +505,7 @@ def plot_tags(data, plot_config):
                 cbar_col = col_idx + 1
                 ax = fig.add_subplot(grid[row_idx, cbar_col])
                 if row_idx == 0:
-                    ax.set_title('Concentration (mmol/fL)', y=1.08)
+                    ax.set_title('Concentration (counts/fL)', y=1.08)
                 ax.axis('off')
                 if min_tag == max_tag:
                     continue
