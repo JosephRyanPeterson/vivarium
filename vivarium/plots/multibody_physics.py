@@ -512,11 +512,13 @@ def plot_tags(data, plot_config):
                 divider = make_axes_locatable(ax)
                 cax = divider.append_axes("left", size="5%", pad=0.0)
                 norm = matplotlib.colors.Normalize()
+                # Sort colors and concentrations by concentration
+                sorted_idx = np.argsort(concentrations)
                 norm.autoscale(used_agent_colors)
                 cmap = matplotlib.colors.ListedColormap(
-                    used_agent_colors).reversed()
+                    np.array(used_agent_colors)[sorted_idx])
                 mappable = matplotlib.cm.ScalarMappable(norm, cmap)
-                mappable.set_array(concentrations)
+                mappable.set_array(np.array(concentrations)[sorted_idx])
                 mappable.set_clim(min_tag, max_tag)
                 fig.colorbar(mappable, cax=cax, format='%.6f')
 
